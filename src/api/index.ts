@@ -1,0 +1,98 @@
+import { evlog } from "evlog/hono";
+import { initWorkersLogger } from "evlog/workers";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+
+import type { AppEnv } from "@/ctx";
+
+import { authApi } from "@/api/controllers/auth";
+import { dashboardApi } from "@/api/controllers/dashboard";
+import { monitorsApi } from "@/api/controllers/monitors";
+import { notificationsApi } from "@/api/controllers/notifications";
+import { registerPushRoutes } from "@/api/controllers/push";
+import { settingsApi } from "@/api/controllers/settings";
+import {
+  publicStatusApi,
+  statusPagesApi,
+} from "@/api/controllers/status-pages";
+import { createAppDb } from "@/api/db";
+import { MonitorActor } from "@/api/durable/monitor-actor";
+import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
+import { loadSession } from "@/api/middleware/auth";
+import { requireApiAdmin, requireApiSession } from "@/api/middleware/guards";
+
+initWorkersLogger({
+  env: { service: "uptime-worker" },
+});
+
+export const api = new Hono<AppEnv>()
+  .route("/auth", authApi)
+  .route("/status", publicStatusApi)
+  .use("*", requireApiSession)
+  .route("/dashboard", dashboardApi)
+  .route("/monitors", monitorsApi)
+  .use("/settings", requireApiAdmin)
+  .use("/settings/*", requireApiAdmin)
+  .route("/settings", settingsApi)
+  .use("/status-pages", requireApiAdmin)
+  .use("/status-pages/*", requireApiAdmin)
+  .route("/status-pages", statusPagesApi)
+  .use("/notifications", requireApiAdmin)
+  .use("/notifications/*", requireApiAdmin)
+  .route("/notifications", notificationsApi);
+
+export type ApiType = typeof api;
+
+const app = new Hono<AppEnv>();
+
+app.use("*", evlog());
+app.use("*", loadSession);
+app.onError((error, ctx) => {
+  const status = error instanceof HTTPException ? error.status : 500;
+  const message =
+    error instanceof HTTPException ? error.message : "Internal server error";
+  ctx
+    .get("log")
+    .error(error instanceof Error ? error : new Error(String(error)));
+  return ctx.json({ error: message }, status);
+});
+
+registerPushRoutes(app);
+app.route("/api", api);
+
+export { MonitorActor };
+
+const worker: ExportedHandler<Env> = {
+  fetch(request, env, executionCtx) {
+    return app.fetch(request, env, executionCtx);
+  },
+  async scheduled(_controller, env, executionCtx) {
+    const db = createAppDb(env.DB);
+    const activeMonitorIds = await db.monitor.listActiveIds();
+    const monitorIds = selectCronMonitorBatch(activeMonitorIds, Date.now());
+    executionCtx.waitUntil(
+      Promise.all(
+        monitorIds.map((monitorId) =>
+          getMonitorActorStub(env, monitorId).syncConfig("cron", monitorId),
+        ),
+      ),
+    );
+  },
+};
+
+export default worker;
+
+export function selectCronMonitorBatch(
+  monitorIds: string[],
+  now: number,
+  batchSize = 30,
+) {
+  if (monitorIds.length <= batchSize) {
+    return monitorIds;
+  }
+
+  const start = (Math.floor(now / 60_000) * batchSize) % monitorIds.length;
+  return Array.from({ length: batchSize }, (_, index) => {
+    return monitorIds[(start + index) % monitorIds.length];
+  });
+}

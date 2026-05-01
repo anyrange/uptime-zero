@@ -1,0 +1,663 @@
+{
+  "$schema": "https://inlang.com/schema/message-format",
+  "common_uptime": "Uptime",
+  "common_edge_uptime": "Uptime Zero",
+  "common_edge_monitoring": "Edge monitoring",
+  "common_loading": "Loading",
+  "common_never": "Never",
+  "common_unknown": "Unknown",
+  "common_just_now": "Just now",
+  "common_not_available": "N/A",
+  "common_no_data": "No data",
+  "common_no_details": "No details",
+  "common_healthy": "Healthy",
+  "common_none": "None",
+  "common_back": "Back",
+  "common_create": "Create",
+  "common_cancel": "Cancel",
+  "common_delete": "Delete",
+  "common_save": "Save",
+  "common_saved": "Saved",
+  "common_close": "Close",
+  "common_edit": "Edit",
+  "common_actions": "Actions",
+  "common_status": "Status",
+  "common_type": "Type",
+  "common_name": "Name",
+  "common_email": "Email",
+  "common_password": "Password",
+  "common_search": "Search",
+  "common_interval": "Interval",
+  "common_duration": "Duration",
+  "common_updated": "Updated",
+  "common_open": "Open",
+  "common_closed": "Closed",
+  "common_active": "Active",
+  "common_paused": "Paused",
+  "common_down": "Down",
+  "common_operational": "Operational",
+  "common_new": "New",
+  "common_manage": "Manage",
+  "common_pages": "Pages",
+  "common_visibility": "Visibility",
+  "common_public": "Public",
+  "common_dashboard": "Dashboard",
+  "common_private": "Private",
+  "common_enabled": "Enabled",
+  "common_disabled": "Disabled",
+  "common_previous": "Previous",
+  "common_next": "Next",
+  "common_up": "Up",
+  "common_average": "Average",
+  "common_resolved": "Resolved",
+  "common_ms": "{value}ms",
+  "common_seconds_short": "{value}s",
+  "common_minutes_short": "{value}m",
+  "common_hours_short": "{value}h",
+  "common_days_short": "{value}d",
+  "common_hours_minutes_short": "{hours}h {minutes}m",
+  "common_days_hours_short": "{days}d {hours}h",
+  "common_count_headers": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} header",
+        "countPlural=other": "{count} headers"
+      }
+    }
+  ],
+  "auth_sign_in": "Sign in",
+  "auth_create_admin": "Create admin",
+  "auth_admin_login": "Admin login",
+  "auth_log_out": "Log out",
+  "auth_logging_out": "Logging out...",
+  "auth_signed_in": "Signed in",
+  "auth_administrator": "Administrator",
+  "auth_uptime_console": "Uptime Zero console",
+  "auth_account": "Account",
+  "validation_email_valid": "Enter a valid email address.",
+  "validation_password_required": "Password is required.",
+  "validation_name_required": "Name is required.",
+  "validation_password_min_12": "Use at least 12 characters.",
+  "validation_min_one_day": "Use at least 1 day.",
+  "validation_interval_positive": "Use an interval above 0.",
+  "validation_timeout_positive": "Use a timeout above 0.",
+  "validation_retries_nonnegative": "Retries cannot be negative.",
+  "validation_monitor_payload": "Invalid monitor payload.",
+  "validation_target_required": "Target is required.",
+  "validation_dns_assertion_required": "DNS monitors need at least one record assertion.",
+  "nav_monitoring": "Monitoring",
+  "nav_operations": "Operations",
+  "nav_overview": "Overview",
+  "nav_monitors": "Monitors",
+  "nav_incidents": "Incidents",
+  "nav_status_pages": "Status Pages",
+  "nav_new_monitor": "New Monitor",
+  "nav_notifications": "Notifications",
+  "nav_settings": "Settings",
+  "nav_sidebar": "Sidebar",
+  "nav_mobile_sidebar_description": "Displays the mobile sidebar.",
+  "nav_toggle_sidebar": "Toggle Sidebar",
+  "monitor_monitors": "Monitors",
+  "monitor_monitor": "Monitor",
+  "monitor_new": "New monitor",
+  "monitor_description": "Create and manage your monitors.",
+  "monitor_edit": "Edit monitor",
+  "monitor_total": "Total monitors",
+  "monitor_open_incidents": "Open incidents",
+  "monitor_slowest_p95": "Slowest p95",
+  "monitor_no_monitors": "No monitors yet.",
+  "monitor_no_heartbeat_logs": "No heartbeat logs yet.",
+  "monitor_no_heartbeat_history": "No heartbeat history yet.",
+  "monitor_no_latency_samples": "No successful latency samples yet.",
+  "monitor_no_latency_summary": "No latency summary available.",
+  "monitor_no_incidents": "No incidents recorded.",
+  "monitor_delete_title": "Delete monitor?",
+  "monitor_timestamp": "Timestamp",
+  "monitor_code": "Code",
+  "monitor_latency": "Latency",
+  "monitor_source": "Source",
+  "monitor_details": "Details",
+  "monitor_incident": "Incident",
+  "monitor_opened": "Opened",
+  "monitor_resolved": "Resolved",
+  "monitor_target": "Target",
+  "monitor_last_latency": "Last latency",
+  "monitor_last_checked": "Last checked",
+  "monitor_http": "HTTP",
+  "monitor_dns": "DNS",
+  "monitor_push": "Push",
+  "monitor_assertions": "Assertions",
+  "monitor_no_assertions": "No assertions configured yet.",
+  "monitor_assertion_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} assertion",
+        "countPlural=other": "{count} assertions"
+      }
+    }
+  ],
+  "monitor_interval_assertion_summary": "Every {interval}s · {assertions}",
+  "monitor_notifications": "Notifications",
+  "monitor_no_destinations": "No destinations configured yet.",
+  "monitor_checks": "Checks",
+  "monitor_recorded_check_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} recorded check",
+        "countPlural=other": "{count} recorded checks"
+      }
+    }
+  ],
+  "monitor_successful_check_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} successful check",
+        "countPlural=other": "{count} successful checks"
+      }
+    }
+  ],
+  "monitor_successful_check_ratio": [
+    {
+      "declarations": [
+        "input up",
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{up}/{total} successful check",
+        "totalPlural=other": "{up}/{total} successful checks"
+      }
+    }
+  ],
+  "monitor_check_window_summary": "{total} checks, {up} up",
+  "monitor_no_checks_recorded": "No checks recorded yet.",
+  "monitor_availability": "Availability",
+  "monitor_requests": "Requests",
+  "monitor_overview": "Overview",
+  "monitor_logs": "Logs",
+  "monitor_settings": "Settings",
+  "monitor_configuration": "Monitor configuration",
+  "monitor_configuration_description": "Create a compact monitor configuration with real HTTP or DNS assertions.",
+  "monitor_type": "Monitor type",
+  "monitor_type_description": "HTTP checks run assertions against the response. DNS checks query records over DNS-over-HTTPS. Push monitors wait for incoming heartbeats.",
+  "monitor_hostname": "Hostname",
+  "monitor_target_hostname_description": "Use the hostname to resolve.",
+  "monitor_target_push_description": "Push monitors generate a heartbeat endpoint after save.",
+  "monitor_target_url_description": "Use the full URL to request.",
+  "monitor_interval_seconds": "Interval (sec)",
+  "monitor_timeout_ms": "Timeout (ms)",
+  "monitor_retries": "Retries",
+  "monitor_assertions_dns_description": "Record assertions decide whether the lookup is healthy.",
+  "monitor_assertions_http_description": "Status, header, and body assertions decide whether the response is healthy.",
+  "monitor_add_status": "Add status",
+  "monitor_add_header": "Add header",
+  "monitor_add_body": "Add body",
+  "monitor_add_json": "Add JSON",
+  "monitor_add_record": "Add record",
+  "monitor_notifications_description": "Bind real destinations that should receive transition alerts.",
+  "monitor_push_endpoint": "Push endpoint",
+  "monitor_push_endpoint_description": "Use this endpoint to mark the monitor healthy from external systems.",
+  "monitor_save": "Save monitor",
+  "monitor_create": "Create monitor",
+  "monitor_cadence_summary": "Every {interval}s cadence",
+  "monitor_p50_latency": "P50 latency",
+  "monitor_p99_latency": "P99 latency",
+  "monitor_p95_latency_value": "P95 {value}",
+  "monitor_average_latency_value": "Average {value}",
+  "monitor_mean_time_to_recovery": "Mean time to recovery",
+  "monitor_filter_placeholder": "Filter monitors...",
+  "monitor_select_all_page": "Select all monitors on this page",
+  "monitor_open_actions": "Open actions for {name}",
+  "monitor_select_row": "Select {name}",
+  "monitor_import_failed": "Failed to import monitors.",
+  "monitor_days_remaining": "Days remaining",
+  "monitor_mttr_minutes": "{minutes} min",
+  "monitor_assertion_status_summary": "Status equals {expected}",
+  "monitor_assertion_header_summary": "Header {header} {operator} {value}",
+  "monitor_assertion_json_summary": "JSON {path} {operator} {value}",
+  "monitor_assertion_body_summary": "Body {operator} {value}",
+  "monitor_assertion_record_summary": "{recordType} {operator} {value}",
+  "monitor_column_last_latency": "Last latency",
+  "monitor_column_last_checked": "Last checked",
+  "monitor_health_trends": "Health trends",
+  "monitor_health_trends_description": "Availability, latency, and outcomes from the heartbeat history currently loaded for this monitor.",
+  "monitor_latest_48_checks": "Latest 48 checks",
+  "monitor_latest_48_hours": "Latest 48 hours",
+  "monitor_availability_windows": "Availability windows",
+  "monitor_recent_incidents": "Recent incidents",
+  "monitor_latency_over_time": "Latency over time",
+  "monitor_latency_empty_description": "Push monitors and failed checks may not record a usable duration.",
+  "monitor_latency_description": "Successful check durations, with incident windows shaded when they overlap the visible range.",
+  "monitor_latency_summary": "Latency summary",
+  "monitor_latency_summary_empty_description": "Percentiles are computed from successful checks only.",
+  "monitor_latency_summary_description": "Per-{bucket} p50, p95, and average latency from the loaded heartbeat history.",
+  "monitor_outcome_breakdown": "Outcome breakdown",
+  "monitor_outcome_breakdown_description": "Grouped by heartbeat result.",
+  "monitor_certificate_health": "Certificate health",
+  "monitor_certificate_description": "Certificate expiry observations from HTTPS checks.",
+  "monitor_certificate_latest_days": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} day remaining on the latest HTTPS certificate check.",
+        "countPlural=other": "{count} days remaining on the latest HTTPS certificate check."
+      }
+    }
+  ],
+  "monitor_imported_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Imported {count} monitor.",
+        "countPlural=other": "Imported {count} monitors."
+      }
+    }
+  ],
+  "monitor_no_filter_matches": "No monitors match that filter.",
+  "monitor_selection_summary": [
+    {
+      "declarations": [
+        "input selected",
+        "input total",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{selected} of {total} row selected.",
+        "totalPlural=other": "{selected} of {total} rows selected."
+      }
+    }
+  ],
+  "monitor_page_summary": "Page {page} of {total}",
+  "monitor_delete_selected_title": "Delete selected monitors?",
+  "monitor_delete_selected_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This will permanently remove {count} selected monitor and its monitoring history.",
+        "countPlural=other": "This will permanently remove {count} selected monitors and their monitoring history."
+      }
+    }
+  ],
+  "monitor_deleting": "Deleting...",
+  "monitor_delete_selected": "Delete selected",
+  "monitor_delete_description": "This will permanently remove {name} and its monitoring history.",
+  "monitor_toggle_columns": "Toggle columns",
+  "monitor_showing_zero_checks": "Showing 0 checks",
+  "monitor_showing_check_range": "Showing {start}-{end} of {total} checks",
+  "monitor_response_ms": "{value}ms response",
+  "monitor_http_status": "HTTP {code}",
+  "monitor_uptime_percent": "{percent}% uptime",
+  "overview_title": "Overview",
+  "overview_description": "Current monitor activity and recent operations.",
+  "overview_recent_incident": "Recent incident",
+  "overview_incidents_heading": "Incidents",
+  "overview_incidents_description": "Incidents over the last 7 days.",
+  "overview_latest_checks_heading": "Latest checks",
+  "overview_latest_checks_description": "Most recent monitor checks across all monitors.",
+  "overview_status_pages": "Status pages",
+  "incident_all": "All incidents",
+  "incident_history": "Incident history",
+  "incident_description": "Review and manage monitor incidents.",
+  "incident_open": "Open",
+  "incident_closed": "Closed",
+  "incident_reset": "Reset",
+  "incident_no_summary": "No summary.",
+  "incident_no_summary_short": "No incident summary.",
+  "incident_latest_for_monitor": "Latest incidents connected to this monitor.",
+  "incident_view_all": "View all",
+  "incident_monitor": "Monitor",
+  "incident_all_monitors": "All monitors",
+  "incident_no_incidents": "No incidents recorded.",
+  "incident_incident": "Incident",
+  "incident_opened": "Opened",
+  "incident_closed_at": "Closed",
+  "notification_configured": "Configured notifiers",
+  "notification_title": "Notifications",
+  "notification_description": "Manage Discord, webhook, and Telegram notifiers with monitor-level routing.",
+  "notification_configured_description": "Transition alerts send on down and again on recovery to up.",
+  "notification_none_configured": "No notifiers configured yet.",
+  "notification_create_new": "Create new notifier",
+  "notification_create_description": "Pick a provider, then configure routing and assigned monitors in the sheet.",
+  "notification_edit": "Edit notifier",
+  "notification_create_provider_notifier": "Create {provider} notifier",
+  "notification_discord": "Discord",
+  "notification_discord_description": "Send rich transition embeds to a Discord channel webhook.",
+  "notification_webhook": "Webhook",
+  "notification_webhook_description": "POST JSON payloads to your own endpoint with optional headers.",
+  "notification_telegram": "Telegram",
+  "notification_telegram_description": "Send compact bot messages to a chat or forum thread.",
+  "notification_notifiers": "Notifiers",
+  "notification_notifiers_metric_description": "Configured notifiers available for monitor transitions.",
+  "notification_assignments": "Assignments",
+  "notification_assignments_metric_description": "Monitor bindings currently attached to notifiers.",
+  "notification_monitors_metric_description": "Monitors available for notifier assignment.",
+  "notification_providers": "Providers",
+  "notification_providers_metric_description": "Providers currently in use.",
+  "notification_complete_required": "Complete the required notifier fields.",
+  "notification_save_failed": "Failed to save notifier.",
+  "notification_form_description": "Configure provider credentials and choose which monitors should use this notifier.",
+  "notification_provider": "Provider",
+  "notification_discord_webhook_url": "Discord webhook URL",
+  "notification_endpoint_url": "Endpoint URL",
+  "notification_custom_headers": "Custom headers",
+  "notification_custom_headers_description": "Optional key and value pairs sent with the JSON request.",
+  "notification_add_header": "Add header",
+  "notification_remove_header": "Remove",
+  "notification_no_custom_headers": "No custom headers configured.",
+  "notification_bot_token": "Bot token",
+  "notification_chat_id": "Chat ID",
+  "notification_message_thread_id": "Message thread ID",
+  "notification_assigned_monitors": "Assigned monitors",
+  "notification_assigned_monitors_description": "Alerts fire only for monitors selected here.",
+  "notification_select_all": "Select all",
+  "notification_no_monitors": "No monitors available yet.",
+  "notification_send_test": "Send test",
+  "notification_save_notifier": "Save notifier",
+  "notification_target": "Target",
+  "notification_updated": "Updated",
+  "notification_assigned": "Assigned",
+  "notification_no_monitors_assigned": "No monitors assigned",
+  "notification_test": "Test",
+  "notification_monitor_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} monitor",
+        "countPlural=other": "{count} monitors"
+      }
+    }
+  ],
+  "notification_chat": "chat {chatId}",
+  "notification_chat_thread": "chat {chatId}, thread {threadId}",
+  "status_page_status_pages": "Status pages",
+  "status_page_description": "Create and manage your status pages.",
+  "status_page_create": "Create status page",
+  "status_page_none_configured": "No status pages have been configured yet.",
+  "status_page_page": "Page",
+  "status_page_delete_title": "Delete status page?",
+  "status_page_delete_description": "This will permanently remove {title} and its public status URL.",
+  "status_page_public": "Public",
+  "status_page_draft_only": "Draft only",
+  "status_page_published": "Published",
+  "status_page_draft": "Draft",
+  "status_page_open_actions": "Open actions for {title}",
+  "status_page_deleting": "Deleting...",
+  "status_page_new": "New status page",
+  "status_page_edit": "Edit status page",
+  "status_page_edit_named": "Edit {title}",
+  "status_page_configuration": "Status page configuration",
+  "status_page_configuration_description": "Create a compact public status page with only the fields the app supports today.",
+  "status_page_settings": "Status page settings",
+  "status_page_settings_description": "Adjust publishing, history visibility, and which monitors appear on this page.",
+  "status_page_title_required": "Title is required.",
+  "status_page_slug_required": "Slug is required.",
+  "status_page_title": "Title",
+  "status_page_slug": "Slug",
+  "status_page_field_description": "Description",
+  "status_page_included_monitors_description": "Only monitors selected here appear on the public page.",
+  "status_page_search_included_monitors": "Search included monitors",
+  "status_page_search_monitors": "Search monitors",
+  "status_page_no_monitors_match": "No monitors match this search.",
+  "status_page_show_recent_history": "Show recent history bars",
+  "status_page_saving": "Saving...",
+  "status_page_creating": "Creating...",
+  "status_page_update": "Update status page",
+  "status_page_overview": "Overview",
+  "status_page_services": "Services",
+  "status_page_incidents": "Incidents",
+  "status_page_recent_incidents": "Recent incidents",
+  "status_page_included_monitors": "Included monitors",
+  "status_page_no_monitors": "No monitors exist yet.",
+  "settings_monitors": "Monitors",
+  "settings_workspace_configuration": "Workspace configuration",
+  "settings_general": "General",
+  "settings_general_description": "Workspace shortcuts and current operational counts.",
+  "settings_account": "Account",
+  "settings_account_description": "Manage your admin profile and account lifecycle.",
+  "settings_data": "Data",
+  "settings_data_description": "Move monitor configuration in and out of this workspace.",
+  "settings_status_pages_description": "Public communication settings that are handled by status page routes.",
+  "settings_notifications_description": "Alert destinations using the providers currently implemented.",
+  "settings_retention": "Retention",
+  "settings_retention_description": "Data cleanup windows for heartbeat history and resolved incidents.",
+  "settings_title": "Settings",
+  "settings_sections": "Settings sections",
+  "settings_display_name": "Display name",
+  "settings_display_name_description": "This name is shown in the admin shell.",
+  "settings_save_changes": "Save changes",
+  "settings_saving": "Saving...",
+  "settings_role": "Role",
+  "settings_user": "User",
+  "settings_login_method": "Login method",
+  "settings_no_login_method": "No linked login method found.",
+  "settings_active_sessions": "Active sessions",
+  "settings_active_sessions_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} session signed in.",
+        "countPlural=other": "{count} sessions signed in."
+      }
+    }
+  ],
+  "settings_delete_account_title": "Delete account and all data?",
+  "settings_delete_account_description": "This permanently removes the admin account and all monitoring data in this instance. Type {email} to confirm.",
+  "settings_delete_account": "Delete account",
+  "settings_deleting": "Deleting...",
+  "settings_new_monitor": "New monitor",
+  "settings_open_incidents": "Open incidents",
+  "settings_status_pages": "Status pages",
+  "settings_open_pages": "Open pages",
+  "settings_notifications": "Notifications",
+  "settings_pages": "Pages",
+  "settings_open_status_pages": "Open status pages",
+  "settings_monitor_bindings": "Monitor bindings",
+  "settings_destinations": "Destinations",
+  "settings_manage_notifications": "Manage notifications",
+  "settings_providers": "Providers",
+  "settings_recent_notifiers": "Recent notifiers",
+  "settings_heartbeat_retention": "Heartbeat retention",
+  "settings_closed_incident_retention": "Closed incident retention",
+  "settings_active_monitors_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} active monitor configured.",
+        "countPlural=other": "{count} active monitors configured."
+      }
+    }
+  ],
+  "settings_unresolved_incidents_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} unresolved incident.",
+        "countPlural=other": "{count} unresolved incidents."
+      }
+    }
+  ],
+  "settings_status_pages_published_summary": [
+    {
+      "declarations": [
+        "input total",
+        "input published",
+        "local totalPlural = total: plural"
+      ],
+      "selectors": ["totalPlural"],
+      "match": {
+        "totalPlural=one": "{published} of {total} status page published.",
+        "totalPlural=other": "{published} of {total} status pages published."
+      }
+    }
+  ],
+  "settings_alert_destinations_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} alert destination ready.",
+        "countPlural=other": "{count} alert destinations ready."
+      }
+    }
+  ],
+  "settings_export_monitors": "Export monitors",
+  "settings_export_monitors_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Download {count} monitor configuration as JSON. History, incidents, status pages, notification bindings, and push tokens are excluded.",
+        "countPlural=other": "Download {count} monitor configurations as JSON. History, incidents, status pages, notification bindings, and push tokens are excluded."
+      }
+    }
+  ],
+  "settings_export": "Export",
+  "settings_import_monitors": "Import monitors",
+  "settings_import_monitors_description": "Create new monitors from a Uptime export file. Existing monitors are left unchanged, and imported push monitors receive new tokens.",
+  "settings_imported_monitors": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Imported {count} monitor.",
+        "countPlural=other": "Imported {count} monitors."
+      }
+    }
+  ],
+  "settings_import": "Import",
+  "settings_import_failed": "Failed to import monitors.",
+  "settings_email_password": "Email and password",
+  "settings_status_pages_configured_summary": "{configured} configured, {published} published.",
+  "settings_status_page_links_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} monitor binding connected to public pages.",
+        "countPlural=other": "{count} monitor bindings connected to public pages."
+      }
+    }
+  ],
+  "settings_destinations_summary": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} configured destination.",
+        "countPlural=other": "{count} configured destinations."
+      }
+    }
+  ],
+  "settings_provider_counts_summary": "{discord} Discord, {webhook} webhook, {telegram} Telegram.",
+  "settings_no_notifiers": "No notifiers configured yet.",
+  "settings_heartbeat_retention_description": "Days to keep raw heartbeat samples before cleanup.",
+  "settings_incident_retention_description": "Days to keep resolved incidents in history.",
+  "settings_days": "Days",
+  "status_block_system_success_long": "All systems operational",
+  "status_block_system_success_short": "Operational",
+  "status_block_system_degraded_long": "Some systems degraded",
+  "status_block_system_degraded_short": "Degraded",
+  "status_block_system_error_long": "Major outage",
+  "status_block_system_error_short": "Outage",
+  "status_block_system_maintenance_long": "Maintenance in progress",
+  "status_block_system_maintenance_short": "Maintenance",
+  "status_block_system_empty_long": "No public monitors",
+  "status_block_system_empty_short": "No monitors",
+  "status_block_request_normal": "Normal",
+  "status_block_request_degraded": "Degraded",
+  "status_block_request_error": "Error",
+  "status_block_request_maintenance": "Maintenance",
+  "status_block_request_no_data": "No Data",
+  "status_block_http_monitors": "HTTP monitors",
+  "status_block_dns_monitors": "DNS monitors",
+  "status_block_push_monitors": "Push monitors",
+  "status_block_monitor_fallback": "Monitor",
+  "status_block_incident_opened_message": "Incident opened.",
+  "status_block_incident_resolved_message": "Issue resolved and monitor returned to normal operation.",
+  "status_block_events_and_updates": "Status events and updates",
+  "status_block_toggle_details": "Toggle {title} status details",
+  "status_block_date_range_until": "Until {date}",
+  "status_block_date_range_since": "Since {date}",
+  "status_block_date_range_all_time": "All time",
+  "status_block_successful_check_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} successful check",
+        "countPlural=other": "{count} successful checks"
+      }
+    }
+  ],
+  "status_block_failed_check_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} failed check",
+        "countPlural=other": "{count} failed checks"
+      }
+    }
+  ],
+  "status_block_unknown_check_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} unknown check",
+        "countPlural=other": "{count} unknown checks"
+      }
+    }
+  ],
+  "status_block_incident_investigating": "Investigating",
+  "status_block_incident_identified": "Identified",
+  "status_block_incident_monitoring": "Monitoring",
+  "status_block_incident_resolved": "Resolved",
+  "status_block_today": "Today",
+  "status_block_ongoing": "Ongoing",
+  "status_block_report_resolved": "Resolved",
+  "status_block_no_recent_notifications": "No recent notifications",
+  "status_block_no_recent_notifications_description": "There have been no reports within the last 7 days.",
+  "status_block_no_reports": "No reports",
+  "status_block_no_reports_description": "There are no reports to display.",
+  "status_block_no_public_monitors": "No public monitors",
+  "status_block_no_public_monitors_description": "There are no public monitors to display.",
+  "status_block_theme_system": "System",
+  "status_block_theme_light": "Light",
+  "status_block_theme_dark": "Dark",
+  "status_block_aria_toggle_theme": "Toggle theme",
+  "status_block_subscribe": "Get updates",
+  "status_block_subscribe_rss_description": "Get the RSS feed",
+  "status_block_subscribe_atom_description": "Get the Atom feed",
+  "status_block_subscribe_json_description": "Get the JSON updates",
+  "status_block_subscribe_slack_description": "For status updates in Slack, paste the text below into any channel.",
+  "status_block_subscribe_ssh_description": "Get status via SSH",
+  "status_block_link_copied": "Link copied to clipboard",
+  "status_block_aria_copy_link": "Copy Link",
+  "status_block_powered_by": "powered by",
+  "status_block_get_in_touch": "Get in touch",
+  "status_block_aria_status_tracker": "Status tracker",
+  "status_block_aria_day_status": "Day {day} status",
+  "status_block_click_again_to_unpin": "Click again to unpin",
+  "status_block_duration_in": "(in {duration})",
+  "status_block_duration_earlier": "({duration} earlier)",
+  "status_block_duration_for": "(for {duration})",
+  "status_block_duration_across": "{duration} across"
+}

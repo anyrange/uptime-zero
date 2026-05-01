@@ -1,0 +1,1 @@
+CREATE INDEX `heartbeats_created_idx` ON `heartbeats` (`createdAt`);

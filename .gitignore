@@ -1,0 +1,7 @@
+node_modules
+.wrangler
+dist
+coverage
+public/app.css
+.dev.vars
+.env
