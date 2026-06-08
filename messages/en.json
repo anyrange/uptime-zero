@@ -307,6 +307,8 @@
   "overview_incidents_description": "Incidents over the last 7 days.",
   "overview_latest_checks_heading": "Latest checks",
   "overview_latest_checks_description": "Most recent monitor checks across all monitors.",
+  "overview_checks_last_hour": "Checks in last hour",
+  "overview_checks_last_day": "Checks in last day",
   "overview_status_pages": "Status pages",
   "incident_all": "All incidents",
   "incident_history": "Incident history",

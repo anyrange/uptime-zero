@@ -55,11 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  formatDurationMs,
-  formatRelativeDateTime,
-  groupHeartbeats,
-} from "@/lib/formatters";
+import { formatDurationMs, formatRelativeDateTime } from "@/lib/formatters";
 import {
   useDeleteMonitorMutation,
   useDeleteMonitorsMutation,
@@ -74,35 +70,18 @@ import { displayMonitorTarget } from "../-components/monitor-workspace-page";
 
 export function MonitorsIndexContent({
   monitors,
-  heartbeats,
   openIncidentCount,
+  slowestP95ResponseMs,
 }: {
   monitors: MonitorRecord[];
-  heartbeats: Parameters<typeof groupHeartbeats>[0];
   openIncidentCount: number;
+  slowestP95ResponseMs: number | null;
 }) {
-  const heartbeatMap = groupHeartbeats(heartbeats);
   const activeCount = monitors.filter((monitor) => monitor.active === 1).length;
   const pausedCount = monitors.length - activeCount;
   const downCount = monitors.filter(
     (monitor) => monitor.lastStatus === "down",
   ).length;
-  const slowestP95 = monitors.reduce<number | null>((slowest, monitor) => {
-    const p95 = percentile(
-      (heartbeatMap.get(monitor.id) ?? [])
-        .filter(
-          (heartbeat) =>
-            heartbeat.status === "up" && heartbeat.durationMs != null,
-        )
-        .map((heartbeat) => heartbeat.durationMs as number)
-        .sort((left, right) => left - right),
-      0.95,
-    );
-    if (p95 == null) {
-      return slowest;
-    }
-    return slowest == null || p95 > slowest ? p95 : slowest;
-  }, null);
 
   return (
     <div className="grid gap-4">
@@ -129,7 +108,7 @@ export function MonitorsIndexContent({
         </MonitorSummaryCard>
         <MonitorSummaryCard>
           <CardDescription>{m.monitor_slowest_p95()}</CardDescription>
-          <CardTitle>{formatDurationMs(slowestP95)}</CardTitle>
+          <CardTitle>{formatDurationMs(slowestP95ResponseMs)}</CardTitle>
         </MonitorSummaryCard>
       </div>
 
@@ -670,15 +649,4 @@ function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
       </AlertDialogContent>
     </AlertDialog>
   );
-}
-
-function percentile(values: number[], ratio: number) {
-  if (values.length === 0) {
-    return null;
-  }
-  const index = Math.min(
-    values.length - 1,
-    Math.max(0, Math.ceil(values.length * ratio) - 1),
-  );
-  return values[index] ?? null;
 }

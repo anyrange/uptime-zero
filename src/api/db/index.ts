@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/d1";
 
+import { DashboardReader } from "@/api/db/dashboard";
 import { MonitorLifecycle } from "@/api/lib/monitor-lifecycle";
 
 import { AuthModel } from "./models/auth";
-import { DashboardModel } from "./models/dashboard";
 import { IncidentModel } from "./models/incident";
 import { MaintenanceModel } from "./models/maintenance";
 import { MonitorModel } from "./models/monitor";
@@ -24,7 +24,7 @@ export type AppDrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 
 export class AppDb {
   readonly auth: AuthModel;
-  readonly dashboard: DashboardModel;
+  readonly dashboard: DashboardReader;
   readonly incident: IncidentModel;
   readonly maintenance: MaintenanceModel;
   readonly monitor: MonitorModel;
@@ -35,7 +35,7 @@ export class AppDb {
 
   constructor(readonly drizzleDb: AppDrizzleDb) {
     this.auth = new AuthModel(drizzleDb);
-    this.dashboard = new DashboardModel(drizzleDb);
+    this.dashboard = new DashboardReader(drizzleDb);
     this.incident = new IncidentModel(drizzleDb);
     this.maintenance = new MaintenanceModel(drizzleDb);
     this.monitor = new MonitorModel(drizzleDb);

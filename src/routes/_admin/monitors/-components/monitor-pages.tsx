@@ -136,9 +136,9 @@ export function MonitorsIndexPage() {
       {data.status === "error" ? <Error message={data.error.message} /> : null}
       {data.status === "success" ? (
         <MonitorsIndexContent
-          heartbeats={data.data.heartbeats}
           monitors={data.data.monitors}
           openIncidentCount={data.data.openIncidentCount}
+          slowestP95ResponseMs={data.data.slowestP95ResponseMs}
         />
       ) : null}
     </AppPage>

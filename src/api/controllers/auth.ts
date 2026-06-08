@@ -24,7 +24,9 @@ const updateAccountPayloadSchema = z.object({
 export const authApi = new Hono<AppEnv>()
   .get("/setup-state", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    return ctx.json(await db.auth.getSetupState());
+    const setupState = await db.auth.getSetupState();
+
+    return ctx.json(setupState);
   })
   .get("/session", async (ctx) =>
     ctx.json({

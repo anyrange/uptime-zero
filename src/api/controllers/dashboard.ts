@@ -18,11 +18,15 @@ const incidentFiltersSchema = z.object({
 export const dashboardApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    return ctx.json(await db.dashboard.get());
+    const overview = await db.dashboard.getOverview();
+
+    return ctx.json(overview);
   })
   .get("/summary", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    return ctx.json(await db.dashboard.getSummarySnapshot());
+    const summary = await db.dashboard.getSummarySnapshot();
+
+    return ctx.json(summary);
   })
   .get(
     "/incidents",
@@ -30,7 +34,9 @@ export const dashboardApi = new Hono<AppEnv>()
     async (ctx) => {
       const filters = readIncidentFilters(ctx.req.valid("query"));
       const db = createAppDb(ctx.env.DB);
-      return ctx.json(await db.incident.list(filters));
+      const incidents = await db.incident.list(filters);
+
+      return ctx.json(incidents);
     },
   )
   .post("/run-checks", async (ctx) => {
@@ -52,7 +58,9 @@ export const dashboardApi = new Hono<AppEnv>()
         ]),
       ),
     );
-    return ctx.json(await db.dashboard.get());
+    const overview = await db.dashboard.getOverview();
+
+    return ctx.json(overview);
   })
   .get("/events", async (ctx) => {
     const encoder = new TextEncoder();

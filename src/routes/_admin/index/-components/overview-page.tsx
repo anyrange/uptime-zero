@@ -168,11 +168,11 @@ function LatestCheckMetrics({ data }: { data: DashboardData }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <OverviewMetricCard>
-        <CardDescription>Checks in last hour</CardDescription>
+        <CardDescription>{m.overview_checks_last_hour()}</CardDescription>
         <CardTitle>{formatCount(data.heartbeatCounts.lastHour)}</CardTitle>
       </OverviewMetricCard>
       <OverviewMetricCard>
-        <CardDescription>Checks in last day</CardDescription>
+        <CardDescription>{m.overview_checks_last_day()}</CardDescription>
         <CardTitle>{formatCount(data.heartbeatCounts.lastDay)}</CardTitle>
       </OverviewMetricCard>
     </div>

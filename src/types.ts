@@ -270,7 +270,6 @@ export interface MonitorDetailMetrics {
 }
 
 export interface DashboardData {
-  settings: AppSettingsRecord;
   monitors: MonitorRecord[];
   incidents: IncidentRecord[];
   openIncidentCount: number;
@@ -280,17 +279,24 @@ export interface DashboardData {
   };
   heartbeats: HeartbeatRecord[];
   statusPages: StatusPageRecord[];
-  statusPageLinks: Array<{ status_page_id: string; monitor_id: string }>;
-  notificationDestinations: NotificationDestinationRecord[];
   counts: Record<MonitorStatus, number>;
   overallStatus: MonitorStatus;
 }
 
-export type SettingsData = DashboardData;
+export interface SettingsData {
+  settings: AppSettingsRecord;
+  monitors: MonitorRecord[];
+  openIncidentCount: number;
+  statusPages: StatusPageRecord[];
+  statusPageLinks: Array<{ status_page_id: string; monitor_id: string }>;
+  notificationDestinations: NotificationDestinationRecord[];
+}
 
 export interface MonitorListData {
   monitors: MonitorRecord[];
   notificationDestinations: NotificationDestinationRecord[];
+  openIncidentCount: number;
+  slowestP95ResponseMs: number | null;
 }
 
 export interface MonitorDetailData {

@@ -22,15 +22,19 @@ const statusPageInputSchema = z.object({
 export const statusPagesApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    const dashboard = await db.dashboard.get();
+    const pages = await db.dashboard.listStatusPages();
+    const monitors = await db.dashboard.listMonitors();
+    const links = await db.dashboard.listStatusPageLinks();
+
     return ctx.json({
-      pages: dashboard.statusPages,
-      monitors: dashboard.monitors,
-      links: dashboard.statusPageLinks,
+      pages,
+      monitors,
+      links,
     });
   })
   .post("/", zValidator("json", statusPageInputSchema), async (ctx) => {
     const saved = await saveStatusPage(ctx, ctx.req.valid("json"));
+
     return ctx.json(saved, 201);
   })
   .get("/:id", async (ctx) => {
@@ -39,8 +43,9 @@ export const statusPagesApi = new Hono<AppEnv>()
     if (!page) {
       throw new HTTPException(404, { message: "Status page not found" });
     }
-    const dashboard = await db.dashboard.get();
-    return ctx.json({ ...page, monitors: dashboard.monitors });
+    const monitors = await db.dashboard.listMonitors();
+
+    return ctx.json({ ...page, monitors });
   })
   .put("/:id", zValidator("json", statusPageInputSchema), async (ctx) => {
     const saved = await saveStatusPage(
@@ -48,11 +53,13 @@ export const statusPagesApi = new Hono<AppEnv>()
       ctx.req.valid("json"),
       ctx.req.param("id"),
     );
+
     return ctx.json(saved);
   })
   .delete("/:id", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
     await db.statusPage.delete(ctx.req.param("id"));
+
     return ctx.json({ ok: true });
   });
 
@@ -90,7 +97,7 @@ async function getStatusPageBySlugForSave(
   db: ReturnType<typeof createAppDb>,
   slug: string,
 ) {
-  const dashboard = await db.dashboard.get();
-  const page = dashboard.statusPages.find((item) => item.slug === slug);
+  const pages = await db.dashboard.listStatusPages();
+  const page = pages.find((item) => item.slug === slug);
   return page ? db.statusPage.getById(page.id) : null;
 }

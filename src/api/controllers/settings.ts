@@ -31,17 +31,20 @@ const monitorImportSchema = z.object({
 export const settingsApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    return ctx.json(await db.dashboard.get());
+    const settings = await db.dashboard.getSettings();
+
+    return ctx.json(settings);
   })
   .get("/monitors/export", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    const dashboard = await db.dashboard.get();
+    const monitors = await db.dashboard.listMonitors();
+
     return ctx.json(
       {
         kind: "uptime-monitor-export",
         version: 1,
         exportedAt: new Date().toISOString(),
-        monitors: dashboard.monitors.map((monitor) => ({
+        monitors: monitors.map((monitor) => ({
           name: monitor.name,
           kind: monitor.kind,
           target: monitor.target,
@@ -106,5 +109,6 @@ export const settingsApi = new Hono<AppEnv>()
       heartbeatRetentionDays: body.heartbeatRetentionDays,
       incidentRetentionDays: body.incidentRetentionDays,
     });
+
     return ctx.json(settings);
   });

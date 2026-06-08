@@ -25,13 +25,9 @@ const monitorLogsQuerySchema = z.object({
 export const monitorsApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
     const db = createAppDb(ctx.env.DB);
-    const dashboard = await db.dashboard.get();
-    return ctx.json({
-      heartbeats: dashboard.heartbeats,
-      monitors: dashboard.monitors,
-      notificationDestinations: dashboard.notificationDestinations,
-      openIncidentCount: dashboard.openIncidentCount,
-    });
+    const listData = await db.monitor.getListData();
+
+    return ctx.json(listData);
   })
   .post("/", zValidator("json", monitorConfigSchema), async (ctx) => {
     const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
@@ -49,6 +45,7 @@ export const monitorsApi = new Hono<AppEnv>()
       throw new HTTPException(500, { message: "Failed to save monitor" });
     }
     await syncSavedMonitor(ctx, savedMonitor, "run");
+
     return ctx.json(savedMonitor, 201);
   })
   .get("/:id", async (ctx) => {
@@ -57,6 +54,7 @@ export const monitorsApi = new Hono<AppEnv>()
     if (!detail) {
       throw new HTTPException(404, { message: "Monitor not found" });
     }
+
     return ctx.json(detail);
   })
   .get(
@@ -72,6 +70,7 @@ export const monitorsApi = new Hono<AppEnv>()
       if (!detail) {
         throw new HTTPException(404, { message: "Monitor not found" });
       }
+
       return ctx.json(detail);
     },
   )
@@ -95,6 +94,7 @@ export const monitorsApi = new Hono<AppEnv>()
       throw new HTTPException(500, { message: "Failed to save monitor" });
     }
     await syncSavedMonitor(ctx, savedMonitor);
+
     return ctx.json(savedMonitor);
   })
   .delete("/:id", async (ctx) => {
@@ -109,6 +109,7 @@ export const monitorsApi = new Hono<AppEnv>()
     );
     const db = createAppDb(ctx.env.DB);
     await db.monitor.delete(monitorId);
+
     return ctx.json({ ok: true });
   })
   .post("/:id/run", async (ctx) => {
@@ -119,6 +120,7 @@ export const monitorsApi = new Hono<AppEnv>()
     );
     const db = createAppDb(ctx.env.DB);
     const detail = await db.monitor.getDetailData(monitorId);
+
     return ctx.json({ result, detail });
   });
 

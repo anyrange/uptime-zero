@@ -6,6 +6,7 @@ import type {
   HeartbeatRecord,
   IncidentRecord,
   MonitorDetailData,
+  MonitorListData,
   MonitorRecord,
 } from "@/types";
 
@@ -139,6 +140,40 @@ export class MonitorModel {
     return this.db.delete(schema.monitors).where(eq(schema.monitors.id, id));
   }
 
+  async getListData() {
+    const { monitors, notificationDestinations, openIncidentCount, durations } =
+      await all({
+        monitors: () =>
+          this.db
+            .select()
+            .from(schema.monitors)
+            .orderBy(asc(schema.monitors.name)),
+        notificationDestinations: () => this.listNotificationDestinations(),
+        openIncidentCount: () =>
+          this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(schema.incidents)
+            .where(eq(schema.incidents.status, "open")),
+        durations: () =>
+          this.db
+            .select({
+              monitorId: schema.heartbeats.monitorId,
+              durationMs: schema.heartbeats.durationMs,
+            })
+            .from(schema.heartbeats)
+            .where(eq(schema.heartbeats.status, "up"))
+            .orderBy(desc(schema.heartbeats.createdAt))
+            .limit(200),
+      });
+
+    return {
+      monitors: monitors.map(mapMonitorRecord),
+      notificationDestinations,
+      openIncidentCount: openIncidentCount[0]?.count ?? 0,
+      slowestP95ResponseMs: computeSlowestP95ResponseMs(durations),
+    } satisfies MonitorListData;
+  }
+
   async getDetailData(monitorId: string) {
     const monitor = await this.db
       .select()
@@ -270,6 +305,43 @@ export class MonitorModel {
 
     return rows.map(mapNotificationDestinationRecord);
   }
+
+  private async listNotificationDestinations() {
+    const destinations = await this.db
+      .select()
+      .from(schema.notificationDestinations)
+      .orderBy(desc(schema.notificationDestinations.createdAt));
+    return destinations.map(mapNotificationDestinationRecord);
+  }
+}
+
+function computeSlowestP95ResponseMs(
+  durations: Array<{ monitorId: string; durationMs: number | null }>,
+) {
+  const byMonitor = new Map<string, number[]>();
+  for (const row of durations) {
+    if (row.durationMs == null) {
+      continue;
+    }
+    const monitorDurations = byMonitor.get(row.monitorId);
+    if (monitorDurations) {
+      monitorDurations.push(row.durationMs);
+    } else {
+      byMonitor.set(row.monitorId, [row.durationMs]);
+    }
+  }
+
+  let slowest: number | null = null;
+  for (const values of byMonitor.values()) {
+    const p95 = percentile(
+      values.sort((left, right) => left - right),
+      0.95,
+    );
+    if (p95 != null && (slowest == null || p95 > slowest)) {
+      slowest = p95;
+    }
+  }
+  return slowest;
 }
 
 function computeMonitorDetailMetrics(
