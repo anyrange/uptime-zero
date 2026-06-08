@@ -17,6 +17,12 @@ export type MonitorImportPayload = {
     timeoutMs?: number;
     retries?: number;
     assertions?: MonitorAssertion[];
+    sslExpiryWarnDays?: number | null;
+    sslExpiryFailDays?: number | null;
+    heartbeatMode?: "interval" | "cron";
+    heartbeatCron?: string | null;
+    heartbeatGraceSec?: number | null;
+    heartbeatTimezone?: string | null;
     active?: boolean;
   }>;
 };

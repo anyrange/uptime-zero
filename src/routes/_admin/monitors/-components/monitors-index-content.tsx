@@ -36,7 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -352,6 +351,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
 const monitorColumns: ColumnDef<MonitorRecord>[] = [
   {
     id: "select",
+    size: 44,
     enableHiding: false,
     enableSorting: false,
     header: ({ table }) => (
@@ -399,24 +399,19 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
       const monitor = row.original;
       return (
         <Link
-          className="flex items-center gap-2"
+          className="block max-w-[180px] truncate font-medium"
           params={{ monitorId: monitor.id }}
           to="/monitors/$monitorId"
         >
-          <p className="font-medium">{monitor.name}</p>
-          {monitor.assertions.length > 0 ? (
-            <Badge variant="outline">
-              {m.monitor_assertion_count({
-                count: monitor.assertions.length,
-              })}
-            </Badge>
-          ) : null}
+          {monitor.name}
         </Link>
       );
     },
+    size: 220,
   },
   {
     accessorKey: "kind",
+    size: 96,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -432,6 +427,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
   },
   {
     accessorKey: "lastStatus",
+    size: 128,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -445,14 +441,28 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
     id: "target",
     accessorFn: (monitor) => displayMonitorTarget(monitor),
     header: m.monitor_target(),
-    cell: ({ row }) => (
-      <span className="block max-w-[320px] truncate text-muted-foreground">
-        {displayMonitorTarget(row.original)}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const target = displayMonitorTarget(row.original);
+      return row.original.kind === "push" ? (
+        <span className="block max-w-[220px] truncate text-muted-foreground">
+          {target}
+        </span>
+      ) : (
+        <a
+          className="block max-w-[220px] truncate text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          href={target}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {target}
+        </a>
+      );
+    },
+    size: 240,
   },
   {
     accessorKey: "intervalSec",
+    size: 112,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -466,6 +476,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
   },
   {
     accessorKey: "lastDurationMs",
+    size: 140,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -481,6 +492,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
   },
   {
     accessorKey: "lastCheckedAt",
+    size: 150,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -496,6 +508,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
   },
   {
     id: "actions",
+    size: 56,
     enableHiding: false,
     enableSorting: false,
     header: () => <span className="sr-only">{m.common_actions()}</span>,

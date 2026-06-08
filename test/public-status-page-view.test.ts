@@ -49,7 +49,7 @@ describe("public status page view model", () => {
     expect(view.monitorGroups.map((group) => group.title)).toEqual([
       "HTTP monitors",
       "DNS monitors",
-      "Push monitors",
+      "Heartbeat monitors",
     ]);
     expect(view.monitorGroups.map((group) => group.status)).toEqual([
       "success",
@@ -199,6 +199,12 @@ function monitor(
     timeoutMs: 10_000,
     retries: 0,
     assertions: [],
+    sslExpiryWarnDays: 14,
+    sslExpiryFailDays: 0,
+    heartbeatMode: "interval",
+    heartbeatCron: "0 * * * *",
+    heartbeatGraceSec: 300,
+    heartbeatTimezone: "UTC",
     pushToken: kind === "push" ? `token-${id}` : null,
     active: 1,
     lastStatus,

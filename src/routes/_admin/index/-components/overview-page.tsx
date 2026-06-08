@@ -11,7 +11,6 @@ import type { DashboardData, HeartbeatRecord, IncidentRecord } from "@/types";
 import { DataTable } from "@/components/data-table";
 import { Error } from "@/components/error";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
-import { Loading } from "@/components/loading";
 import {
   AppPage,
   AppPageHeader,
@@ -40,6 +39,8 @@ import {
 } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
+import { OverviewSkeleton } from "./overview-skeleton";
+
 export function OverviewPage() {
   const dashboard = useDashboardQuery(DASHBOARD_POLL_INTERVAL_MS);
 
@@ -51,7 +52,7 @@ export function OverviewPage() {
           <AppPageSubtitle>{m.overview_description()}</AppPageSubtitle>
         </AppPageHeaderContent>
       </AppPageHeader>
-      {dashboard.status === "pending" ? <Loading /> : null}
+      {dashboard.status === "pending" ? <OverviewSkeleton /> : null}
       {dashboard.status === "error" ? (
         <Error message={dashboard.error.message} />
       ) : null}
@@ -229,6 +230,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         </Button>
       </div>
     ),
+    size: 220,
   },
   {
     accessorFn: (row) => row.heartbeat.createdAt,
@@ -238,11 +240,13 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {formatDateTime(row.original.heartbeat.createdAt)}
       </span>
     ),
+    size: 200,
   },
   {
     accessorFn: (row) => row.heartbeat.status,
     header: m.common_status(),
     cell: ({ row }) => <StatusBadge status={row.original.heartbeat.status} />,
+    size: 140,
   },
   {
     accessorFn: (row) => row.heartbeat.statusCode,
@@ -252,6 +256,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {row.original.heartbeat.statusCode ?? m.common_not_available()}
       </span>
     ),
+    size: 90,
   },
   {
     accessorFn: (row) => row.heartbeat.durationMs,
@@ -261,6 +266,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {formatDurationMs(row.original.heartbeat.durationMs)}
       </span>
     ),
+    size: 130,
   },
   {
     accessorFn: (row) => row.heartbeat.source,
@@ -270,6 +276,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {row.original.heartbeat.source}
       </span>
     ),
+    size: 120,
   },
   {
     id: "details",
@@ -279,6 +286,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {row.original.heartbeat.error ?? m.common_healthy()}
       </span>
     ),
+    size: 220,
   },
 ];
 
@@ -327,8 +335,13 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
     id: "monitor",
     header: m.incident_monitor(),
     cell: ({ row }) => (
-      <Button asChild className="h-auto p-0 font-medium" variant="link">
+      <Button
+        asChild
+        className="h-auto max-w-[220px] p-0 font-medium"
+        variant="link"
+      >
         <Link
+          className="truncate"
           params={{ monitorId: row.original.incident.monitorId }}
           to="/monitors/$monitorId"
         >
@@ -336,6 +349,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
         </Link>
       </Button>
     ),
+    size: 260,
   },
   {
     accessorFn: (row) => row.incident.status,
@@ -343,6 +357,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
     cell: ({ row }) => (
       <IncidentStatusBadge status={row.original.incident.status} />
     ),
+    size: 120,
   },
   {
     accessorFn: (row) => row.incident.openedAt,
@@ -352,6 +367,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
         {formatDateTime(row.original.incident.openedAt)}
       </span>
     ),
+    size: 220,
   },
   {
     accessorFn: (row) => row.incident.closedAt,
@@ -361,6 +377,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
         {formatDateTime(row.original.incident.closedAt)}
       </span>
     ),
+    size: 220,
   },
   {
     id: "duration",
@@ -370,6 +387,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
         {formatIncidentDuration(row.original.incident)}
       </span>
     ),
+    size: 110,
   },
 ];
 

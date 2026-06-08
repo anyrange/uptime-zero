@@ -7,8 +7,11 @@ import type {
 } from "@/types";
 
 import { parseDateMs } from "@/api/lib/dates";
+import {
+  DEFAULT_SSL_EXPIRY_FAIL_DAYS,
+  DEFAULT_SSL_EXPIRY_WARN_DAYS,
+} from "@/lib/monitor-config";
 
-const SSL_EXPIRY_THRESHOLD_DAYS = 14;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export function getHttpsMonitorHostname(target: string): string | null {
@@ -38,7 +41,7 @@ export function getCertDaysRemaining(
 export function getSslStatus(
   certValidToIso: string | null,
   nowMs = Date.now(),
-  thresholdDays = SSL_EXPIRY_THRESHOLD_DAYS,
+  warnDays = DEFAULT_SSL_EXPIRY_WARN_DAYS,
 ): MonitorSslStatus {
   if (!certValidToIso) {
     return "unavailable";
@@ -47,7 +50,7 @@ export function getSslStatus(
   if (daysRemaining <= 0) {
     return "expired";
   }
-  if (daysRemaining < thresholdDays) {
+  if (daysRemaining <= warnDays) {
     return "expiring";
   }
   return "valid";
@@ -57,6 +60,7 @@ export async function probeMonitorSsl(
   target: string,
   timeoutMs: number,
   nowMs = Date.now(),
+  warnDays = DEFAULT_SSL_EXPIRY_WARN_DAYS,
 ): Promise<
   Pick<
     MonitorCheckResult,
@@ -116,7 +120,7 @@ export async function probeMonitorSsl(
         hostname,
         certValidTo,
         certDaysRemaining,
-        sslStatus: getSslStatus(certValidTo, nowMs),
+        sslStatus: getSslStatus(certValidTo, nowMs, warnDays),
       });
     });
   });
@@ -128,6 +132,7 @@ export function mergeHttpAndSslResult(
     MonitorCheckResult,
     "hostname" | "certValidTo" | "certDaysRemaining" | "sslStatus"
   >,
+  monitor?: Pick<MonitorRecord, "sslExpiryFailDays">,
 ): MonitorCheckResult {
   const merged: MonitorCheckResult = {
     ...httpResult,
@@ -148,7 +153,9 @@ export function mergeHttpAndSslResult(
 
   if (
     sslResult.sslStatus === "expiring" &&
-    typeof sslResult.certDaysRemaining === "number"
+    typeof sslResult.certDaysRemaining === "number" &&
+    sslResult.certDaysRemaining <=
+      (monitor?.sslExpiryFailDays ?? DEFAULT_SSL_EXPIRY_FAIL_DAYS)
   ) {
     return {
       ...merged,

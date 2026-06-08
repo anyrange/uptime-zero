@@ -17,7 +17,6 @@ import { z } from "zod";
 import type { AccountData, SettingsData } from "@/types";
 
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import { AppPage } from "@/components/page";
 import {
   AlertDialog,
@@ -53,6 +52,8 @@ import {
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
+import { SettingsSkeleton } from "./settings-skeleton";
+
 const sections = [
   "general",
   "account",
@@ -81,7 +82,7 @@ export function SettingsPage() {
 
   return (
     <AppPage title={m.settings_title()}>
-      {settings.status === "pending" ? <Loading /> : null}
+      {settings.status === "pending" ? <SettingsSkeleton /> : null}
       {settings.status === "error" ? (
         <Error message={settings.error.message} />
       ) : null}
@@ -135,7 +136,7 @@ export function SettingsPage() {
 function AccountSettings() {
   const account = useAccountQuery();
 
-  if (account.status === "pending") return <Loading />;
+  if (account.status === "pending") return <SettingsSkeleton />;
   if (account.status === "error") {
     return <Error message={account.error.message} />;
   }
@@ -590,7 +591,7 @@ function StatusPagesSettings({ data }: { data: SettingsData }) {
 function NotificationsSettings() {
   const notifications = useNotificationsQuery();
 
-  if (notifications.status === "pending") return <Loading />;
+  if (notifications.status === "pending") return <SettingsSkeleton />;
   if (notifications.status === "error") {
     return <Error message={notifications.error.message} />;
   }

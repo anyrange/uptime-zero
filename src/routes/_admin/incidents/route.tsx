@@ -12,7 +12,6 @@ import type { IncidentListRecord } from "@/types";
 import { DataTable } from "@/components/data-table";
 import { Error } from "@/components/error";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
-import { Loading } from "@/components/loading";
 import {
   AppPage,
   AppPageHeader,
@@ -32,6 +31,8 @@ import {
 import { formatDateTime, formatIncidentDuration } from "@/lib/formatters";
 import { useDashboardQuery, useIncidentsQuery } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
+
+import { IncidentsSkeleton } from "./-components/incidents-skeleton";
 
 const incidentsSearchSchema = z.object({
   monitor: z.string().optional().catch(undefined),
@@ -172,7 +173,7 @@ function IncidentsRoute() {
           </Link>
         </Button>
       </div>
-      {incidents.status === "pending" ? <Loading /> : null}
+      {incidents.status === "pending" ? <IncidentsSkeleton /> : null}
       {incidents.status === "error" ? (
         <Error message={incidents.error.message} />
       ) : null}
@@ -204,6 +205,7 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
     accessorKey: "status",
     header: m.common_status(),
     cell: ({ row }) => <IncidentStatusBadge status={row.original.status} />,
+    size: 120,
   },
   {
     accessorKey: "title",
@@ -216,6 +218,7 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
         </p>
       </div>
     ),
+    size: 300,
   },
   {
     accessorKey: "monitorName",
@@ -228,6 +231,7 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
         </p>
       </div>
     ),
+    size: 240,
   },
   {
     accessorKey: "openedAt",
@@ -237,6 +241,7 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
         {formatDateTime(row.original.openedAt)}
       </span>
     ),
+    size: 200,
   },
   {
     id: "duration",
@@ -246,6 +251,7 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
         {formatIncidentDuration(row.original)}
       </span>
     ),
+    size: 110,
   },
   {
     accessorKey: "closedAt",
@@ -255,5 +261,6 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
         {formatDateTime(row.original.closedAt)}
       </span>
     ),
+    size: 200,
   },
 ];

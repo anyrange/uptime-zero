@@ -4,6 +4,8 @@ export type MonitorStatus = "up" | "down" | "unknown";
 
 export type MonitorSslStatus = "valid" | "expiring" | "expired" | "unavailable";
 
+export type HeartbeatMode = "interval" | "cron";
+
 export type JsonOperator =
   | "eq"
   | "ne"
@@ -62,6 +64,12 @@ export interface MonitorRecord {
   timeoutMs: number;
   retries: number;
   assertions: MonitorAssertion[];
+  sslExpiryWarnDays: number | null;
+  sslExpiryFailDays: number | null;
+  heartbeatMode: HeartbeatMode;
+  heartbeatCron: string | null;
+  heartbeatGraceSec: number | null;
+  heartbeatTimezone: string | null;
   pushToken: string | null;
   active: number;
   lastStatus: MonitorStatus;

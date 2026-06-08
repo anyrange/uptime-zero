@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { MonitorPayload } from "@/lib/queries/monitors";
 import type {
   DnsRecordType,
+  HeartbeatMode,
   JsonOperator,
   MonitorAssertion,
   MonitorKind,
@@ -13,7 +14,6 @@ import type {
 } from "@/types";
 
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import {
   AppPage,
   AppPageActions,
@@ -69,6 +69,8 @@ import {
   useMonitorListQuery,
   useMonitorLogsQuery,
   useMonitorQuery,
+  usePauseMonitorMutation,
+  useResumeMonitorMutation,
   useUpdateMonitorMutation,
 } from "@/lib/queries/monitors";
 import { providerLabel } from "@/lib/queries/notifications";
@@ -78,6 +80,10 @@ import { MonitorIncidentsTable } from "../-components/monitor-incidents-table";
 import { MonitorLogsTable } from "../-components/monitor-logs-table";
 import { MonitorWorkspacePage } from "../-components/monitor-workspace-page";
 import { MonitorsIndexContent } from "../-components/monitors-index-content";
+import {
+  MonitorFormSkeleton,
+  MonitorsSkeleton,
+} from "../-components/monitors-skeleton";
 
 const textOperatorOptions = textAssertionOperators;
 const jsonOperatorOptions = jsonOperators;
@@ -98,7 +104,7 @@ export function NewMonitorPage() {
           </AppPageSubtitle>
         </AppPageHeaderContent>
       </AppPageHeader>
-      {data.status === "pending" ? <Loading /> : null}
+      {data.status === "pending" ? <MonitorFormSkeleton /> : null}
       {data.status === "error" ? <Error message={data.error.message} /> : null}
       {data.status === "success" ? (
         <MonitorConfigShell>
@@ -132,7 +138,7 @@ export function MonitorsIndexPage() {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {data.status === "pending" ? <Loading /> : null}
+      {data.status === "pending" ? <MonitorsSkeleton /> : null}
       {data.status === "error" ? <Error message={data.error.message} /> : null}
       {data.status === "success" ? (
         <MonitorsIndexContent
@@ -173,7 +179,7 @@ export function MonitorLogsPage({
     <MonitorWorkspacePage currentTab="logs" detail={detail}>
       {() =>
         logs.status === "pending" ? (
-          <Loading />
+          <MonitorsSkeleton />
         ) : logs.status === "error" ? (
           <Error message={logs.error.message} />
         ) : logs.data.total === 0 ? (
@@ -213,7 +219,7 @@ export function MonitorSettingsPage({ monitorId }: { monitorId: string }) {
     <MonitorWorkspacePage currentTab="settings" detail={detail}>
       {(data) =>
         list.status === "pending" ? (
-          <Loading />
+          <MonitorFormSkeleton />
         ) : list.status === "error" ? (
           <Error message={list.error.message} />
         ) : (
@@ -288,11 +294,27 @@ function MonitorForm({
   const [assertions, setAssertions] = useState<MonitorAssertion[]>(
     defaults.assertions,
   );
-  const [active, setActive] = useState(defaults.active);
+  const [sslExpiryWarnDays, setSslExpiryWarnDays] = useState(
+    defaults.sslExpiryWarnDays,
+  );
+  const [sslExpiryFailDays, setSslExpiryFailDays] = useState(
+    defaults.sslExpiryFailDays,
+  );
+  const [heartbeatMode, setHeartbeatMode] = useState(defaults.heartbeatMode);
+  const [heartbeatCron, setHeartbeatCron] = useState(defaults.heartbeatCron);
+  const [heartbeatGraceSec, setHeartbeatGraceSec] = useState(
+    defaults.heartbeatGraceSec,
+  );
+  const [heartbeatTimezone, setHeartbeatTimezone] = useState(
+    defaults.heartbeatTimezone,
+  );
   const [notificationDestinationIds, setNotificationDestinationIds] = useState(
     defaults.notificationDestinationIds,
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const pause = usePauseMonitorMutation(monitor?.id ?? "");
+  const resume = useResumeMonitorMutation(monitor?.id ?? "");
+  const actionPending = pending || pause.isPending || resume.isPending;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -306,7 +328,13 @@ function MonitorForm({
       timeoutMs,
       retries,
       assertions,
-      active,
+      sslExpiryWarnDays,
+      sslExpiryFailDays,
+      heartbeatMode,
+      heartbeatCron,
+      heartbeatGraceSec,
+      heartbeatTimezone,
+      active: monitor ? monitor.active === 1 : true,
       notificationDestinationIds,
     });
 
@@ -319,7 +347,7 @@ function MonitorForm({
   }
   return (
     <form className="grid gap-5" onSubmit={handleSubmit}>
-      <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_180px]">
+      <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <Field>
           <FieldLabel>Monitor name</FieldLabel>
           <Input
@@ -327,13 +355,27 @@ function MonitorForm({
             value={name}
           />
         </Field>
-        <label className="mt-7 flex h-9 items-center gap-3 text-sm">
-          <Checkbox
-            checked={active}
-            onCheckedChange={(checked) => setActive(Boolean(checked))}
-          />
-          Active monitor
-        </label>
+        {monitor ? (
+          monitor.active === 1 ? (
+            <Button
+              disabled={actionPending}
+              onClick={() => pause.mutate()}
+              type="button"
+              variant="outline"
+            >
+              {m.monitor_pause()}
+            </Button>
+          ) : (
+            <Button
+              disabled={actionPending}
+              onClick={() => resume.mutate()}
+              type="button"
+              variant="outline"
+            >
+              {m.monitor_resume()}
+            </Button>
+          )
+        ) : null}
       </div>
 
       <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-2">
@@ -358,7 +400,7 @@ function MonitorForm({
             <SelectContent>
               <SelectItem value="http">{m.monitor_http()}</SelectItem>
               <SelectItem value="dns">{m.monitor_dns()}</SelectItem>
-              <SelectItem value="push">{m.monitor_push()}</SelectItem>
+              <SelectItem value="push">{m.monitor_heartbeat()}</SelectItem>
             </SelectContent>
           </Select>
           <FieldDescription>{m.monitor_type_description()}</FieldDescription>
@@ -413,6 +455,103 @@ function MonitorForm({
           />
         </Field>
       </div>
+
+      {kind === "http" ? (
+        <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-2">
+          <Field>
+            <FieldLabel>{m.monitor_ssl_warn_days()}</FieldLabel>
+            <Input
+              onChange={(event) =>
+                setSslExpiryWarnDays(Number(event.target.value || 0))
+              }
+              type="number"
+              value={sslExpiryWarnDays ?? 0}
+            />
+            <FieldDescription>
+              {m.monitor_ssl_warn_days_description()}
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel>{m.monitor_ssl_fail_days()}</FieldLabel>
+            <Input
+              onChange={(event) =>
+                setSslExpiryFailDays(Number(event.target.value || 0))
+              }
+              type="number"
+              value={sslExpiryFailDays ?? 0}
+            />
+            <FieldDescription>
+              {m.monitor_ssl_fail_days_description()}
+            </FieldDescription>
+          </Field>
+        </div>
+      ) : null}
+
+      {kind === "push" ? (
+        <div className="grid gap-4 border-b border-border/70 pb-5">
+          <div>
+            <h3 className="font-medium">{m.monitor_heartbeat_schedule()}</h3>
+            <p className="text-sm text-muted-foreground">
+              {m.monitor_heartbeat_schedule_description()}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field>
+              <FieldLabel>{m.monitor_heartbeat_mode()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  setHeartbeatMode(value as HeartbeatMode)
+                }
+                value={heartbeatMode}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interval">
+                    {m.monitor_heartbeat_interval()}
+                  </SelectItem>
+                  <SelectItem value="cron">
+                    {m.monitor_heartbeat_cron()}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            {heartbeatMode === "cron" ? (
+              <>
+                <Field>
+                  <FieldLabel>
+                    {m.monitor_heartbeat_cron_expression()}
+                  </FieldLabel>
+                  <Input
+                    onChange={(event) => setHeartbeatCron(event.target.value)}
+                    value={heartbeatCron ?? ""}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>{m.monitor_heartbeat_timezone()}</FieldLabel>
+                  <Input
+                    onChange={(event) =>
+                      setHeartbeatTimezone(event.target.value)
+                    }
+                    value={heartbeatTimezone ?? ""}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>{m.monitor_heartbeat_grace_seconds()}</FieldLabel>
+                  <Input
+                    onChange={(event) =>
+                      setHeartbeatGraceSec(Number(event.target.value || 0))
+                    }
+                    type="number"
+                    value={heartbeatGraceSec ?? 0}
+                  />
+                </Field>
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {kind !== "push" ? (
         <div className="grid gap-4 border-b border-border/70 pb-5">
@@ -593,12 +732,12 @@ function MonitorForm({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button disabled={pending} type="submit">
+        <Button disabled={actionPending} type="submit">
           {monitor ? m.monitor_save() : m.monitor_create()}
         </Button>
         {onDelete ? (
           <Button
-            disabled={pending}
+            disabled={actionPending}
             onClick={onDelete}
             type="button"
             variant="destructive"

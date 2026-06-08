@@ -5,11 +5,11 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { Error as AppError } from "@/components/error";
-import { Loading } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useLoginMutation,
   useSessionQuery,
@@ -47,7 +47,7 @@ function LoginRoute() {
   if (setup.status === "pending" || session.status === "pending") {
     return (
       <AuthFrame>
-        <Loading />
+        <LoginSkeleton />
       </AuthFrame>
     );
   }
@@ -199,6 +199,19 @@ function AuthFrameBody({ children }: { children: ReactNode }) {
 
 function AuthCard({ children }: { children: ReactNode }) {
   return <Card className="px-6 py-6">{children}</Card>;
+}
+
+function LoginSkeleton() {
+  return (
+    <Card className="px-6 py-6">
+      <div className="grid gap-4">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-9 w-28" />
+      </div>
+    </Card>
+  );
 }
 
 function firstFieldError(errors: unknown[]) {

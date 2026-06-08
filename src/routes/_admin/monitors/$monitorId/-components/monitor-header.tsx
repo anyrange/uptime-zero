@@ -10,7 +10,6 @@ import type {
 } from "@/types";
 
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import { AppPage } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +33,7 @@ import { m } from "@/paraglide/messages.js";
 
 import { CheckHistory } from "../-components/check-history";
 import { IncidentList } from "../-components/incident-list";
+import { MonitorDetailSkeleton } from "../../-components/monitors-skeleton";
 
 export function MonitorDetailPage({ monitorId }: { monitorId: string }) {
   const detail = useMonitorQuery(monitorId);
@@ -276,7 +276,7 @@ function MonitorWorkspacePage({
   children: (data: MonitorDetailData) => ReactNode;
 }) {
   if (detail.status === "pending") {
-    return <Loading />;
+    return <MonitorDetailSkeleton />;
   }
   if (detail.status === "error") {
     return <Error message={detail.error.message} />;
@@ -325,7 +325,7 @@ function MonitorWorkspacePage({
                   params={{ monitorId: monitor.id }}
                   to="/monitors/$monitorId"
                 >
-                  Overview
+                  {m.monitor_overview()}
                 </Link>
               </TabsTrigger>
               <TabsTrigger asChild value="logs">
@@ -334,7 +334,7 @@ function MonitorWorkspacePage({
                   search={{ page: 1 }}
                   to="/monitors/$monitorId/logs"
                 >
-                  Logs
+                  {m.monitor_logs()}
                 </Link>
               </TabsTrigger>
               <TabsTrigger asChild value="incidents">
@@ -342,7 +342,7 @@ function MonitorWorkspacePage({
                   params={{ monitorId: monitor.id }}
                   to="/monitors/$monitorId/incidents"
                 >
-                  Incidents
+                  {m.nav_incidents()}
                 </Link>
               </TabsTrigger>
               <TabsTrigger asChild value="settings">
@@ -350,7 +350,7 @@ function MonitorWorkspacePage({
                   params={{ monitorId: monitor.id }}
                   to="/monitors/$monitorId/settings"
                 >
-                  Settings
+                  {m.monitor_settings()}
                 </Link>
               </TabsTrigger>
             </TabsList>

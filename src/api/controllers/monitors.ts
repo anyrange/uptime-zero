@@ -112,6 +112,37 @@ export const monitorsApi = new Hono<AppEnv>()
 
     return ctx.json({ ok: true });
   })
+  .post("/:id/pause", async (ctx) => {
+    const monitorId = ctx.req.param("id");
+    const db = createAppDb(ctx.env.DB);
+    const savedMonitor = await db.monitor.createOrUpdate({
+      id: monitorId,
+      active: 0,
+    });
+    if (!savedMonitor) {
+      throw new HTTPException(404, { message: "Monitor not found" });
+    }
+    await getMonitorActorStub(ctx.env, monitorId).deactivate(
+      "monitor-pause",
+      monitorId,
+    );
+
+    return ctx.json(savedMonitor);
+  })
+  .post("/:id/resume", async (ctx) => {
+    const monitorId = ctx.req.param("id");
+    const db = createAppDb(ctx.env.DB);
+    const savedMonitor = await db.monitor.createOrUpdate({
+      id: monitorId,
+      active: 1,
+    });
+    if (!savedMonitor) {
+      throw new HTTPException(404, { message: "Monitor not found" });
+    }
+    await syncSavedMonitor(ctx, savedMonitor);
+
+    return ctx.json(savedMonitor);
+  })
   .post("/:id/run", async (ctx) => {
     const monitorId = ctx.req.param("id");
     const result = await getMonitorActorStub(ctx.env, monitorId).runNow(

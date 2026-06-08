@@ -136,3 +136,39 @@ export function useRunMonitorMutation(id: string) {
     },
   });
 }
+
+export function usePauseMonitorMutation(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      parseResponse(apiClient.monitors[":id"].pause.$post({ param: { id } })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("dashboard"),
+      });
+      await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("monitors", id),
+      });
+    },
+  });
+}
+
+export function useResumeMonitorMutation(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      parseResponse(apiClient.monitors[":id"].resume.$post({ param: { id } })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("dashboard"),
+      });
+      await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("monitors", id),
+      });
+    },
+  });
+}

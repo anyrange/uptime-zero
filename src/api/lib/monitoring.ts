@@ -1,6 +1,10 @@
 import type { MonitorRecord, MonitorStatus } from "@/types";
 
 import { parseDateMs } from "@/api/lib/dates";
+import {
+  getCronHeartbeatSchedule,
+  getNextCronHeartbeatExpectedAt,
+} from "@/api/lib/monitoring-cron";
 export {
   compareJsonValue,
   readJsonPath,
@@ -71,14 +75,46 @@ export function isPushMonitorOverdue(
   };
 }
 
+export function isCronHeartbeatOverdue(
+  monitor: Pick<
+    MonitorRecord,
+    | "lastCheckedAt"
+    | "createdAt"
+    | "heartbeatCron"
+    | "heartbeatGraceSec"
+    | "heartbeatTimezone"
+  >,
+  nowMs: number,
+): DueCheck {
+  const baseline = parseDateMs(monitor.lastCheckedAt ?? monitor.createdAt);
+  const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
+  const { graceSec } = getCronHeartbeatSchedule(monitor);
+  const overdueMs = nowMs - expectedAt - graceSec * 1000;
+  return {
+    due: overdueMs >= 0,
+    overdueMs,
+  };
+}
+
 export function isMonitorDue(
   monitor: Pick<
     MonitorRecord,
-    "kind" | "lastCheckedAt" | "intervalSec" | "timeoutMs" | "createdAt"
+    | "kind"
+    | "lastCheckedAt"
+    | "intervalSec"
+    | "timeoutMs"
+    | "createdAt"
+    | "heartbeatMode"
+    | "heartbeatCron"
+    | "heartbeatGraceSec"
+    | "heartbeatTimezone"
   >,
   nowMs: number,
 ): DueCheck {
   if (monitor.kind === "push") {
+    if (monitor.heartbeatMode === "cron") {
+      return isCronHeartbeatOverdue(monitor, nowMs);
+    }
     return isPushMonitorOverdue(
       monitor.lastCheckedAt,
       nowMs,
@@ -98,10 +134,23 @@ export function isMonitorDue(
 export function getMonitorNextDueAt(
   monitor: Pick<
     MonitorRecord,
-    "kind" | "lastCheckedAt" | "intervalSec" | "timeoutMs" | "createdAt"
+    | "kind"
+    | "lastCheckedAt"
+    | "intervalSec"
+    | "timeoutMs"
+    | "createdAt"
+    | "heartbeatMode"
+    | "heartbeatCron"
+    | "heartbeatGraceSec"
+    | "heartbeatTimezone"
   >,
 ): number {
   const baseline = parseDateMs(monitor.lastCheckedAt ?? monitor.createdAt);
+  if (monitor.kind === "push" && monitor.heartbeatMode === "cron") {
+    const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
+    const { graceSec } = getCronHeartbeatSchedule(monitor);
+    return expectedAt + graceSec * 1000;
+  }
   const timeoutMs = monitor.kind === "push" ? monitor.timeoutMs : 0;
   return baseline + monitor.intervalSec * 1000 + timeoutMs;
 }

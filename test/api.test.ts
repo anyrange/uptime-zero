@@ -334,6 +334,46 @@ describe("monitor API", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("pauses and resumes monitors through explicit actions", async () => {
+    const cookie = await setupAdminSession();
+
+    const createResponse = await apiFetch("/api/monitors", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        name: "Pause target",
+        kind: "push",
+        target: "",
+        intervalSec: 60,
+        timeoutMs: 10000,
+        retries: 0,
+        active: true,
+        assertions: [],
+      }),
+    });
+    const created = (await createResponse.json()) as { id: string };
+
+    const pauseResponse = await apiFetch(`/api/monitors/${created.id}/pause`, {
+      method: "POST",
+      headers: { cookie },
+    });
+    expect(pauseResponse.status).toBe(200);
+    await expect(pauseResponse.json()).resolves.toMatchObject({ active: 0 });
+
+    const resumeResponse = await apiFetch(
+      `/api/monitors/${created.id}/resume`,
+      {
+        method: "POST",
+        headers: { cookie },
+      },
+    );
+    expect(resumeResponse.status).toBe(200);
+    await expect(resumeResponse.json()).resolves.toMatchObject({ active: 1 });
+  });
 });
 
 describe("notification API", () => {

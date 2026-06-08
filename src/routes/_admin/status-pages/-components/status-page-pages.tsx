@@ -14,7 +14,6 @@ import type { MonitorRecord, StatusPageRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import {
   AppPage,
   AppPageActions,
@@ -66,6 +65,11 @@ import {
 } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
 
+import {
+  StatusPageFormSkeleton,
+  StatusPagesSkeleton,
+} from "./status-pages-skeleton";
+
 const statusPageSchema = z.object({
   title: z.string().trim().min(1, m.status_page_title_required()),
   slug: z.string().trim().min(1, m.status_page_slug_required()),
@@ -98,7 +102,7 @@ export function StatusPagesPage() {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {pages.status === "pending" ? <Loading /> : null}
+      {pages.status === "pending" ? <StatusPagesSkeleton /> : null}
       {pages.status === "error" ? (
         <Error message={pages.error.message} />
       ) : null}
@@ -286,10 +290,13 @@ export function NewStatusPagePage() {
   const create = useCreateStatusPageMutation();
   const navigate = useNavigate();
   return (
-    <AppPage title={m.status_page_new()}>
+    <AppPage title={m.status_page_configuration()}>
       <AppPageHeader>
         <AppPageHeaderContent>
-          <AppPageLabel>{m.status_page_new()}</AppPageLabel>
+          <AppPageLabel>{m.status_page_configuration()}</AppPageLabel>
+          <AppPageSubtitle>
+            {m.status_page_configuration_description()}
+          </AppPageSubtitle>
         </AppPageHeaderContent>
         <AppPageActions>
           <Button asChild variant="outline">
@@ -297,20 +304,12 @@ export function NewStatusPagePage() {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {pages.status === "pending" ? <Loading /> : null}
+      {pages.status === "pending" ? <StatusPageFormSkeleton /> : null}
       {pages.status === "error" ? (
         <Error message={pages.error.message} />
       ) : null}
       {pages.status === "success" ? (
         <StatusPageConfigShell>
-          <StatusPageConfigShellHeader>
-            <StatusPageConfigShellTitle>
-              {m.status_page_configuration()}
-            </StatusPageConfigShellTitle>
-            <StatusPageConfigShellDescription>
-              {m.status_page_configuration_description()}
-            </StatusPageConfigShellDescription>
-          </StatusPageConfigShellHeader>
           <StatusPageForm
             monitors={pages.data.monitors}
             onSubmit={async (payload) => {
@@ -357,7 +356,7 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {page.status === "pending" ? <Loading /> : null}
+      {page.status === "pending" ? <StatusPageFormSkeleton /> : null}
       {page.status === "error" ? <Error message={page.error.message} /> : null}
       {page.status === "success" ? (
         <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>

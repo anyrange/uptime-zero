@@ -21,6 +21,7 @@ import { normalizeMonitorAssertions } from "@/lib/monitor-assertions";
 
 const monitorKinds = ["http", "dns", "push"] as const;
 const monitorStatuses = ["up", "down", "unknown"] as const;
+const heartbeatModes = ["interval", "cron"] as const;
 const monitorSslStatuses = [
   "valid",
   "expiring",
@@ -59,6 +60,7 @@ export function mapMonitorRecord(row: MonitorRow) {
     assertions: normalizeMonitorAssertions(row.assertionsJson ?? null),
     lastStatus: normalizeMonitorStatus(row.lastStatus),
     lastSslStatus: normalizeMonitorSslStatus(row.lastSslStatus),
+    heartbeatMode: normalizeHeartbeatMode(row.heartbeatMode),
   } satisfies MonitorRecord;
 }
 
@@ -151,6 +153,12 @@ export function normalizeHeartbeatSource(
   value: string,
 ): HeartbeatRecord["source"] {
   return includes(heartbeatSources, value) ? value : "system";
+}
+
+export function normalizeHeartbeatMode(
+  value: string,
+): MonitorRecord["heartbeatMode"] {
+  return includes(heartbeatModes, value) ? value : "interval";
 }
 
 export function normalizeIncidentStatus(

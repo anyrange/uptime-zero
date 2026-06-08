@@ -6,12 +6,13 @@ import { Link } from "@tanstack/react-router";
 import type { MonitorDetailData, MonitorRecord } from "@/types";
 
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import { AppPage } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { m } from "@/paraglide/messages.js";
+
+import { MonitorDetailSkeleton } from "../-components/monitors-skeleton";
 
 export function MonitorWorkspacePage({
   detail,
@@ -23,7 +24,7 @@ export function MonitorWorkspacePage({
   children: (data: MonitorDetailData) => ReactNode;
 }) {
   if (detail.status === "pending") {
-    return <Loading />;
+    return <MonitorDetailSkeleton />;
   }
   if (detail.status === "error") {
     return <Error message={detail.error.message} />;

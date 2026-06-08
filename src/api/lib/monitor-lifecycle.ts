@@ -16,6 +16,10 @@ import {
   probeMonitorSsl,
   runHttpCheck,
 } from "@/api/lib/monitoring";
+import {
+  getCronHeartbeatSchedule,
+  getNextCronHeartbeatExpectedAt,
+} from "@/api/lib/monitoring-cron";
 import { dispatchNotificationEvent } from "@/api/lib/notifications";
 
 export class MonitorLifecycle {
@@ -29,7 +33,10 @@ export class MonitorLifecycle {
 
   async recordPushOverdue(monitor: MonitorRecord) {
     const checkedAt = nowIso();
-    const error = `No push heartbeat received in the last ${monitor.intervalSec}s`;
+    const error =
+      monitor.heartbeatMode === "cron"
+        ? buildCronHeartbeatOverdueMessage(monitor)
+        : `No heartbeat received in the last ${monitor.intervalSec}s`;
     await this.persistCheckResult(
       monitor,
       { status: "down", statusCode: null, durationMs: 0, error },
@@ -70,8 +77,13 @@ export class MonitorLifecycle {
     if (!monitor.target.startsWith("https://")) {
       return result;
     }
-    const sslResult = await probeMonitorSsl(monitor.target, remainingTimeoutMs);
-    return mergeHttpAndSslResult(result, sslResult);
+    const sslResult = await probeMonitorSsl(
+      monitor.target,
+      remainingTimeoutMs,
+      Date.now(),
+      monitor.sslExpiryWarnDays ?? undefined,
+    );
+    return mergeHttpAndSslResult(result, sslResult, monitor);
   }
 
   private async persistCheckResult(
@@ -246,4 +258,11 @@ export class MonitorLifecycle {
 
     return rows.map(mapNotificationDestinationRecord);
   }
+}
+
+function buildCronHeartbeatOverdueMessage(monitor: MonitorRecord) {
+  const baseline = Date.parse(monitor.lastCheckedAt ?? monitor.createdAt);
+  const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
+  const schedule = getCronHeartbeatSchedule(monitor);
+  return `No heartbeat received for the ${new Date(expectedAt).toISOString()} schedule within ${schedule.graceSec}s`;
 }

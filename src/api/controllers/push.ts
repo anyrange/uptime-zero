@@ -18,7 +18,7 @@ export function registerPushRoutes(app: Hono<AppEnv>) {
     const db = createAppDb(ctx.env.DB);
     const monitor = await db.monitor.getByPushToken(ctx.req.param("token"));
     if (!monitor) {
-      throw new HTTPException(404, { message: "Push monitor not found" });
+      throw new HTTPException(404, { message: "Heartbeat monitor not found" });
     }
     await getMonitorActorStub(ctx.env, monitor.id).recordPushHeartbeat(
       "push",

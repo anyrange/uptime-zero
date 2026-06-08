@@ -92,6 +92,35 @@ describe("monitor orchestration", () => {
     expect(alarm.value).toBe(result.scheduledFor);
   });
 
+  it("records a cron heartbeat monitor overdue after the scheduled run plus grace", async () => {
+    const db = createAppDb(env.DB);
+    const alarm = new FakeAlarm();
+    const monitor = await seedMonitor({
+      kind: "push",
+      lastStatus: "up",
+      lastCheckedAt: "2026-05-01T12:05:00.000Z",
+      heartbeatMode: "cron",
+      heartbeatCron: "0 * * * *",
+      heartbeatGraceSec: 60,
+      heartbeatTimezone: "UTC",
+    });
+
+    const result = await new MonitorOrchestrator(db, alarm).runMonitorNow(
+      monitor.id,
+      "alarm",
+    );
+    const detail = await db.monitor.getDetailData(monitor.id);
+
+    expect(result.ran).toBe(true);
+    expect(detail?.monitor.lastStatus).toBe("down");
+    expect(detail?.heartbeats[0]).toMatchObject({
+      source: "system",
+      status: "down",
+      error:
+        "No heartbeat received for the 2026-05-01T13:00:00.000Z schedule within 60s",
+    });
+  });
+
   it("records a push heartbeat and reschedules from the reloaded monitor", async () => {
     const db = createAppDb(env.DB);
     const alarm = new FakeAlarm();
@@ -152,6 +181,12 @@ async function seedMonitor(payload: Partial<MonitorRecord> = {}) {
     timeoutMs: payload.timeoutMs ?? 1000,
     retries: payload.retries ?? 0,
     assertionsJson: JSON.stringify(payload.assertions ?? []),
+    sslExpiryWarnDays: payload.sslExpiryWarnDays ?? 14,
+    sslExpiryFailDays: payload.sslExpiryFailDays ?? 0,
+    heartbeatMode: payload.heartbeatMode ?? "interval",
+    heartbeatCron: payload.heartbeatCron ?? null,
+    heartbeatGraceSec: payload.heartbeatGraceSec ?? null,
+    heartbeatTimezone: payload.heartbeatTimezone ?? null,
     pushToken: kind === "push" ? crypto.randomUUID() : null,
     active: payload.active ?? 1,
     lastStatus: payload.lastStatus ?? "unknown",

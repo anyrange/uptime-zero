@@ -38,18 +38,19 @@ import {
 } from "@/components/blocks/status-page-shell";
 import { StatusTimestamp } from "@/components/blocks/status-timestamp";
 import { Error } from "@/components/error";
-import { Loading } from "@/components/loading";
 import { formatDateTime } from "@/lib/formatters";
 import { buildPublicStatusPageView } from "@/lib/public-status-page-view";
 import { usePublicStatusPageQuery } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
+
+import { PublicStatusSkeleton } from "./public-status-skeleton";
 
 export function PublicStatusPage({ slug }: { slug: string }) {
   const page = usePublicStatusPageQuery(slug);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {page.status === "pending" ? <Loading /> : null}
+      {page.status === "pending" ? <PublicStatusSkeleton /> : null}
       {page.status === "error" ? <Error message={page.error.message} /> : null}
       {page.status === "success" ? (
         <PublicStatusPageView data={page.data} />

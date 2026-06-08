@@ -10,6 +10,7 @@ import {
   getMonitorSslDetails,
   getMonitorNextDueAt,
   getSslStatus,
+  isCronHeartbeatOverdue,
   isPushMonitorOverdue,
   mergeHttpAndSslResult,
   parseCertValidTo,
@@ -68,6 +69,10 @@ describe("monitoring helpers", () => {
         lastCheckedAt: "2026-05-01T12:00:05.000Z",
         intervalSec: 60,
         timeoutMs: 5000,
+        heartbeatMode: "interval",
+        heartbeatCron: null,
+        heartbeatGraceSec: null,
+        heartbeatTimezone: null,
         createdAt: "2026-05-01T12:00:00.000Z",
       }),
     ).toBe(parseDateMs("2026-05-01T12:01:05.000Z"));
@@ -78,9 +83,39 @@ describe("monitoring helpers", () => {
         lastCheckedAt: "2026-05-01T12:00:05.000Z",
         intervalSec: 60,
         timeoutMs: 5000,
+        heartbeatMode: "interval",
+        heartbeatCron: null,
+        heartbeatGraceSec: null,
+        heartbeatTimezone: null,
         createdAt: "2026-05-01T12:00:00.000Z",
       }),
     ).toBe(parseDateMs("2026-05-01T12:01:10.000Z"));
+  });
+
+  it("computes cron heartbeat due timestamps from the configured schedule and grace", () => {
+    const monitor = {
+      kind: "push" as const,
+      lastCheckedAt: "2026-05-01T12:05:00.000Z",
+      intervalSec: 60,
+      timeoutMs: 5000,
+      heartbeatMode: "cron" as const,
+      heartbeatCron: "0 * * * *",
+      heartbeatGraceSec: 60,
+      heartbeatTimezone: "UTC",
+      createdAt: "2026-05-01T12:00:00.000Z",
+    };
+
+    expect(getMonitorNextDueAt(monitor)).toBe(
+      parseDateMs("2026-05-01T13:01:00.000Z"),
+    );
+    expect(
+      isCronHeartbeatOverdue(monitor, parseDateMs("2026-05-01T13:00:59.000Z"))
+        .due,
+    ).toBe(false);
+    expect(
+      isCronHeartbeatOverdue(monitor, parseDateMs("2026-05-01T13:01:00.000Z"))
+        .due,
+    ).toBe(true);
   });
 
   it("parses certificate validity dates and computes remaining days", () => {
@@ -156,7 +191,7 @@ describe("monitoring helpers", () => {
     expect(result.error).toBeNull();
   });
 
-  it("marks healthy HTTPS checks down when the certificate is near expiry", () => {
+  it("keeps healthy HTTPS checks up when the certificate is only inside the warning window", () => {
     const result = mergeHttpAndSslResult(
       {
         status: "up",
@@ -170,6 +205,28 @@ describe("monitoring helpers", () => {
         certDaysRemaining: 9,
         sslStatus: "expiring",
       },
+      { sslExpiryFailDays: 0 },
+    );
+
+    expect(result.status).toBe("up");
+    expect(result.error).toBeNull();
+  });
+
+  it("marks healthy HTTPS checks down when the certificate is inside the failure window", () => {
+    const result = mergeHttpAndSslResult(
+      {
+        status: "up",
+        statusCode: 200,
+        durationMs: 120,
+        error: null,
+      },
+      {
+        hostname: "example.com",
+        certValidTo: "2026-05-10T00:00:00.000Z",
+        certDaysRemaining: 9,
+        sslStatus: "expiring",
+      },
+      { sslExpiryFailDays: 10 },
     );
 
     expect(result.status).toBe("down");
@@ -264,6 +321,12 @@ function buildMonitor(overrides: Partial<MonitorRecord> = {}): MonitorRecord {
     timeoutMs: 10_000,
     retries: 0,
     assertions: [],
+    sslExpiryWarnDays: 14,
+    sslExpiryFailDays: 0,
+    heartbeatMode: "interval",
+    heartbeatCron: "0 * * * *",
+    heartbeatGraceSec: 300,
+    heartbeatTimezone: "UTC",
     pushToken: null,
     active: 1,
     lastStatus: "unknown",

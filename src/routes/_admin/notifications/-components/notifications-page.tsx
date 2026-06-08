@@ -14,7 +14,6 @@ import type {
 } from "@/types";
 
 import { Error as ErrorState } from "@/components/error";
-import { Loading } from "@/components/loading";
 import {
   AppPage,
   AppPageHeader,
@@ -72,6 +71,8 @@ import {
 } from "@/lib/queries/notifications";
 import { m } from "@/paraglide/messages.js";
 
+import { NotificationsSkeleton } from "./notifications-skeleton";
+
 type NotificationFormState = {
   name: string;
   provider: NotificationProvider;
@@ -118,7 +119,7 @@ export function NotificationsPage() {
     useState<NotificationProvider>("discord");
 
   if (notifications.status === "pending") {
-    return <Loading />;
+    return <NotificationsSkeleton />;
   }
   if (notifications.status === "error") {
     return <ErrorState message={notifications.error.message} />;
@@ -209,6 +210,7 @@ export function NotificationsPage() {
               {providerCards.map((item) => (
                 <Item asChild key={item.provider} variant="outline">
                   <button
+                    className="cursor-pointer hover:border-ring/60 hover:bg-muted/50 focus-visible:border-ring"
                     onClick={() => {
                       setEditingId(null);
                       setDraftProvider(item.provider);
@@ -224,7 +226,7 @@ export function NotificationsPage() {
                       <ItemDescription>{item.description}</ItemDescription>
                     </ItemContent>
                     <ItemActions>
-                      <Badge variant="outline">{m.common_new()}</Badge>
+                      <Badge variant="outline">{m.common_add()}</Badge>
                     </ItemActions>
                   </button>
                 </Item>
@@ -632,7 +634,7 @@ function NotificationSheet({
           </div>
         ) : (
           <div className="px-6 py-6">
-            <Loading />
+            <NotificationsSkeleton />
           </div>
         )}
       </SheetContent>
@@ -723,7 +725,7 @@ function NotifierCard({
 
 function ProviderIcon({ provider }: { provider: NotificationProvider }) {
   return (
-    <span className="flex size-10 shrink-0 items-center justify-center">
+    <span className="flex size-6 shrink-0 items-center justify-center">
       {provider === "discord" ? (
         <Discord aria-hidden="true" className="size-5" />
       ) : provider === "telegram" ? (

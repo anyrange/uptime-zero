@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { flexRender, type Table as TanStackTable } from "@tanstack/react-table";
 
 import { Card } from "@/components/ui/card";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -30,7 +31,10 @@ export function DataTable<TData>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow className="hover:bg-transparent" key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  style={columnSizeStyle(header.column.columnDef.size)}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -50,7 +54,10 @@ export function DataTable<TData>({
                 key={row.id}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    style={columnSizeStyle(cell.column.columnDef.size)}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -58,11 +65,12 @@ export function DataTable<TData>({
             ))
           ) : (
             <TableRow>
-              <TableCell
-                className="h-24 text-center text-muted-foreground"
-                colSpan={columnsLength}
-              >
-                {empty}
+              <TableCell className="p-4" colSpan={columnsLength}>
+                <Empty className="min-h-32 border-0 bg-transparent">
+                  <EmptyHeader>
+                    <EmptyTitle>{empty}</EmptyTitle>
+                  </EmptyHeader>
+                </Empty>
               </TableCell>
             </TableRow>
           )}
@@ -71,4 +79,8 @@ export function DataTable<TData>({
       {footer}
     </Card>
   );
+}
+
+function columnSizeStyle(size: number | undefined) {
+  return size ? { width: `${size}px`, maxWidth: `${size}px` } : undefined;
 }
