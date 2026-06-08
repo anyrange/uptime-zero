@@ -379,7 +379,7 @@
   "notification_configured_description": "Transition alerts send on down and again on recovery to up.",
   "notification_none_configured": "No notifiers configured yet.",
   "notification_create_new": "Create new notifier",
-  "notification_create_description": "Pick a provider, then configure routing and assigned monitors in the sheet.",
+  "notification_create_description": "Pick a provider and assign monitors.",
   "notification_edit": "Edit notifier",
   "notification_create_provider_notifier": "Create {provider} notifier",
   "notification_discord": "Discord",

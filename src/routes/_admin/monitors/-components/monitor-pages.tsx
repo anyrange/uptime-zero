@@ -143,7 +143,6 @@ export function MonitorsIndexPage() {
       {data.status === "success" ? (
         <MonitorsIndexContent
           monitors={data.data.monitors}
-          openIncidentCount={data.data.openIncidentCount}
           slowestP95ResponseMs={data.data.slowestP95ResponseMs}
         />
       ) : null}

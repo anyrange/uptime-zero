@@ -39,8 +39,8 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -69,11 +69,9 @@ import { displayMonitorTarget } from "../-components/monitor-workspace-page";
 
 export function MonitorsIndexContent({
   monitors,
-  openIncidentCount,
   slowestP95ResponseMs,
 }: {
   monitors: MonitorRecord[];
-  openIncidentCount: number;
   slowestP95ResponseMs: number | null;
 }) {
   const activeCount = monitors.filter((monitor) => monitor.active === 1).length;
@@ -84,31 +82,37 @@ export function MonitorsIndexContent({
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <MonitorSummaryCard>
-          <CardDescription>{m.monitor_total()}</CardDescription>
-          <CardTitle>{monitors.length}</CardTitle>
-        </MonitorSummaryCard>
-        <MonitorSummaryCard>
-          <CardDescription>{m.common_active()}</CardDescription>
-          <CardTitle>{activeCount}</CardTitle>
-        </MonitorSummaryCard>
-        <MonitorSummaryCard>
-          <CardDescription>{m.common_paused()}</CardDescription>
-          <CardTitle>{pausedCount}</CardTitle>
-        </MonitorSummaryCard>
-        <MonitorSummaryCard>
-          <CardDescription>{m.common_down()}</CardDescription>
-          <CardTitle>{downCount}</CardTitle>
-        </MonitorSummaryCard>
-        <MonitorSummaryCard>
-          <CardDescription>{m.monitor_open_incidents()}</CardDescription>
-          <CardTitle>{openIncidentCount}</CardTitle>
-        </MonitorSummaryCard>
-        <MonitorSummaryCard>
-          <CardDescription>{m.monitor_slowest_p95()}</CardDescription>
-          <CardTitle>{formatDurationMs(slowestP95ResponseMs)}</CardTitle>
-        </MonitorSummaryCard>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.monitor_total()}</CardDescription>
+            <CardTitle>{monitors.length}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.common_active()}</CardDescription>
+            <CardTitle>{activeCount}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.common_paused()}</CardDescription>
+            <CardTitle>{pausedCount}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.common_down()}</CardDescription>
+            <CardTitle>{downCount}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.monitor_slowest_p95()}</CardDescription>
+            <CardTitle>{formatDurationMs(slowestP95ResponseMs)}</CardTitle>
+          </CardContent>
+        </Card>
       </div>
 
       <MonitorDataTable monitors={monitors} />
@@ -586,14 +590,6 @@ function errorMessage(error: unknown) {
     typeof error.message === "string"
     ? error.message
     : m.monitor_import_failed();
-}
-
-function MonitorSummaryCard({ children }: { children: ReactNode }) {
-  return (
-    <Card size="sm">
-      <CardHeader>{children}</CardHeader>
-    </Card>
-  );
 }
 
 function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {

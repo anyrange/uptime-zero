@@ -22,8 +22,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
@@ -73,46 +73,56 @@ function OverviewContent({ data }: { data: DashboardData }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <OverviewMetricCard>
-          <CardDescription>{m.common_status()}</CardDescription>
-          <CardTitle>{getOverallStatusLabel(data.overallStatus)}</CardTitle>
-        </OverviewMetricCard>
-        <OverviewMetricCard>
-          <Link className="grid gap-1.5" to="/monitors">
-            <CardDescription>{m.monitor_monitors()}</CardDescription>
-            <CardTitle>{data.monitors.length}</CardTitle>
-          </Link>
-        </OverviewMetricCard>
-        <OverviewMetricCard>
-          <Link className="grid gap-1.5" to="/status-pages">
-            <CardDescription>{m.overview_status_pages()}</CardDescription>
-            <CardTitle>{data.statusPages.length}</CardTitle>
-          </Link>
-        </OverviewMetricCard>
-        <OverviewMetricCard>
-          <Link
-            className="grid gap-1.5"
-            search={{ monitor: undefined, q: undefined, status: "all" }}
-            to="/incidents"
-          >
-            <CardDescription>{m.monitor_open_incidents()}</CardDescription>
-            <CardTitle>{data.openIncidentCount}</CardTitle>
-          </Link>
-        </OverviewMetricCard>
-        <OverviewMetricCard>
-          <Link
-            className="grid gap-1.5"
-            search={{ monitor: undefined, q: undefined, status: "all" }}
-            to="/incidents"
-          >
-            <CardDescription>{m.overview_recent_incident()}</CardDescription>
-            <CardTitle>
-              {recentIncident
-                ? formatRelativeDateTime(recentIncident.openedAt)
-                : m.common_none()}
-            </CardTitle>
-          </Link>
-        </OverviewMetricCard>
+        <Card size="sm">
+          <CardContent className="grid gap-1.5">
+            <CardDescription>{m.common_status()}</CardDescription>
+            <CardTitle>{getOverallStatusLabel(data.overallStatus)}</CardTitle>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <Link className="grid gap-1.5" to="/monitors">
+              <CardDescription>{m.monitor_monitors()}</CardDescription>
+              <CardTitle>{data.monitors.length}</CardTitle>
+            </Link>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <Link className="grid gap-1.5" to="/status-pages">
+              <CardDescription>{m.overview_status_pages()}</CardDescription>
+              <CardTitle>{data.statusPages.length}</CardTitle>
+            </Link>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <Link
+              className="grid gap-1.5"
+              search={{ monitor: undefined, q: undefined, status: "all" }}
+              to="/incidents"
+            >
+              <CardDescription>{m.monitor_open_incidents()}</CardDescription>
+              <CardTitle>{data.openIncidentCount}</CardTitle>
+            </Link>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <Link
+              className="grid gap-1.5"
+              search={{ monitor: undefined, q: undefined, status: "all" }}
+              to="/incidents"
+            >
+              <CardDescription>{m.overview_recent_incident()}</CardDescription>
+              <CardTitle>
+                {recentIncident
+                  ? formatRelativeDateTime(recentIncident.openedAt)
+                  : m.common_none()}
+              </CardTitle>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
       <OverviewSection>
         <OverviewSectionHeader>
@@ -141,14 +151,6 @@ function OverviewContent({ data }: { data: DashboardData }) {
   );
 }
 
-function OverviewMetricCard({ children }: { children: ReactNode }) {
-  return (
-    <Card size="sm">
-      <CardHeader>{children}</CardHeader>
-    </Card>
-  );
-}
-
 function OverviewSection({ children }: { children: ReactNode }) {
   return <section className="flex flex-col gap-3">{children}</section>;
 }
@@ -168,14 +170,18 @@ function OverviewSectionDescription({ children }: { children: ReactNode }) {
 function LatestCheckMetrics({ data }: { data: DashboardData }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <OverviewMetricCard>
-        <CardDescription>{m.overview_checks_last_hour()}</CardDescription>
-        <CardTitle>{formatCount(data.heartbeatCounts.lastHour)}</CardTitle>
-      </OverviewMetricCard>
-      <OverviewMetricCard>
-        <CardDescription>{m.overview_checks_last_day()}</CardDescription>
-        <CardTitle>{formatCount(data.heartbeatCounts.lastDay)}</CardTitle>
-      </OverviewMetricCard>
+      <Card size="sm">
+        <CardContent className="grid gap-1.5">
+          <CardDescription>{m.overview_checks_last_hour()}</CardDescription>
+          <CardTitle>{formatCount(data.heartbeatCounts.lastHour)}</CardTitle>
+        </CardContent>
+      </Card>
+      <Card size="sm">
+        <CardContent className="grid gap-1.5">
+          <CardDescription>{m.overview_checks_last_day()}</CardDescription>
+          <CardTitle>{formatCount(data.heartbeatCounts.lastDay)}</CardTitle>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -7,9 +7,17 @@ export function IncidentsSkeleton() {
     <div aria-label={m.common_loading()} className="grid gap-4" role="status">
       <span className="sr-only">{m.common_loading()}</span>
       <Card className="overflow-hidden py-0">
+        <div className="grid grid-cols-[120px_300px_240px_200px_110px_200px] gap-4 border-b border-border/70 px-4 py-3">
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-5 w-16" />
+        </div>
         {Array.from({ length: 8 }, (_, index) => (
           <div
-            className="grid grid-cols-[120px_300px_240px_200px_110px_200px] gap-4 border-b border-border/70 px-4 py-4 last:border-b-0"
+            className="grid grid-cols-[120px_300px_240px_200px_110px_200px] gap-4 border-b border-border/70 px-4 py-3 last:border-b-0"
             key={index}
           >
             <Skeleton className="h-5 w-20" />

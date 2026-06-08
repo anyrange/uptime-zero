@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { m } from "@/paraglide/messages.js";
 
@@ -12,9 +12,11 @@ export function OverviewSkeleton() {
       <span className="sr-only">{m.common_loading()}</span>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, index) => (
-          <Card className="gap-3 px-5 py-5" key={index} size="sm">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-7 w-16" />
+          <Card key={index} size="sm">
+            <CardHeader>
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-6 w-16" />
+            </CardHeader>
           </Card>
         ))}
       </div>
@@ -25,19 +27,30 @@ export function OverviewSkeleton() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 2 }, (_, index) => (
-            <Card className="gap-3 px-5 py-5" key={index} size="sm">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-7 w-16" />
+            <Card key={index} size="sm">
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-6 w-16" />
+              </CardHeader>
             </Card>
           ))}
         </div>
         <Card className="overflow-hidden py-0">
+          <div className="grid grid-cols-[220px_200px_140px_90px_130px_120px_220px] gap-4 border-b border-border/70 px-4 py-3">
+            <Skeleton className="ml-5 h-5 w-20" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-12" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-20" />
+          </div>
           {Array.from({ length: 10 }, (_, index) => (
             <div
-              className="grid grid-cols-[220px_220px_150px_90px_120px_120px_minmax(0,1fr)] gap-4 border-b border-border/70 px-4 py-4 last:border-b-0"
+              className="grid grid-cols-[220px_200px_140px_90px_130px_120px_220px] gap-4 border-b border-border/70 px-4 py-3 last:border-b-0"
               key={index}
             >
-              <Skeleton className="h-5 w-40" />
+              <Skeleton className="ml-5 h-5 w-40" />
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-5 w-12" />
