@@ -1,20 +1,20 @@
 # Uptime Zero
 
-**Self-hostable uptime monitoring, built to run on Cloudflare.**
+**Simple self-hostable uptime monitoring, built to run on Cloudflare.**
 
-Uptime Zero is for people who want a simple monitor dashboard, public status pages, and webhook alerts without keeping a separate server around. It is inspired by [Uptime Kuma](https://github.com/louislam/uptime-kuma), but the runtime is Cloudflare Workers, D1, Durable Objects, and scheduled triggers.
+Uptime Zero is heavily inspired by [Uptime Kuma](https://github.com/louislam/uptime-kuma), but built for people who want a simple monitor dashboard, public status pages, and webhook alerts without keeping a separate server around.
 
-It is still early, but the core idea is straightforward: create monitors, let Cloudflare run the checks, publish the health of the services you care about, and keep the operational bits small enough to self-host comfortably.
+> [!WARNING]
+> Uptime Zero is still early-stage software. Expect breaking changes, rough edges, and missing pieces while the project is actively taking shape.
 
 ## ✨ Features
 
-- HTTP, DNS monitors
-- Scheduled checks with Cloudflare cron triggers
-- Incidents created from monitor state changes
+- HTTP and DNS uptime monitors
 - Public status pages for sharing service health
-- Webhook notifications
-- Admin setup and login
-- Retention settings for monitor history and closed incidents
+- Incident history from monitor state changes
+- Webhook alerts when monitors change state
+- Configurable retention for monitor checks and incidents
+- Cloudflare-native runtime with Workers, D1, Durable Objects, and scheduled triggers
 
 ## 🚀 Deploy
 

@@ -6,7 +6,7 @@ Uptime Zero deploys as a Cloudflare Worker with static assets, D1, Durable Objec
 
 - Node.js
 - pnpm
-- A Cloudflare account with Workers enabled
+- A Cloudflare account
 
 ## Deploy
 
@@ -75,14 +75,3 @@ pnpm run deploy
 ```
 
 If new migrations exist, `pnpm run deploy` applies them before deploying.
-
-## Local Worker
-
-Apply local migrations and run Wrangler dev:
-
-```sh
-pnpm run db:migrate
-pnpm run dev:worker
-```
-
-The local Worker runs on `http://localhost:8788`.
