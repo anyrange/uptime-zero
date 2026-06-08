@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.3.0...uptime-zero-v0.4.0) (2026-06-08)
+
+
+### Features
+
+* update dashboard to show version ([f9b04ba](https://github.com/anyrange/uptime-zero/commit/f9b04ba7d967a3fc7c01dffc5ce399d45f51ff6b))
+
+
+### Performance Improvements
+
+* optimize dashboard loading ([69eb3aa](https://github.com/anyrange/uptime-zero/commit/69eb3aac0a78cfd98dd6cf2c0bec3cce30af2bb8))
+
+
+### Continuous Integration
+
+* prevent running release-please in forks ([057ccb7](https://github.com/anyrange/uptime-zero/commit/057ccb73b9805fdd1fc88cd0b56e0e0a1d0728ad))
+
 ## [0.3.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.2.0...uptime-zero-v0.3.0) (2026-06-08)
 
 
