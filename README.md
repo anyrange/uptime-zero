@@ -1,22 +1,60 @@
 # Uptime Zero
 
-Self-hostable uptime monitoring on the Cloudflare free tier.
+**Self-hostable uptime monitoring, built to run on Cloudflare.**
 
-Uptime Zero is a small monitoring app for people who want something like [Uptime Kuma](https://github.com/louislam/uptime-kuma), but built for Cloudflare Workers instead of a server you have to keep around.
+Uptime Zero is for people who want a simple monitor dashboard, public status pages, and webhook alerts without keeping a separate server around. It is inspired by [Uptime Kuma](https://github.com/louislam/uptime-kuma), but the runtime is Cloudflare Workers, D1, Durable Objects, and scheduled triggers.
 
-It handles the practical parts first: HTTP, keyword, JSON, DNS, and push checks; incidents; public status pages; webhooks; and admin settings. The app runs on Workers with D1, Durable Objects, and scheduled triggers, so one person can deploy it and keep it running without a separate VM.
+It is still early, but the core idea is straightforward: create monitors, let Cloudflare run the checks, publish the health of the services you care about, and keep the operational bits small enough to self-host comfortably.
 
-## Features
+## ✨ Features
 
-- Monitor CRUD for HTTP, keyword, JSON, DNS, and push monitors
-- Scheduled checks through Cloudflare cron triggers
-- Incident tracking from monitor state changes
-- Public status pages
+- HTTP, keyword, JSON, DNS, and push monitors
+- Scheduled checks with Cloudflare cron triggers
+- Incidents created from monitor state changes
+- Public status pages for sharing service health
 - Webhook notifications
 - Admin setup and login
 - Retention settings for monitor history and closed incidents
 
-## Stack
+## 🚀 Deploy
+
+The full deployment guide is in [docs/deployment.md](docs/deployment.md).
+
+For the short version, install dependencies, log in to Cloudflare, and create the D1 database:
+
+```sh
+pnpm install
+pnpm wrangler login
+pnpm wrangler d1 create uptime-zero
+```
+
+Paste the returned D1 `database_id` into `wrangler.jsonc`, then set the auth secrets and deploy:
+
+```sh
+pnpm wrangler secret put BETTER_AUTH_SECRET
+pnpm wrangler secret put BETTER_AUTH_URL
+pnpm run deploy
+```
+
+After deploy, open `/setup` on your Worker URL and create the first admin account.
+
+## 🛠️ Local Development
+
+```sh
+pnpm install
+pnpm run db:migrate
+pnpm run dev:worker
+```
+
+The local Worker runs on `http://localhost:8788`.
+
+You can also run the Vite frontend dev server:
+
+```sh
+pnpm run dev
+```
+
+## 🧱 Stack
 
 - Cloudflare Workers
 - Cloudflare D1
@@ -28,42 +66,8 @@ It handles the practical parts first: HTTP, keyword, JSON, DNS, and push checks;
 - Better Auth
 - shadcn/ui
 
-## Deploy
+## 🌱 Project Status
 
-See [docs/deployment.md](docs/deployment.md).
+Uptime Zero is early self-hostable software. The main monitoring flow is in place, and the roadmap is intentionally focused on practical uptime monitoring: better notifications, richer incident management, maintenance windows, and a few more monitor types.
 
-Short version:
-
-```sh
-pnpm install
-pnpm wrangler login
-pnpm wrangler d1 create uptime-zero
-```
-
-Paste the returned D1 `database_id` into `wrangler.jsonc`, then set auth config and deploy:
-
-```sh
-pnpm wrangler secret put BETTER_AUTH_SECRET
-pnpm wrangler secret put BETTER_AUTH_URL
-pnpm run deploy
-```
-
-After deploy, open `/setup` on your Worker URL and create the first admin account.
-
-## Local Development
-
-```sh
-pnpm install
-pnpm run db:migrate
-pnpm run dev:worker
-```
-
-For the Vite frontend dev server:
-
-```sh
-pnpm run dev
-```
-
-## Project Status
-
-This is early self-hostable software. The core monitoring flow works, and the roadmap stays intentionally close to practical uptime monitoring: better notifications, richer incident management, maintenance windows, and a few more monitor types. See [docs/roadmap.md](docs/roadmap.md).
+Contributions, bug reports, and small product-minded improvements are welcome.
