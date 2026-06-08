@@ -41,6 +41,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { appVersion } from "@/lib/build-info";
 import { useLogoutMutation, useSessionQuery } from "@/lib/queries/auth";
 import { m } from "@/paraglide/messages.js";
 
@@ -68,8 +69,11 @@ export function AppSidebar() {
                   <span className="truncate font-semibold">
                     {m.common_edge_uptime()}
                   </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {m.common_edge_monitoring()}
+                  <span
+                    aria-label={m.common_app_version({ version: appVersion })}
+                    className="truncate text-xs text-muted-foreground"
+                  >
+                    {appVersion}
                   </span>
                 </div>
               </Link>
@@ -209,12 +213,10 @@ function SessionFooter({
   if (session.status === "success" && session.data.user) {
     const { user } = session.data;
     const name = user.name?.trim();
-    const primaryLabel = name || user.email || m.auth_signed_in();
+    const primaryLabel = name || m.auth_signed_in();
     const secondaryLabel = name
-      ? user.email || m.auth_administrator()
-      : user.email
-        ? m.auth_administrator()
-        : m.auth_uptime_console();
+      ? m.auth_administrator()
+      : m.auth_uptime_console();
     const initials = primaryLabel
       .split(/\s+/)
       .filter(Boolean)

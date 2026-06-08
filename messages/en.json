@@ -3,6 +3,7 @@
   "common_uptime": "Uptime",
   "common_edge_uptime": "Uptime Zero",
   "common_edge_monitoring": "Edge monitoring",
+  "common_app_version": "App version {version}",
   "common_loading": "Loading",
   "common_never": "Never",
   "common_unknown": "Unknown",

@@ -2,9 +2,13 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
+import { buildInfo } from "@/lib/build-info";
+
 import * as TanstackQuery from "./lib/providers/query-provider";
 import { getRouter, routerContext } from "./router";
 import "./index.css";
+
+console.log("Uptime Zero build", buildInfo);
 
 const router = getRouter();
 

@@ -6,8 +6,25 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+import pkg from "./package.json" with { type: "json" };
+
+const commitSha =
+  process.env.WORKERS_CI_COMMIT_SHA ??
+  process.env.COMMIT_SHA ??
+  process.env.CF_PAGES_COMMIT_SHA ??
+  process.env.GITHUB_SHA;
+
+const buildInfo = {
+  branch: process.env.WORKERS_CI_BRANCH ?? process.env.CF_PAGES_BRANCH ?? null,
+  sha: commitSha ?? null,
+  version: `${pkg.version}${commitSha ? `.${commitSha.slice(0, 8)}` : ""}`,
+};
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  define: {
+    __BUILD_INFO__: JSON.stringify(buildInfo),
+  },
   plugins: [
     devtools(),
     tailwindcss(),
