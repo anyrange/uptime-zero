@@ -8,7 +8,7 @@ It is still early, but the core idea is straightforward: create monitors, let Cl
 
 ## ✨ Features
 
-- HTTP, keyword, JSON, DNS, and push monitors
+- HTTP, DNS monitors
 - Scheduled checks with Cloudflare cron triggers
 - Incidents created from monitor state changes
 - Public status pages for sharing service health
@@ -43,16 +43,10 @@ After deploy, open `/setup` on your Worker URL and create the first admin accoun
 ```sh
 pnpm install
 pnpm run db:migrate
-pnpm run dev:worker
-```
-
-The local Worker runs on `http://localhost:8788`.
-
-You can also run the Vite frontend dev server:
-
-```sh
 pnpm run dev
 ```
+
+The local Worker runs on `http://localhost:5173`
 
 ## 🧱 Stack
 
@@ -65,9 +59,3 @@ pnpm run dev
 - Drizzle ORM
 - Better Auth
 - shadcn/ui
-
-## 🌱 Project Status
-
-Uptime Zero is early self-hostable software. The main monitoring flow is in place, and the roadmap is intentionally focused on practical uptime monitoring: better notifications, richer incident management, maintenance windows, and a few more monitor types.
-
-Contributions, bug reports, and small product-minded improvements are welcome.
