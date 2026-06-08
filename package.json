@@ -66,6 +66,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/devtools-vite": "^0.7.0",
     "@tanstack/react-devtools": "^0.10.5",
+    "@tanstack/react-router-devtools": "^1.167.0",
     "@tanstack/router-plugin": "^1.168.18",
     "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^25.9.2",

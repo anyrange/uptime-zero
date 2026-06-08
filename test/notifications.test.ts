@@ -304,6 +304,24 @@ describe("notification delivery", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("throws when a destination returns a non-success response", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 401 }));
+
+    await expect(
+      deliverNotificationDestination(
+        webhookDestination,
+        {
+          kind: "transition",
+          monitor,
+          status: "down",
+          checkedAt: "2026-05-04T10:00:00.000Z",
+          error: "timeout",
+        },
+        fetchMock as typeof fetch,
+      ),
+    ).rejects.toThrow("webhook notification failed");
+  });
+
   it("does nothing when no destinations are bound", async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
 
@@ -325,7 +343,7 @@ describe("notification delivery", () => {
   it("swallows provider failures so one broken destination does not abort delivery", async () => {
     const fetchMock = vi
       .fn()
-      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
 
     await expect(

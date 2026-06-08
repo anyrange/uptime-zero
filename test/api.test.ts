@@ -376,6 +376,129 @@ describe("monitor API", () => {
   });
 });
 
+describe("status page API", () => {
+  it("dedupes linked monitors and returns public heartbeat history per monitor", async () => {
+    const cookie = await setupAdminSession();
+    const db = getDb(env.DB);
+    const busyMonitorId = crypto.randomUUID();
+    const quietMonitorId = crypto.randomUUID();
+
+    await db.insert(schema.monitors).values([
+      {
+        id: busyMonitorId,
+        name: "Busy API",
+        kind: "http",
+        target: "https://busy.example.com/health",
+        intervalSec: 60,
+        timeoutMs: 10000,
+        retries: 0,
+        assertionsJson: "[]",
+        pushToken: null,
+        active: 1,
+        lastStatus: "up",
+        lastCheckedAt: "2026-05-01T12:49:00.000Z",
+        lastDurationMs: 100,
+        lastError: null,
+        lastCertValidTo: null,
+        lastCertDaysRemaining: null,
+        lastCertHostname: null,
+        lastSslStatus: null,
+        createdAt: "2026-05-01T12:00:00.000Z",
+        updatedAt: "2026-05-01T12:49:00.000Z",
+      },
+      {
+        id: quietMonitorId,
+        name: "Quiet API",
+        kind: "http",
+        target: "https://quiet.example.com/health",
+        intervalSec: 60,
+        timeoutMs: 10000,
+        retries: 0,
+        assertionsJson: "[]",
+        pushToken: null,
+        active: 1,
+        lastStatus: "up",
+        lastCheckedAt: "2026-05-01T11:00:00.000Z",
+        lastDurationMs: 120,
+        lastError: null,
+        lastCertValidTo: null,
+        lastCertDaysRemaining: null,
+        lastCertHostname: null,
+        lastSslStatus: null,
+        createdAt: "2026-05-01T10:00:00.000Z",
+        updatedAt: "2026-05-01T11:00:00.000Z",
+      },
+    ]);
+
+    for (const heartbeat of [
+      ...Array.from({ length: 50 }, (_, index) => ({
+        id: crypto.randomUUID(),
+        monitorId: busyMonitorId,
+        status: "up",
+        statusCode: 200,
+        durationMs: 100 + index,
+        error: null,
+        certDaysRemaining: null,
+        createdAt: new Date(Date.UTC(2026, 4, 1, 12, index, 0)).toISOString(),
+        source: "poll",
+      })),
+      {
+        id: crypto.randomUUID(),
+        monitorId: quietMonitorId,
+        status: "up",
+        statusCode: 200,
+        durationMs: 120,
+        error: null,
+        certDaysRemaining: null,
+        createdAt: "2026-05-01T11:00:00.000Z",
+        source: "poll",
+      },
+    ]) {
+      await db.insert(schema.heartbeats).values(heartbeat);
+    }
+
+    const createResponse = await apiFetch("/api/status-pages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        slug: "public",
+        title: "Public",
+        description: null,
+        published: true,
+        showHistory: true,
+        monitorIds: [busyMonitorId, quietMonitorId, quietMonitorId],
+      }),
+    });
+
+    expect(createResponse.status).toBe(201);
+    const created = (await createResponse.json()) as {
+      page: { id: string };
+      monitorIds: string[];
+    };
+    expect(created.monitorIds).toEqual([busyMonitorId, quietMonitorId]);
+
+    const publicResponse = await apiFetch("/api/status/public");
+    expect(publicResponse.status).toBe(200);
+    const publicData = (await publicResponse.json()) as {
+      heartbeats: Array<{ monitorId: string }>;
+    };
+
+    expect(
+      publicData.heartbeats.filter(
+        (heartbeat) => heartbeat.monitorId === busyMonitorId,
+      ),
+    ).toHaveLength(45);
+    expect(
+      publicData.heartbeats.filter(
+        (heartbeat) => heartbeat.monitorId === quietMonitorId,
+      ),
+    ).toHaveLength(1);
+  });
+});
+
 describe("notification API", () => {
   it("persists provider config and monitor bindings through the real API", async () => {
     const cookie = await setupAdminSession();

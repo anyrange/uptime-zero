@@ -26,6 +26,7 @@ export class StatusPageModel {
   }) {
     const now = nowIso();
     const id = payload.id ?? crypto.randomUUID();
+    const monitorIds = [...new Set(payload.monitorIds)];
     const existing = payload.id
       ? await this.db
           .select()
@@ -62,9 +63,9 @@ export class StatusPageModel {
     await this.db
       .delete(schema.statusPageMonitors)
       .where(eq(schema.statusPageMonitors.statusPageId, id));
-    if (payload.monitorIds.length > 0) {
+    if (monitorIds.length > 0) {
       await this.db.insert(schema.statusPageMonitors).values(
-        payload.monitorIds.map((monitorId) => ({
+        monitorIds.map((monitorId) => ({
           statusPageId: id,
           monitorId,
         })),
@@ -133,13 +134,7 @@ export class StatusPageModel {
               .where(inArray(schema.incidents.monitorId, monitorIds))
               .orderBy(desc(schema.incidents.openedAt))
               .limit(10),
-          heartbeats: () =>
-            this.db
-              .select()
-              .from(schema.heartbeats)
-              .where(inArray(schema.heartbeats.monitorId, monitorIds))
-              .orderBy(desc(schema.heartbeats.createdAt))
-              .limit(30),
+          heartbeats: () => this.listPublicHeartbeatsForMonitors(monitorIds),
         })
       : { monitors: [], incidents: [], heartbeats: [] };
 
@@ -152,5 +147,20 @@ export class StatusPageModel {
         monitors.map((monitor) => normalizeMonitorStatus(monitor.lastStatus)),
       ),
     };
+  }
+
+  private async listPublicHeartbeatsForMonitors(monitorIds: string[]) {
+    const rowsByMonitor = await Promise.all(
+      monitorIds.map((monitorId) =>
+        this.db
+          .select()
+          .from(schema.heartbeats)
+          .where(eq(schema.heartbeats.monitorId, monitorId))
+          .orderBy(desc(schema.heartbeats.createdAt))
+          .limit(45),
+      ),
+    );
+
+    return rowsByMonitor.flat();
   }
 }

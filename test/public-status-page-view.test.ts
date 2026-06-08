@@ -57,7 +57,7 @@ describe("public status page view model", () => {
       "error",
     ]);
     expect(view.monitors.find((item) => item.id === "push-1")?.meta).toBe(
-      "/api/push/token-push-1",
+      "Heartbeat monitor",
     );
     expect(view.monitors.find((item) => item.id === "http-1")?.uptime).toBe(
       "100% uptime",

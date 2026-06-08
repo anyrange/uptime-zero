@@ -74,7 +74,7 @@ export function buildPublicStatusPageView(
       status: monitorStatusToBlockStatus(monitor.lastStatus),
       meta:
         monitor.kind === "push"
-          ? `/api/push/${monitor.pushToken}`
+          ? m.status_page_push_monitor_meta()
           : monitor.target,
       uptime: formatMonitorUptime(heartbeats),
       history: buildDailyStatusBarData(

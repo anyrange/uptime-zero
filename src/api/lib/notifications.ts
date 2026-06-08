@@ -154,11 +154,12 @@ export async function deliverNotificationDestination(
 ) {
   if (destination.provider === "discord") {
     const discordConfig = destination.config as DiscordNotificationConfig;
-    await fetchImpl(discordConfig.webhookUrl, {
+    const response = await fetchImpl(discordConfig.webhookUrl, {
       method: "POST",
       headers: notificationRequestHeaders(),
       body: JSON.stringify(buildDiscordPayload(destination, event)),
     });
+    assertNotificationResponse(response, destination);
     return;
   }
 
@@ -174,7 +175,7 @@ export async function deliverNotificationDestination(
           )
         : buildTestNotificationPayload(event.destination, event.sentAt);
 
-    await fetchImpl(webhookConfig.url, {
+    const response = await fetchImpl(webhookConfig.url, {
       method: "POST",
       headers: {
         ...notificationRequestHeaders(),
@@ -182,6 +183,7 @@ export async function deliverNotificationDestination(
       },
       body: JSON.stringify(body),
     });
+    assertNotificationResponse(response, destination);
     return;
   }
 
@@ -202,7 +204,7 @@ export async function deliverNotificationDestination(
     payload.message_thread_id = telegramConfig.messageThreadId;
   }
 
-  await fetchImpl(
+  const response = await fetchImpl(
     `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`,
     {
       method: "POST",
@@ -210,6 +212,7 @@ export async function deliverNotificationDestination(
       body: JSON.stringify(payload),
     },
   );
+  assertNotificationResponse(response, destination);
 }
 
 export async function dispatchNotificationEvent(
@@ -242,6 +245,19 @@ function notificationRequestHeaders() {
     "content-type": "application/json",
     "user-agent": "uptime-zero/0.1.0",
   };
+}
+
+function assertNotificationResponse(
+  response: Response,
+  destination: Pick<NotificationDestinationRecord, "name" | "provider">,
+) {
+  if (response.ok) {
+    return;
+  }
+
+  throw new Error(
+    `${destination.provider} notification failed for ${destination.name}: HTTP ${response.status}`,
+  );
 }
 
 function normalizeHeaders(value: unknown) {

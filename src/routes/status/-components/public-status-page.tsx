@@ -124,8 +124,8 @@ function PublicStatusPageView({
                             variant={monitor.status}
                           >
                             <StatusComponentHeader className="gap-4">
-                              <StatusComponentHeaderLeft>
-                                <StatusComponentIcon />
+                              <StatusComponentHeaderLeft className="items-start">
+                                <StatusComponentIcon className="mt-1 shrink-0" />
                                 <div className="min-w-0">
                                   <StatusComponentTitle>
                                     {monitor.name}
@@ -178,7 +178,7 @@ function PublicStatusPageView({
                     {m.status_page_recent_incidents()}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Latest incident updates linked to this public status page.
+                    {m.status_page_recent_incidents_description()}
                   </p>
                 </div>
                 <StatusFeed

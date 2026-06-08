@@ -89,6 +89,8 @@
       }
     }
   ],
+  "status_page_push_monitor_meta": "Heartbeat monitor",
+  "status_page_recent_incidents_description": "Latest incident updates linked to this public status page.",
   "auth_sign_in": "Sign in",
   "auth_create_admin": "Create admin",
   "auth_admin_login": "Admin login",
