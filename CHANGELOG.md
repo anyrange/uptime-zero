@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.2.0...uptime-zero-v0.3.0) (2026-06-08)
+
+
+### Features
+
+* update logo and favicon ([c6a3e3d](https://github.com/anyrange/uptime-zero/commit/c6a3e3d1b4196960db6bb0c04c73eded954956a1))
+
+
+### Miscellaneous Chores
+
+* ignore changelog formatting ([b118aed](https://github.com/anyrange/uptime-zero/commit/b118aed24bc88b2dce10e35694ec667eff62dfa7))
+
 ## [0.2.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.1.0...uptime-zero-v0.2.0) (2026-06-08)
 
 
