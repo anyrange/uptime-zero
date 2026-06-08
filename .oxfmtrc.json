@@ -9,6 +9,7 @@
     "public/app.css",
     "src/routeTree.gen.ts",
     "worker-configuration.d.ts",
+    "CHANGELOG.md",
     "drizzle/**"
   ],
   "sortImports": {
