@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.5.0...uptime-zero-v0.6.0) (2026-06-08)
+
+
+### Features
+
+* close up security issues and app boilerplate ([d8fcad8](https://github.com/anyrange/uptime-zero/commit/d8fcad8659498a637a8e093e66cbce67b1798931))
+* update dashboard ([ab2c12a](https://github.com/anyrange/uptime-zero/commit/ab2c12a4f95a6ae760c7a4fbb6f27a2017efbb43))
+
+
+### Bug Fixes
+
+* **overview:** change blocks order ([1259440](https://github.com/anyrange/uptime-zero/commit/1259440cfb9a0808b29afaf7aaa144c89f0d24c1))
+
+
+### Documentation
+
+* update readme ([7273093](https://github.com/anyrange/uptime-zero/commit/7273093675ed3e498eb02ddbfab7aee71386889f))
+* update wording ([4351971](https://github.com/anyrange/uptime-zero/commit/4351971e5d8a7dfa4a38b84b4f5cd44970e6c3af))
+
 ## [0.5.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.4.0...uptime-zero-v0.5.0) (2026-06-08)
 
 
