@@ -8,67 +8,53 @@ Uptime Zero deploys as a Cloudflare Worker with static assets, D1, Durable Objec
 - pnpm
 - A Cloudflare account with Workers enabled
 
-## 1. Install dependencies
+## Deploy
 
 ```sh
+# 1. Install dependencies.
 pnpm install
-```
 
-## 2. Log in to Cloudflare
-
-```sh
+# 2. Log in and confirm the target account.
 pnpm wrangler login
-```
+pnpm wrangler whoami
 
-If you manage more than one Cloudflare account, set the right account in your Wrangler profile or add your own `account_id` to `wrangler.jsonc`.
+# 3. If `whoami` shows multiple accounts, add the target account_id to wrangler.jsonc.
+#    Keep the D1 binding name as DB.
 
-## 3. Create a D1 database
-
-```sh
+# 4. Create the remote D1 database and copy the returned database_id into wrangler.jsonc.
 pnpm wrangler d1 create uptime-zero
-```
 
-Copy the returned `database_id` into the `d1_databases` section of `wrangler.jsonc`.
-
-## 4. Set auth secrets
-
-Generate a strong secret:
-
-```sh
+# 5. Set auth secrets.
 openssl rand -base64 32
-```
-
-Set it in Cloudflare:
-
-```sh
 pnpm wrangler secret put BETTER_AUTH_SECRET
-```
-
-Set the public Worker URL used by auth cookies and redirects:
-
-```sh
 pnpm wrangler secret put BETTER_AUTH_URL
-```
 
-Use your final origin, for example `https://uptime.example.com` or the `workers.dev` URL.
-
-## 5. Deploy
-
-```sh
+# 6. Apply remote migrations, build, and deploy.
 pnpm run deploy
 ```
 
-The deploy script applies remote D1 migrations, builds the app, and deploys the generated Worker bundle.
+Use your final public origin for `BETTER_AUTH_URL`, for example `https://uptime.example.com`.
+If you do not know the `workers.dev` origin yet, deploy once, copy the URL printed by Wrangler, update `BETTER_AUTH_URL`, and deploy again:
 
-## 6. Create the first admin
+```sh
+pnpm wrangler secret put BETTER_AUTH_URL
+pnpm wrangler deploy --config dist/uptime_zero/wrangler.json
+```
 
-Open:
+Open the setup page and create the first admin:
 
 ```txt
 https://your-domain.example/setup
 ```
 
-Create the first admin account. After an admin exists, setup redirects to the app.
+After an admin exists, setup redirects to the app.
+
+## Notes
+
+- `pnpm run deploy` applies remote D1 migrations, builds the app, and deploys the generated Worker bundle.
+- Wrangler D1 commands use the account selected by `wrangler.jsonc`; on multi-account logins, add `account_id` before creating or listing D1 databases.
+- Keep the D1 binding as `DB`. Wrangler may suggest a binding based on the database name, but the app expects `env.DB`.
+- `workers.dev` may be enabled by default if `workers_dev` is omitted from `wrangler.jsonc`.
 
 ## Custom Domain
 
