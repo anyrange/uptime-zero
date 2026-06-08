@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-import { AppShell } from "@/components/app-shell";
+import { AdminLayout } from "@/components/admin-layout";
 import { requireSession } from "@/lib/router-auth";
 
 export const Route = createFileRoute("/_admin")({
@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_admin")({
 
 function AdminRoute() {
   return (
-    <AppShell>
+    <AdminLayout>
       <Outlet />
-    </AppShell>
+    </AdminLayout>
   );
 }

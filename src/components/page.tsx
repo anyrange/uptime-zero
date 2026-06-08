@@ -1,9 +1,5 @@
 import type { ReactNode } from "react";
 
-import { useEffect } from "react";
-
-import { useAppShellTitle } from "@/components/app-shell";
-
 export function AppPage({
   title,
   children,
@@ -11,13 +7,6 @@ export function AppPage({
   title: string;
   children: ReactNode;
 }) {
-  const { setTitle } = useAppShellTitle();
-
-  useEffect(() => {
-    setTitle(title);
-    return () => setTitle(null);
-  }, [setTitle, title]);
-
   return (
     <section className="flex flex-1 flex-col gap-4">
       <div className="flex flex-1 flex-col gap-4">
