@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState } from "react";
 
+import { AppCommand } from "@/components/app-command";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   SidebarInset,
@@ -43,13 +44,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex min-w-0 items-center gap-2 px-4 lg:px-6">
+          <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 lg:px-6">
+            <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger className="-ml-1" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{title}</p>
               </div>
             </div>
+            <AppCommand />
           </header>
           <main className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col px-4 py-4 lg:px-6">
