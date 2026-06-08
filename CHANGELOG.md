@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.0...uptime-zero-v0.6.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* reduce sampling to ease on observability limits ([778e888](https://github.com/anyrange/uptime-zero/commit/778e888eaae964adc0bf7ff9d7f10221cb27a5f7))
+
+
+### Code Refactoring
+
+* update app layout ([8391b7c](https://github.com/anyrange/uptime-zero/commit/8391b7ce90279b2cd831e7a7b80e4d9577b9d7f7))
+
 ## [0.6.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.5.0...uptime-zero-v0.6.0) (2026-06-08)
 
 
