@@ -23,6 +23,13 @@ import { requireApiAdmin, requireApiSession } from "@/api/middleware/guards";
 
 initWorkersLogger({
   env: { service: "uptime-worker" },
+  sampling: {
+    rates: {
+      info: 25,
+      warn: 100,
+      error: 100,
+    },
+  },
 });
 
 export const api = new Hono<AppEnv>()
