@@ -117,6 +117,17 @@ function OverviewContent({ data }: { data: DashboardData }) {
       <OverviewSection>
         <OverviewSectionHeader>
           <OverviewSectionTitle>
+            {m.overview_incidents_heading()}
+          </OverviewSectionTitle>
+          <OverviewSectionDescription>
+            {m.overview_incidents_description()}
+          </OverviewSectionDescription>
+        </OverviewSectionHeader>
+        <RecentIncidentsTable data={data} incidents={incidents} />
+      </OverviewSection>
+      <OverviewSection>
+        <OverviewSectionHeader>
+          <OverviewSectionTitle>
             {m.overview_latest_checks_heading()}
           </OverviewSectionTitle>
           <OverviewSectionDescription>
@@ -125,17 +136,6 @@ function OverviewContent({ data }: { data: DashboardData }) {
         </OverviewSectionHeader>
         <LatestCheckMetrics data={data} />
         <LatestChecksTable data={data} />
-      </OverviewSection>
-      <OverviewSection>
-        <OverviewSectionHeader>
-          <OverviewSectionTitle>
-            {m.overview_incidents_heading()}
-          </OverviewSectionTitle>
-          <OverviewSectionDescription>
-            {m.overview_incidents_description()}
-          </OverviewSectionDescription>
-        </OverviewSectionHeader>
-        <RecentIncidentsTable data={data} incidents={incidents} />
       </OverviewSection>
     </div>
   );
