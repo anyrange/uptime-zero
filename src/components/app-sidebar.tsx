@@ -59,9 +59,11 @@ export function AppSidebar() {
               tooltip={m.common_edge_uptime()}
             >
               <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <RadioTower className="size-4" />
-                </div>
+                <img
+                  alt={m.common_edge_uptime()}
+                  className="aspect-square size-8 rounded-lg"
+                  src="/logo.svg"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
                     {m.common_edge_uptime()}
