@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.4.0...uptime-zero-v0.5.0) (2026-06-08)
+
+
+### Features
+
+* add command menu ([a485d2e](https://github.com/anyrange/uptime-zero/commit/a485d2eb512c2aead77b787d8676fa0b9ac13ac1))
+* add scheduled monitors and polish admin UI states ([e61b2ef](https://github.com/anyrange/uptime-zero/commit/e61b2ef172b75f48dc9ffa9c3a652e39e5d33da4))
+
 ## [0.4.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.3.0...uptime-zero-v0.4.0) (2026-06-08)
 
 
