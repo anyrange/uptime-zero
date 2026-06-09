@@ -8,6 +8,7 @@ import type { AppEnv } from "@/ctx";
 import { createDatabase } from "@/server/db";
 import { NotificationDestinationValidationError } from "@/server/db/models/notification";
 import { NotificationService } from "@/server/services/notifications";
+import { parseNotificationHeaders } from "@/server/services/notifications/config";
 
 const notificationHeaderSchema = z.object({
   key: z.string().trim().min(1, "Header key is required."),
@@ -37,6 +38,7 @@ const notificationInputSchema = z.discriminatedUnion("provider", [
     monitorIds: z.array(z.string()).default([]),
   }),
 ]);
+type NotificationInput = z.infer<typeof notificationInputSchema>;
 
 export const notificationsApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
@@ -59,30 +61,15 @@ export const notificationsApi = new Hono<AppEnv>()
   })
   .post("/", zValidator("json", notificationInputSchema), async (ctx) => {
     const input = ctx.req.valid("json");
-    const monitorIds = [...new Set(input.monitorIds)];
-    const config =
-      input.provider === "discord"
-        ? { webhookUrl: input.webhookUrl }
-        : input.provider === "telegram"
-          ? {
-              botToken: input.botToken,
-              chatId: input.chatId,
-              messageThreadId: input.messageThreadId || null,
-            }
-          : {
-              url: input.url,
-              headers: input.headers.filter(
-                (header) => header.key.trim().length > 0,
-              ),
-            };
+    const destinationInput = parseDestinationInput(input);
 
     try {
       const db = createDatabase(ctx.env.DB);
       const destination = await db.notification.create(
-        input.name,
-        input.provider,
-        config,
-        monitorIds,
+        destinationInput.name,
+        destinationInput.provider,
+        destinationInput.config,
+        destinationInput.monitorIds,
       );
       return ctx.json(destination, 201);
     } catch (error) {
@@ -96,30 +83,15 @@ export const notificationsApi = new Hono<AppEnv>()
   })
   .put("/:id", zValidator("json", notificationInputSchema), async (ctx) => {
     const input = ctx.req.valid("json");
-    const monitorIds = [...new Set(input.monitorIds)];
-    const config =
-      input.provider === "discord"
-        ? { webhookUrl: input.webhookUrl }
-        : input.provider === "telegram"
-          ? {
-              botToken: input.botToken,
-              chatId: input.chatId,
-              messageThreadId: input.messageThreadId || null,
-            }
-          : {
-              url: input.url,
-              headers: input.headers.filter(
-                (header) => header.key.trim().length > 0,
-              ),
-            };
+    const destinationInput = parseDestinationInput(input);
 
     try {
       const db = createDatabase(ctx.env.DB);
       const destination = await db.notification.update(ctx.req.param("id"), {
-        name: input.name,
-        provider: input.provider,
-        config,
-        monitorIds,
+        name: destinationInput.name,
+        provider: destinationInput.provider,
+        config: destinationInput.config,
+        monitorIds: destinationInput.monitorIds,
       });
       if (!destination) {
         throw new HTTPException(404, { message: "Notification not found" });
@@ -159,3 +131,37 @@ export const notificationsApi = new Hono<AppEnv>()
 
     return ctx.json({ ok: true });
   });
+
+function parseDestinationInput(input: NotificationInput) {
+  if (input.provider === "discord") {
+    return {
+      name: input.name,
+      provider: input.provider,
+      config: { webhookUrl: input.webhookUrl },
+      monitorIds: input.monitorIds,
+    };
+  }
+
+  if (input.provider === "telegram") {
+    return {
+      name: input.name,
+      provider: input.provider,
+      config: {
+        botToken: input.botToken,
+        chatId: input.chatId,
+        messageThreadId: input.messageThreadId || null,
+      },
+      monitorIds: input.monitorIds,
+    };
+  }
+
+  return {
+    name: input.name,
+    provider: input.provider,
+    config: {
+      url: input.url,
+      headers: parseNotificationHeaders(input.headers),
+    },
+    monitorIds: input.monitorIds,
+  };
+}
