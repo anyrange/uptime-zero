@@ -1,0 +1,2 @@
+BETTER_AUTH_SECRET=generate-a-random-secret
+BETTER_AUTH_URL=https://your-worker-name.your-subdomain.workers.dev

@@ -86,5 +86,15 @@
   },
   "lint-staged": {
     "*": "oxfmt --no-error-on-unmatched-pattern"
+  },
+  "cloudflare": {
+    "bindings": {
+      "BETTER_AUTH_SECRET": {
+        "description": "Generate a random signing secret, for example with `openssl rand -hex 32`."
+      },
+      "BETTER_AUTH_URL": {
+        "description": "Set this to the final public origin of your Uptime Zero Worker, for example `https://uptime-zero.example.workers.dev`. If you change to a custom domain later, update this secret and redeploy."
+      }
+    }
   }
 }
