@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "uptime-zero",
+  "name": "uptime-zero-demo",
+  "account_id": "4f1f6a74f0f1faee4a93162736f7cb05",
   "main": "src/server/index.ts",
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -35,8 +36,8 @@
       "binding": "DB",
       // Create your own D1 database with `pnpm wrangler d1 create uptime-zero`
       // and paste the returned database_id here before deploying.
-      "database_id": "replace-with-your-d1-database-id",
-      "database_name": "uptime-zero",
+      "database_id": "f97ea3da-9701-40e5-b92d-9d52e3c30b93",
+      "database_name": "uptime-zero-demo",
       "migrations_dir": "src/server/db/migrations",
       "migrations_pattern": "src/server/db/migrations/*/migration.sql",
     },
