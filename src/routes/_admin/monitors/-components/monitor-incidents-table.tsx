@@ -7,8 +7,9 @@ import {
 import type { IncidentRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
+import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
-import { formatDateTime, formatIncidentDuration } from "@/lib/formatters";
+import { formatDateTime } from "@/lib/formatters";
 import { m } from "@/paraglide/messages.js";
 
 export function MonitorIncidentsTable({
@@ -65,9 +66,10 @@ const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
     id: "duration",
     header: m.common_duration(),
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {formatIncidentDuration(row.original)}
-      </span>
+      <IncidentDuration
+        className="text-muted-foreground"
+        incident={row.original}
+      />
     ),
     size: 120,
   },

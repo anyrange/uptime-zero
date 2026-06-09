@@ -10,6 +10,7 @@ import type { DashboardData, HeartbeatRecord, IncidentRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
 import { Error } from "@/components/error";
+import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
 import {
   AppPage,
@@ -30,7 +31,6 @@ import { Empty } from "@/components/ui/empty";
 import {
   formatDateTime,
   formatDurationMs,
-  formatIncidentDuration,
   formatRelativeDateTime,
 } from "@/lib/formatters";
 import {
@@ -396,9 +396,10 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
     id: "duration",
     header: m.common_duration(),
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {formatIncidentDuration(row.original.incident)}
-      </span>
+      <IncidentDuration
+        className="text-muted-foreground"
+        incident={row.original.incident}
+      />
     ),
     size: 110,
   },
