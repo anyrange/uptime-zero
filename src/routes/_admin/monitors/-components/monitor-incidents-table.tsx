@@ -36,18 +36,20 @@ const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
     accessorKey: "title",
     header: () => <span className="pl-5">{m.monitor_incident()}</span>,
     cell: ({ row }) => (
-      <div className="pl-5">
-        <p className="font-medium">{row.original.title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div className="min-w-0 pl-5">
+        <p className="truncate font-medium">{row.original.title}</p>
+        <p className="mt-1 truncate text-sm text-muted-foreground">
           {row.original.body ?? m.incident_no_summary_short()}
         </p>
       </div>
     ),
+    size: 360,
   },
   {
     accessorKey: "status",
     header: m.common_status(),
     cell: ({ row }) => <IncidentStatusBadge status={row.original.status} />,
+    size: 120,
   },
   {
     accessorKey: "openedAt",
@@ -57,6 +59,7 @@ const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
         {formatDateTime(row.original.openedAt)}
       </span>
     ),
+    size: 240,
   },
   {
     id: "duration",
@@ -66,6 +69,7 @@ const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
         {formatIncidentDuration(row.original)}
       </span>
     ),
+    size: 120,
   },
   {
     accessorKey: "closedAt",
@@ -75,5 +79,6 @@ const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
         {formatDateTime(row.original.closedAt)}
       </span>
     ),
+    size: 240,
   },
 ];

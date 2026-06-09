@@ -82,15 +82,15 @@ function formatMonitorConfigFormError(error: {
   if (field === "retries") {
     return m.validation_retries_nonnegative();
   }
-  if (field === "sslExpiryWarnDays" || field === "sslExpiryFailDays") {
-    return issue?.message ?? m.validation_ssl_thresholds();
-  }
   if (
     field === "heartbeatCron" ||
     field === "heartbeatGraceSec" ||
     field === "heartbeatTimezone"
   ) {
     return issue?.message ?? m.validation_heartbeat_schedule();
+  }
+  if (field === "notificationGraceSec") {
+    return issue?.message ?? m.validation_notification_grace();
   }
 
   return issue?.message ?? m.validation_monitor_payload();

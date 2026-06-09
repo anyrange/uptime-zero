@@ -10,15 +10,6 @@ export {
   readJsonPath,
   runHttpCheck,
 } from "@/api/lib/monitoring-http";
-export {
-  getCertDaysRemaining,
-  getHttpsMonitorHostname,
-  getMonitorSslDetails,
-  getSslStatus,
-  mergeHttpAndSslResult,
-  parseCertValidTo,
-  probeMonitorSsl,
-} from "@/api/lib/monitoring-ssl";
 
 export interface DueCheck {
   due: boolean;

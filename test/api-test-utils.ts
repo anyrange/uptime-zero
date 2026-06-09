@@ -50,10 +50,6 @@ export async function seedMonitorWithHeartbeats(count: number) {
     lastCheckedAt: now,
     lastDurationMs: 123,
     lastError: null,
-    lastCertValidTo: null,
-    lastCertDaysRemaining: null,
-    lastCertHostname: null,
-    lastSslStatus: null,
     createdAt: now,
     updatedAt: now,
   });
@@ -65,7 +61,6 @@ export async function seedMonitorWithHeartbeats(count: number) {
     statusCode: index % 5 === 0 ? 500 : 200,
     durationMs: 100 + index,
     error: index % 5 === 0 ? "HTTP 500" : null,
-    certDaysRemaining: null,
     createdAt: new Date(Date.UTC(2026, 4, 1, 12, index, 0)).toISOString(),
     source: "scheduled",
   }))) {

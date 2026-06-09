@@ -24,9 +24,13 @@ export function DataTable<TData>({
   empty: ReactNode;
   footer?: ReactNode;
 }) {
+  const tableMinWidth = table
+    .getAllLeafColumns()
+    .reduce((width, column) => width + (column.columnDef.size ?? 160), 0);
+
   return (
-    <Card className="overflow-hidden py-0">
-      <Table>
+    <Card className="min-w-0 overflow-hidden py-0">
+      <Table className="table-fixed" style={{ minWidth: `${tableMinWidth}px` }}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow className="hover:bg-transparent" key={headerGroup.id}>
@@ -82,5 +86,7 @@ export function DataTable<TData>({
 }
 
 function columnSizeStyle(size: number | undefined) {
-  return size ? { width: `${size}px`, maxWidth: `${size}px` } : undefined;
+  return size
+    ? { width: `${size}px`, minWidth: `${size}px`, maxWidth: `${size}px` }
+    : undefined;
 }

@@ -24,10 +24,6 @@ describe("monitor lifecycle", () => {
       lastCheckedAt: "2026-05-01T12:00:00.000Z",
       lastDurationMs: 0,
       lastError: null,
-      lastCertValidTo: null,
-      lastCertDaysRemaining: null,
-      lastCertHostname: null,
-      lastSslStatus: null,
       createdAt: "2026-05-01T12:00:00.000Z",
       updatedAt: "2026-05-01T12:00:00.000Z",
     });

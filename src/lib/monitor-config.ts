@@ -19,21 +19,19 @@ export type MonitorPayload = {
   timeoutMs: number;
   retries: number;
   assertions: MonitorAssertion[];
-  sslExpiryWarnDays: number | null;
-  sslExpiryFailDays: number | null;
   heartbeatMode: HeartbeatMode;
   heartbeatCron: string | null;
   heartbeatGraceSec: number | null;
   heartbeatTimezone: string | null;
+  notificationGraceSec: number;
   active: boolean;
   notificationDestinationIds: string[];
 };
 
-export const DEFAULT_SSL_EXPIRY_WARN_DAYS = 14;
-export const DEFAULT_SSL_EXPIRY_FAIL_DAYS = 0;
 export const DEFAULT_HEARTBEAT_CRON = "0 * * * *";
 export const DEFAULT_HEARTBEAT_GRACE_SEC = 300;
 export const DEFAULT_HEARTBEAT_TIMEZONE = "UTC";
+export const DEFAULT_NOTIFICATION_GRACE_SEC = 0;
 
 export const monitorConfigObjectSchema = z.object({
   name: z.string().trim().min(1),
@@ -43,12 +41,11 @@ export const monitorConfigObjectSchema = z.object({
   timeoutMs: z.coerce.number().int().min(1).default(10000),
   retries: z.coerce.number().int().min(0).default(0),
   assertions: z.array(monitorAssertionSchema).default([]),
-  sslExpiryWarnDays: z.coerce.number().int().min(0).nullable().default(null),
-  sslExpiryFailDays: z.coerce.number().int().min(0).nullable().default(null),
   heartbeatMode: z.enum(["interval", "cron"]).default("interval"),
   heartbeatCron: z.string().trim().nullable().default(null),
   heartbeatGraceSec: z.coerce.number().int().min(1).nullable().default(null),
   heartbeatTimezone: z.string().trim().nullable().default(null),
+  notificationGraceSec: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
   notificationDestinationIds: z.array(z.string()).default([]),
 });
@@ -71,19 +68,6 @@ export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(
         code: "custom",
         message: m.validation_dns_assertion_required(),
         path: ["assertions"],
-      });
-    }
-
-    if (
-      value.kind === "http" &&
-      value.sslExpiryWarnDays != null &&
-      value.sslExpiryFailDays != null &&
-      value.sslExpiryWarnDays < value.sslExpiryFailDays
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        message: m.validation_ssl_threshold_order(),
-        path: ["sslExpiryWarnDays"],
       });
     }
 
@@ -130,8 +114,6 @@ export function normalizeMonitorConfig(config: MonitorConfig): MonitorConfig {
   return {
     ...config,
     assertions: filterAssertionsForKind(config.kind, config.assertions),
-    sslExpiryWarnDays: config.kind === "http" ? config.sslExpiryWarnDays : null,
-    sslExpiryFailDays: config.kind === "http" ? config.sslExpiryFailDays : null,
     heartbeatMode: config.kind === "push" ? config.heartbeatMode : "interval",
     heartbeatCron:
       config.kind === "push" && config.heartbeatMode === "cron"
@@ -145,6 +127,7 @@ export function normalizeMonitorConfig(config: MonitorConfig): MonitorConfig {
       config.kind === "push" && config.heartbeatMode === "cron"
         ? config.heartbeatTimezone
         : null,
+    notificationGraceSec: config.notificationGraceSec,
   };
 }
 
@@ -158,12 +141,11 @@ export function parseMonitorConfigForStorage(config: MonitorConfig) {
     timeoutMs: monitor.timeoutMs,
     retries: monitor.retries,
     assertions: monitor.assertions,
-    sslExpiryWarnDays: monitor.sslExpiryWarnDays,
-    sslExpiryFailDays: monitor.sslExpiryFailDays,
     heartbeatMode: monitor.heartbeatMode,
     heartbeatCron: monitor.heartbeatCron,
     heartbeatGraceSec: monitor.heartbeatGraceSec,
     heartbeatTimezone: monitor.heartbeatTimezone,
+    notificationGraceSec: monitor.notificationGraceSec,
     active: monitor.active ? 1 : 0,
     notificationDestinationIds: monitor.notificationDestinationIds,
   };
@@ -181,15 +163,13 @@ export function getMonitorConfigDefaults(
     timeoutMs: monitor?.timeoutMs ?? 10000,
     retries: monitor?.retries ?? 0,
     assertions: monitor?.assertions ?? [createStatusAssertion()],
-    sslExpiryWarnDays:
-      monitor?.sslExpiryWarnDays ?? DEFAULT_SSL_EXPIRY_WARN_DAYS,
-    sslExpiryFailDays:
-      monitor?.sslExpiryFailDays ?? DEFAULT_SSL_EXPIRY_FAIL_DAYS,
     heartbeatMode: monitor?.heartbeatMode ?? "interval",
     heartbeatCron: monitor?.heartbeatCron ?? DEFAULT_HEARTBEAT_CRON,
     heartbeatGraceSec:
       monitor?.heartbeatGraceSec ?? DEFAULT_HEARTBEAT_GRACE_SEC,
     heartbeatTimezone: monitor?.heartbeatTimezone ?? DEFAULT_HEARTBEAT_TIMEZONE,
+    notificationGraceSec:
+      monitor?.notificationGraceSec ?? DEFAULT_NOTIFICATION_GRACE_SEC,
     active: monitor ? monitor.active === 1 : true,
     notificationDestinationIds,
   };

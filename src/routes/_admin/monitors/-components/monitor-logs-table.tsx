@@ -83,10 +83,11 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
     accessorKey: "error",
     header: () => <span className="pr-5">{m.monitor_details()}</span>,
     cell: ({ row }) => (
-      <span className="pr-5 text-sm text-muted-foreground">
+      <span className="block truncate pr-5 text-sm text-muted-foreground">
         {row.original.error ?? m.common_healthy()}
       </span>
     ),
+    size: 260,
   },
 ];
 

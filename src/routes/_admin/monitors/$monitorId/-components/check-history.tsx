@@ -58,11 +58,6 @@ type MonitorChartData = {
     start: number;
     end: number;
   }>;
-  certificatePoints: Array<{
-    timestamp: number;
-    timeLabel: string;
-    days: number;
-  }>;
   statusCodeSummary: string | null;
   bucketLabel: string;
 };
@@ -104,13 +99,6 @@ const outcomeChartConfig = {
   unknown: {
     label: m.common_unknown(),
     color: "var(--muted-foreground)",
-  },
-} satisfies ChartConfig;
-
-const certificateChartConfig = {
-  days: {
-    label: m.monitor_days_remaining(),
-    color: "var(--chart-1)",
   },
 } satisfies ChartConfig;
 
@@ -170,9 +158,6 @@ export function CheckHistory({
             <LatencyTrendChart charts={charts} />
             <LatencySummaryChart charts={charts} />
             <OutcomeBreakdownChart charts={charts} />
-            {charts.certificatePoints.length > 0 ? (
-              <CertificateHealthChart charts={charts} />
-            ) : null}
           </div>
         )}
       </CardContent>
@@ -388,66 +373,6 @@ function OutcomeBreakdownChart({ charts }: { charts: MonitorChartData }) {
   );
 }
 
-function CertificateHealthChart({ charts }: { charts: MonitorChartData }) {
-  const latest =
-    charts.certificatePoints[charts.certificatePoints.length - 1]?.days ?? null;
-
-  return (
-    <ChartCard>
-      <ChartCardHeader>
-        <ChartCardTitle>{m.monitor_certificate_health()}</ChartCardTitle>
-        <ChartCardDescription>
-          {latest == null
-            ? m.monitor_certificate_description()
-            : m.monitor_certificate_latest_days({ count: latest })}
-        </ChartCardDescription>
-      </ChartCardHeader>
-      <ChartContainer
-        className="h-56 min-h-56 w-full max-w-full"
-        config={certificateChartConfig}
-      >
-        <LineChart
-          accessibilityLayer
-          data={charts.certificatePoints}
-          margin={{ bottom: 4, left: 4, right: 20, top: 8 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            axisLine={false}
-            dataKey="timestamp"
-            domain={["dataMin", "dataMax"]}
-            minTickGap={28}
-            tickFormatter={formatChartTick}
-            tickLine={false}
-            type="number"
-          />
-          <YAxis
-            axisLine={false}
-            tickFormatter={(value) => `${value}d`}
-            tickLine={false}
-            width={42}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                labelFormatter={(value) => formatChartTooltipTime(value)}
-              />
-            }
-          />
-          <Line
-            dataKey="days"
-            dot={false}
-            isAnimationActive={false}
-            stroke="var(--color-days)"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ChartContainer>
-    </ChartCard>
-  );
-}
-
 function ChartCard({ children }: { children: ReactNode }) {
   return (
     <div className="grid min-w-0 gap-3 rounded-lg border border-border/70 bg-muted/10 p-4">
@@ -498,7 +423,6 @@ function deriveMonitorCharts({
     percentilePoints: buildPercentileSeries(latencyPoints, bucket.ms),
     outcomePoints: buildOutcomePoints(sortedHeartbeats),
     incidentMarkers: buildIncidentMarkers(incidents, latencyPoints),
-    certificatePoints: buildCertificatePoints(sortedHeartbeats),
     statusCodeSummary:
       monitorKind === "http" ? buildStatusCodeSummary(sortedHeartbeats) : null,
     bucketLabel: bucket.label,
@@ -606,23 +530,6 @@ function buildIncidentMarkers(
       };
     })
     .filter((incident) => incident.start <= last && incident.end >= first);
-}
-
-function buildCertificatePoints(heartbeats: HeartbeatRecord[]) {
-  return heartbeats
-    .filter(
-      (heartbeat) =>
-        typeof heartbeat.certDaysRemaining === "number" &&
-        Number.isFinite(heartbeat.certDaysRemaining),
-    )
-    .map((heartbeat) => {
-      const timestamp = new Date(heartbeat.createdAt).getTime();
-      return {
-        timestamp,
-        timeLabel: formatChartTooltipTime(timestamp),
-        days: heartbeat.certDaysRemaining as number,
-      };
-    });
 }
 
 function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {

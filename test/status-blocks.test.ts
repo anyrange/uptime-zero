@@ -21,7 +21,6 @@ function heartbeat(
     statusCode: status === "up" ? 200 : null,
     durationMs: status === "up" ? 123 : null,
     error: status === "down" ? "Request failed" : null,
-    certDaysRemaining: null,
     createdAt: createdAt.toISOString(),
     source: "poll",
   };

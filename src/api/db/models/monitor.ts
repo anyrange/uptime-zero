@@ -64,14 +64,6 @@ export class MonitorModel {
           timeoutMs: payload.timeoutMs ?? existing.timeoutMs,
           retries: payload.retries ?? existing.retries,
           assertionsJson: JSON.stringify(assertions),
-          sslExpiryWarnDays:
-            kind === "http"
-              ? (payload.sslExpiryWarnDays ?? existing.sslExpiryWarnDays)
-              : null,
-          sslExpiryFailDays:
-            kind === "http"
-              ? (payload.sslExpiryFailDays ?? existing.sslExpiryFailDays)
-              : null,
           heartbeatMode:
             kind === "push"
               ? (payload.heartbeatMode ?? existing.heartbeatMode)
@@ -88,6 +80,8 @@ export class MonitorModel {
             kind === "push"
               ? (payload.heartbeatTimezone ?? existing.heartbeatTimezone)
               : null,
+          notificationGraceSec:
+            payload.notificationGraceSec ?? existing.notificationGraceSec,
           pushToken,
           active: payload.active ?? existing.active,
           updatedAt: now,
@@ -103,10 +97,6 @@ export class MonitorModel {
         timeoutMs: payload.timeoutMs ?? 10_000,
         retries: payload.retries ?? 0,
         assertionsJson: JSON.stringify(assertions),
-        sslExpiryWarnDays:
-          kind === "http" ? (payload.sslExpiryWarnDays ?? 14) : null,
-        sslExpiryFailDays:
-          kind === "http" ? (payload.sslExpiryFailDays ?? 0) : null,
         heartbeatMode:
           kind === "push" ? (payload.heartbeatMode ?? "interval") : "interval",
         heartbeatCron: kind === "push" ? (payload.heartbeatCron ?? null) : null,
@@ -114,16 +104,14 @@ export class MonitorModel {
           kind === "push" ? (payload.heartbeatGraceSec ?? null) : null,
         heartbeatTimezone:
           kind === "push" ? (payload.heartbeatTimezone ?? null) : null,
+        notificationGraceSec: payload.notificationGraceSec ?? 0,
         pushToken,
         active: payload.active ?? 1,
         lastStatus: "unknown",
         lastCheckedAt: null,
         lastDurationMs: null,
         lastError: null,
-        lastCertValidTo: null,
-        lastCertDaysRemaining: null,
-        lastCertHostname: null,
-        lastSslStatus: null,
+        lastDownNotifiedAt: null,
         createdAt: now,
         updatedAt: now,
       });

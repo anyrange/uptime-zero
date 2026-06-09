@@ -11,11 +11,7 @@ import type {
 import { mapNotificationDestinationRecord } from "@/api/db/normalize";
 import * as schema from "@/api/db/schema";
 import { nowIso } from "@/api/lib/dates";
-import {
-  mergeHttpAndSslResult,
-  probeMonitorSsl,
-  runHttpCheck,
-} from "@/api/lib/monitoring";
+import { runHttpCheck } from "@/api/lib/monitoring";
 import {
   getCronHeartbeatSchedule,
   getNextCronHeartbeatExpectedAt,
@@ -64,7 +60,6 @@ export class MonitorLifecycle {
     monitor: MonitorRecord,
     fetchImpl: typeof fetch = fetch,
   ) {
-    const startedAt = Date.now();
     let result = await runHttpCheck(monitor, fetchImpl);
     for (
       let attempt = 0;
@@ -73,17 +68,7 @@ export class MonitorLifecycle {
     ) {
       result = await runHttpCheck(monitor, fetchImpl);
     }
-    const remainingTimeoutMs = monitor.timeoutMs - (Date.now() - startedAt);
-    if (!monitor.target.startsWith("https://")) {
-      return result;
-    }
-    const sslResult = await probeMonitorSsl(
-      monitor.target,
-      remainingTimeoutMs,
-      Date.now(),
-      monitor.sslExpiryWarnDays ?? undefined,
-    );
-    return mergeHttpAndSslResult(result, sslResult, monitor);
+    return result;
   }
 
   private async persistCheckResult(
@@ -99,10 +84,6 @@ export class MonitorLifecycle {
       checkedAt,
       result.durationMs,
       result.error,
-      result.certValidTo ?? null,
-      result.certDaysRemaining ?? null,
-      result.hostname ?? null,
-      result.sslStatus ?? null,
     );
     await this.handleTransition(
       monitor,
@@ -118,15 +99,31 @@ export class MonitorLifecycle {
     checkedAt: string,
     error: string | null,
   ) {
-    if (monitor.lastStatus === nextStatus) return;
+    if (monitor.lastStatus === nextStatus) {
+      if (nextStatus === "down") {
+        await this.deliverDownNotificationAfterGrace(monitor, checkedAt, error);
+      }
+      return;
+    }
     if (nextStatus === "down") {
       await this.openIncident(monitor, checkedAt, error);
-      await this.deliverMonitorNotifications(monitor, "down", checkedAt, error);
+      if (monitor.notificationGraceSec === 0) {
+        await this.deliverMonitorNotifications(
+          monitor,
+          "down",
+          checkedAt,
+          error,
+        );
+        await this.markDownNotificationDelivered(monitor.id, checkedAt);
+      }
       return;
     }
     if (nextStatus === "up") {
       await this.closeIncidentIfNeeded(monitor.id, checkedAt);
-      await this.deliverMonitorNotifications(monitor, "up", checkedAt, null);
+      if (monitor.lastDownNotifiedAt) {
+        await this.deliverMonitorNotifications(monitor, "up", checkedAt, null);
+      }
+      await this.clearDownNotificationDelivered(monitor.id, checkedAt);
     }
   }
 
@@ -143,7 +140,6 @@ export class MonitorLifecycle {
       statusCode: result.statusCode,
       durationMs: result.durationMs,
       error: result.error,
-      certDaysRemaining: result.certDaysRemaining ?? null,
       createdAt,
       source,
     });
@@ -155,10 +151,6 @@ export class MonitorLifecycle {
     checkedAt: string,
     durationMs: number,
     error: string | null,
-    certValidTo: string | null,
-    certDaysRemaining: number | null,
-    certHostname: string | null,
-    sslStatus: MonitorRecord["lastSslStatus"],
   ) {
     await this.db
       .update(schema.monitors)
@@ -167,10 +159,6 @@ export class MonitorLifecycle {
         lastCheckedAt: checkedAt,
         lastDurationMs: durationMs,
         lastError: error,
-        lastCertValidTo: certValidTo,
-        lastCertDaysRemaining: certDaysRemaining,
-        lastCertHostname: certHostname,
-        lastSslStatus: sslStatus,
         updatedAt: checkedAt,
       })
       .where(eq(schema.monitors.id, monitorId));
@@ -215,6 +203,59 @@ export class MonitorLifecycle {
           eq(schema.incidents.status, "open"),
         ),
       );
+  }
+
+  private async deliverDownNotificationAfterGrace(
+    monitor: MonitorRecord,
+    checkedAt: string,
+    error: string | null,
+  ) {
+    if (monitor.lastDownNotifiedAt) return;
+
+    const incident = await this.getOpenIncident(monitor.id);
+    if (!incident) return;
+
+    const downtimeMs = Date.parse(checkedAt) - Date.parse(incident.openedAt);
+    if (downtimeMs < monitor.notificationGraceSec * 1000) return;
+
+    await this.deliverMonitorNotifications(monitor, "down", checkedAt, error);
+    await this.markDownNotificationDelivered(monitor.id, checkedAt);
+  }
+
+  private async getOpenIncident(monitorId: string) {
+    return await this.db
+      .select({
+        id: schema.incidents.id,
+        openedAt: schema.incidents.openedAt,
+      })
+      .from(schema.incidents)
+      .where(
+        and(
+          eq(schema.incidents.monitorId, monitorId),
+          eq(schema.incidents.status, "open"),
+        ),
+      )
+      .get();
+  }
+
+  private async markDownNotificationDelivered(
+    monitorId: string,
+    checkedAt: string,
+  ) {
+    await this.db
+      .update(schema.monitors)
+      .set({ lastDownNotifiedAt: checkedAt, updatedAt: checkedAt })
+      .where(eq(schema.monitors.id, monitorId));
+  }
+
+  private async clearDownNotificationDelivered(
+    monitorId: string,
+    checkedAt: string,
+  ) {
+    await this.db
+      .update(schema.monitors)
+      .set({ lastDownNotifiedAt: null, updatedAt: checkedAt })
+      .where(eq(schema.monitors.id, monitorId));
   }
 
   private async deliverMonitorNotifications(

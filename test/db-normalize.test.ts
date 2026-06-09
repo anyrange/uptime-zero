@@ -10,7 +10,6 @@ import {
   normalizeHeartbeatSource,
   normalizeIncidentStatus,
   normalizeMonitorKind,
-  normalizeMonitorSslStatus,
   normalizeMonitorStatus,
   normalizeNotificationProvider,
 } from "@/api/db/normalize";
@@ -31,29 +30,24 @@ describe("database record normalization", () => {
         { id: "status-200", type: "status", expected: 200 },
         { id: "invalid", type: "header", operator: "missing" },
       ]),
-      sslExpiryWarnDays: 14,
-      sslExpiryFailDays: 0,
       heartbeatMode: "later",
       heartbeatCron: null,
       heartbeatGraceSec: null,
       heartbeatTimezone: null,
+      notificationGraceSec: 0,
       pushToken: null,
       active: 1,
       lastStatus: "stale",
       lastCheckedAt: null,
       lastDurationMs: null,
       lastError: null,
-      lastCertValidTo: null,
-      lastCertDaysRemaining: null,
-      lastCertHostname: null,
-      lastSslStatus: "self-signed",
+      lastDownNotifiedAt: null,
       createdAt: now,
       updatedAt: now,
     });
 
     expect(record.kind).toBe("http");
     expect(record.lastStatus).toBe("unknown");
-    expect(record.lastSslStatus).toBeNull();
     expect(record.assertions).toEqual([
       { id: "status-200", type: "status", expected: 200 },
     ]);
@@ -68,7 +62,6 @@ describe("database record normalization", () => {
         statusCode: null,
         durationMs: null,
         error: null,
-        certDaysRemaining: null,
         createdAt: now,
         source: "manual",
       }),
@@ -145,9 +138,6 @@ describe("database record normalization", () => {
     expect(normalizeMonitorKind("tcp")).toBe("http");
     expect(normalizeMonitorStatus("down")).toBe("down");
     expect(normalizeMonitorStatus("pending")).toBe("unknown");
-    expect(normalizeMonitorSslStatus("expiring")).toBe("expiring");
-    expect(normalizeMonitorSslStatus("self-signed")).toBeNull();
-    expect(normalizeMonitorSslStatus(null)).toBeNull();
     expect(normalizeHeartbeatSource("push")).toBe("push");
     expect(normalizeHeartbeatSource("manual")).toBe("system");
     expect(normalizeIncidentStatus("open")).toBe("open");

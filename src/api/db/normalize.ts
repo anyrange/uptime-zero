@@ -5,7 +5,6 @@ import type {
   IncidentRecord,
   MonitorKind,
   MonitorRecord,
-  MonitorSslStatus,
   MonitorStatus,
   NotificationDestinationConfig,
   NotificationDestinationDetail,
@@ -22,12 +21,6 @@ import { normalizeMonitorAssertions } from "@/lib/monitor-assertions";
 const monitorKinds = ["http", "dns", "push"] as const;
 const monitorStatuses = ["up", "down", "unknown"] as const;
 const heartbeatModes = ["interval", "cron"] as const;
-const monitorSslStatuses = [
-  "valid",
-  "expiring",
-  "expired",
-  "unavailable",
-] as const;
 const heartbeatSources = ["poll", "push", "system"] as const;
 const incidentStatuses = ["open", "closed"] as const;
 const notificationProviders = ["discord", "webhook", "telegram"] as const;
@@ -59,7 +52,6 @@ export function mapMonitorRecord(row: MonitorRow) {
     kind: normalizeMonitorKind(row.kind),
     assertions: normalizeMonitorAssertions(row.assertionsJson ?? null),
     lastStatus: normalizeMonitorStatus(row.lastStatus),
-    lastSslStatus: normalizeMonitorSslStatus(row.lastSslStatus),
     heartbeatMode: normalizeHeartbeatMode(row.heartbeatMode),
   } satisfies MonitorRecord;
 }
@@ -138,15 +130,6 @@ export function normalizeMonitorKind(value: string): MonitorKind {
 
 export function normalizeMonitorStatus(value: string): MonitorStatus {
   return includes(monitorStatuses, value) ? value : "unknown";
-}
-
-export function normalizeMonitorSslStatus(
-  value: string | null,
-): MonitorSslStatus | null {
-  if (value == null) {
-    return null;
-  }
-  return includes(monitorSslStatuses, value) ? value : null;
 }
 
 export function normalizeHeartbeatSource(

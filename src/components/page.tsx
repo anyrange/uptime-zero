@@ -8,8 +8,8 @@ export function AppPage({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-1 flex-col gap-4">
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
         <h2 className="sr-only">{title}</h2>
         {children}
       </div>

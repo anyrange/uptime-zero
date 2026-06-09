@@ -2,8 +2,6 @@ export type MonitorKind = "http" | "dns" | "push";
 
 export type MonitorStatus = "up" | "down" | "unknown";
 
-export type MonitorSslStatus = "valid" | "expiring" | "expired" | "unavailable";
-
 export type HeartbeatMode = "interval" | "cron";
 
 export type JsonOperator =
@@ -64,22 +62,18 @@ export interface MonitorRecord {
   timeoutMs: number;
   retries: number;
   assertions: MonitorAssertion[];
-  sslExpiryWarnDays: number | null;
-  sslExpiryFailDays: number | null;
   heartbeatMode: HeartbeatMode;
   heartbeatCron: string | null;
   heartbeatGraceSec: number | null;
   heartbeatTimezone: string | null;
+  notificationGraceSec: number;
   pushToken: string | null;
   active: number;
   lastStatus: MonitorStatus;
   lastCheckedAt: string | null;
   lastDurationMs: number | null;
   lastError: string | null;
-  lastCertValidTo: string | null;
-  lastCertDaysRemaining: number | null;
-  lastCertHostname: string | null;
-  lastSslStatus: MonitorSslStatus | null;
+  lastDownNotifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +85,6 @@ export interface HeartbeatRecord {
   statusCode: number | null;
   durationMs: number | null;
   error: string | null;
-  certDaysRemaining: number | null;
   createdAt: string;
   source: "poll" | "push" | "system";
 }
@@ -240,10 +233,6 @@ export interface MonitorCheckResult {
   durationMs: number;
   error: string | null;
   details?: string | null;
-  hostname?: string | null;
-  certValidTo?: string | null;
-  certDaysRemaining?: number | null;
-  sslStatus?: MonitorSslStatus;
   responseText?: string;
 }
 

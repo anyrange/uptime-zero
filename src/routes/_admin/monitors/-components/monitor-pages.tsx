@@ -293,12 +293,6 @@ function MonitorForm({
   const [assertions, setAssertions] = useState<MonitorAssertion[]>(
     defaults.assertions,
   );
-  const [sslExpiryWarnDays, setSslExpiryWarnDays] = useState(
-    defaults.sslExpiryWarnDays,
-  );
-  const [sslExpiryFailDays, setSslExpiryFailDays] = useState(
-    defaults.sslExpiryFailDays,
-  );
   const [heartbeatMode, setHeartbeatMode] = useState(defaults.heartbeatMode);
   const [heartbeatCron, setHeartbeatCron] = useState(defaults.heartbeatCron);
   const [heartbeatGraceSec, setHeartbeatGraceSec] = useState(
@@ -306,6 +300,9 @@ function MonitorForm({
   );
   const [heartbeatTimezone, setHeartbeatTimezone] = useState(
     defaults.heartbeatTimezone,
+  );
+  const [notificationGraceSec, setNotificationGraceSec] = useState(
+    defaults.notificationGraceSec,
   );
   const [notificationDestinationIds, setNotificationDestinationIds] = useState(
     defaults.notificationDestinationIds,
@@ -327,12 +324,11 @@ function MonitorForm({
       timeoutMs,
       retries,
       assertions,
-      sslExpiryWarnDays,
-      sslExpiryFailDays,
       heartbeatMode,
       heartbeatCron,
       heartbeatGraceSec,
       heartbeatTimezone,
+      notificationGraceSec,
       active: monitor ? monitor.active === 1 : true,
       notificationDestinationIds,
     });
@@ -454,37 +450,6 @@ function MonitorForm({
           />
         </Field>
       </div>
-
-      {kind === "http" ? (
-        <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-2">
-          <Field>
-            <FieldLabel>{m.monitor_ssl_warn_days()}</FieldLabel>
-            <Input
-              onChange={(event) =>
-                setSslExpiryWarnDays(Number(event.target.value || 0))
-              }
-              type="number"
-              value={sslExpiryWarnDays ?? 0}
-            />
-            <FieldDescription>
-              {m.monitor_ssl_warn_days_description()}
-            </FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel>{m.monitor_ssl_fail_days()}</FieldLabel>
-            <Input
-              onChange={(event) =>
-                setSslExpiryFailDays(Number(event.target.value || 0))
-              }
-              type="number"
-              value={sslExpiryFailDays ?? 0}
-            />
-            <FieldDescription>
-              {m.monitor_ssl_fail_days_description()}
-            </FieldDescription>
-          </Field>
-        </div>
-      ) : null}
 
       {kind === "push" ? (
         <div className="grid gap-4 border-b border-border/70 pb-5">
@@ -671,6 +636,20 @@ function MonitorForm({
             {m.monitor_notifications_description()}
           </p>
         </div>
+        <Field>
+          <FieldLabel>{m.monitor_notification_grace_seconds()}</FieldLabel>
+          <Input
+            min={0}
+            onChange={(event) =>
+              setNotificationGraceSec(Number(event.target.value || 0))
+            }
+            type="number"
+            value={notificationGraceSec}
+          />
+          <FieldDescription>
+            {m.monitor_notification_grace_seconds_description()}
+          </FieldDescription>
+        </Field>
         {destinations.length === 0 ? (
           <Empty>{m.monitor_no_destinations()}</Empty>
         ) : (

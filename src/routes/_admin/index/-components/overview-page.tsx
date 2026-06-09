@@ -71,7 +71,7 @@ function OverviewContent({ data }: { data: DashboardData }) {
   const recentIncident = incidents[0];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-8">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Card size="sm">
           <CardContent className="grid gap-1.5">
@@ -152,7 +152,7 @@ function OverviewContent({ data }: { data: DashboardData }) {
 }
 
 function OverviewSection({ children }: { children: ReactNode }) {
-  return <section className="flex flex-col gap-3">{children}</section>;
+  return <section className="flex min-w-0 flex-col gap-3">{children}</section>;
 }
 
 function OverviewSectionHeader({ children }: { children: ReactNode }) {
@@ -225,9 +225,14 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
     id: "monitor",
     header: () => <span className="pl-5">{m.incident_monitor()}</span>,
     cell: ({ row }) => (
-      <div className="pl-5">
-        <Button asChild className="h-auto p-0 font-medium" variant="link">
+      <div className="min-w-0 pl-5">
+        <Button
+          asChild
+          className="h-auto max-w-full p-0 font-medium"
+          variant="link"
+        >
           <Link
+            className="truncate"
             params={{ monitorId: row.original.heartbeat.monitorId }}
             to="/monitors/$monitorId"
           >
@@ -288,7 +293,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
     id: "details",
     header: () => <span className="pr-5">{m.monitor_details()}</span>,
     cell: ({ row }) => (
-      <span className="pr-5 text-sm text-muted-foreground">
+      <span className="block truncate pr-5 text-sm text-muted-foreground">
         {row.original.heartbeat.error ?? m.common_healthy()}
       </span>
     ),
@@ -341,19 +346,21 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
     id: "monitor",
     header: m.incident_monitor(),
     cell: ({ row }) => (
-      <Button
-        asChild
-        className="h-auto max-w-[220px] p-0 font-medium"
-        variant="link"
-      >
-        <Link
-          className="truncate"
-          params={{ monitorId: row.original.incident.monitorId }}
-          to="/monitors/$monitorId"
+      <div className="min-w-0">
+        <Button
+          asChild
+          className="h-auto max-w-full p-0 font-medium"
+          variant="link"
         >
-          {row.original.monitorName ?? row.original.incident.title}
-        </Link>
-      </Button>
+          <Link
+            className="truncate"
+            params={{ monitorId: row.original.incident.monitorId }}
+            to="/monitors/$monitorId"
+          >
+            {row.original.monitorName ?? row.original.incident.title}
+          </Link>
+        </Button>
+      </div>
     ),
     size: 260,
   },

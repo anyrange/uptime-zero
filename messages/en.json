@@ -111,8 +111,7 @@
   "validation_monitor_payload": "Invalid monitor payload.",
   "validation_target_required": "Target is required.",
   "validation_dns_assertion_required": "DNS monitors need at least one record assertion.",
-  "validation_ssl_thresholds": "Use valid certificate expiry thresholds.",
-  "validation_ssl_threshold_order": "Warning days must be greater than or equal to failure days.",
+  "validation_notification_grace": "Use a valid notification grace period.",
   "validation_heartbeat_schedule": "Use a valid heartbeat schedule.",
   "validation_heartbeat_cron_required": "Cron expression is required.",
   "validation_heartbeat_cron_invalid": "Use a valid cron expression.",
@@ -231,10 +230,6 @@
   "monitor_heartbeat": "Heartbeat",
   "monitor_pause": "Pause",
   "monitor_resume": "Resume",
-  "monitor_ssl_warn_days": "Certificate warning (days)",
-  "monitor_ssl_warn_days_description": "Show the certificate as expiring when it has this many days remaining.",
-  "monitor_ssl_fail_days": "Certificate failure (days)",
-  "monitor_ssl_fail_days_description": "Mark the monitor down when the certificate has this many days remaining.",
   "monitor_heartbeat_schedule": "Heartbeat schedule",
   "monitor_heartbeat_schedule_description": "Choose how often the external job is expected to call the heartbeat endpoint.",
   "monitor_heartbeat_mode": "Schedule mode",
@@ -251,6 +246,8 @@
   "monitor_add_json": "Add JSON",
   "monitor_add_record": "Add record",
   "monitor_notifications_description": "Bind real destinations that should receive transition alerts.",
+  "monitor_notification_grace_seconds": "Notification grace period (sec)",
+  "monitor_notification_grace_seconds_description": "Wait this long after downtime starts before sending a down notification.",
   "monitor_push_endpoint": "Heartbeat endpoint",
   "monitor_push_endpoint_description": "Use this endpoint to mark the monitor healthy from external systems.",
   "monitor_save": "Save monitor",
@@ -266,7 +263,6 @@
   "monitor_open_actions": "Open actions for {name}",
   "monitor_select_row": "Select {name}",
   "monitor_import_failed": "Failed to import monitors.",
-  "monitor_days_remaining": "Days remaining",
   "monitor_mttr_minutes": "{minutes} min",
   "monitor_assertion_status_summary": "Status equals {expected}",
   "monitor_assertion_header_summary": "Header {header} {operator} {value}",
@@ -289,18 +285,6 @@
   "monitor_latency_summary_description": "Per-{bucket} p50, p95, and average latency from the loaded heartbeat history.",
   "monitor_outcome_breakdown": "Outcome breakdown",
   "monitor_outcome_breakdown_description": "Grouped by heartbeat result.",
-  "monitor_certificate_health": "Certificate health",
-  "monitor_certificate_description": "Certificate expiry observations from HTTPS checks.",
-  "monitor_certificate_latest_days": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{count} day remaining on the latest HTTPS certificate check.",
-        "countPlural=other": "{count} days remaining on the latest HTTPS certificate check."
-      }
-    }
-  ],
   "monitor_imported_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
