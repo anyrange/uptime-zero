@@ -27,6 +27,10 @@ jobs:
           git fetch origin main demo
           git checkout -B demo origin/demo
           git rebase origin/main
+          mkdir -p .cloudflare
+          git rev-parse origin/main > .cloudflare/demo-source-sha
+          git add .cloudflare/demo-source-sha
+          git commit -m "chore: record demo source sha" || true
           git push origin demo --force-with-lease
 
       - name: Rebase demo-bak branch on main
@@ -36,4 +40,8 @@ jobs:
           git fetch origin main demo-bak
           git checkout -B demo-bak origin/demo-bak
           git rebase origin/main
+          mkdir -p .cloudflare
+          git rev-parse origin/main > .cloudflare/demo-source-sha
+          git add .cloudflare/demo-source-sha
+          git commit -m "chore: record demo source sha" || true
           git push origin demo-bak --force-with-lease
