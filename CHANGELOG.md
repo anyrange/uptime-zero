@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.10.1](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.10.0...uptime-zero-v0.10.1) (2026-06-09)
+
+
+### Documentation
+
+* update readme ([3cb8c59](https://github.com/anyrange/uptime-zero/commit/3cb8c59bed546ee8960ea716ebfba1e2db082c5d))
+
+
+### Miscellaneous Chores
+
+* add example vars ([8266753](https://github.com/anyrange/uptime-zero/commit/82667538cf7dec9422322f5d48a9fac63b302b30))
+* update scripts ([b4c0b62](https://github.com/anyrange/uptime-zero/commit/b4c0b627232603f87bdb8ba795f30ca41dcb3736))
+
 ## [0.10.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.9.0...uptime-zero-v0.10.0) (2026-06-09)
 
 
