@@ -227,7 +227,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="outline">
                   <Columns3 className="size-4" />
-                  Columns
+                  {m.monitor_columns()}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -404,7 +404,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
       const monitor = row.original;
       return (
         <Link
-          className="block max-w-[180px] truncate font-medium"
+          className="block max-w-[160px] truncate font-medium"
           params={{ monitorId: monitor.id }}
           to="/monitors/$monitorId"
         >
@@ -412,7 +412,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
         </Link>
       );
     },
-    size: 220,
+    size: 190,
   },
   {
     accessorKey: "kind",
@@ -432,7 +432,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
   },
   {
     accessorKey: "lastStatus",
-    size: 128,
+    size: 96,
     header: ({ column }) => (
       <SortableHeader
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -449,12 +449,12 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
     cell: ({ row }) => {
       const target = displayMonitorTarget(row.original);
       return row.original.kind === "push" ? (
-        <span className="block max-w-[220px] truncate text-muted-foreground">
+        <span className="block max-w-[180px] truncate text-muted-foreground">
           {target}
         </span>
       ) : (
         <a
-          className="block max-w-[220px] truncate text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          className="block max-w-[180px] truncate text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           href={target}
           rel="noreferrer"
           target="_blank"
@@ -463,7 +463,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
         </a>
       );
     },
-    size: 240,
+    size: 200,
   },
   {
     accessorKey: "intervalSec",

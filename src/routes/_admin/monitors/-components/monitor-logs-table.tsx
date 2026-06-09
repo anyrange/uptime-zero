@@ -51,11 +51,13 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
         value={row.original.createdAt}
       />
     ),
+    size: 220,
   },
   {
     accessorKey: "status",
     header: m.common_status(),
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    size: 120,
   },
   {
     accessorKey: "statusCode",
@@ -65,6 +67,7 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
         {row.original.statusCode ?? m.common_not_available()}
       </span>
     ),
+    size: 80,
   },
   {
     accessorKey: "durationMs",
@@ -74,6 +77,7 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
         {formatDurationMs(row.original.durationMs)}
       </span>
     ),
+    size: 100,
   },
   {
     accessorKey: "source",
@@ -81,6 +85,7 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
     cell: ({ row }) => (
       <span className="text-muted-foreground">{row.original.source}</span>
     ),
+    size: 100,
   },
   {
     accessorKey: "error",
