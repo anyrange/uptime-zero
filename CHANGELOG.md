@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.2](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.1...uptime-zero-v0.6.2) (2026-06-09)
+
+
+### Performance Improvements
+
+* move monitor checks out of Durable Objects ([052a5ca](https://github.com/anyrange/uptime-zero/commit/052a5ca39d257eb9538608bd537140652e47f907))
+
+
+### Continuous Integration
+
+* rebase properly ([4aaec91](https://github.com/anyrange/uptime-zero/commit/4aaec9176dc466d230e928d6f55378b18c9a45b6))
+* sync demo branch on each commit ([16a6055](https://github.com/anyrange/uptime-zero/commit/16a6055d0f2766e0e440af717d7a36adfa5a4427))
+
 ## [0.6.1](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.0...uptime-zero-v0.6.1) (2026-06-08)
 
 
