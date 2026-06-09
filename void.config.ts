@@ -6,7 +6,11 @@ export default defineConfig({
     compatibility_flags: ["nodejs_compat"],
   },
   cloudflare: {
-    name: "uptime-zero",
+    name: "uptime-zero-demo",
+    account_id: "4f1f6a74f0f1faee4a93162736f7cb05",
+    // Dashboard-managed routing, pinned so `void deploy` can republish it.
+    workers_dev: true,
+    preview_urls: true,
     observability: {
       enabled: true,
       head_sampling_rate: 1,
@@ -16,7 +20,8 @@ export default defineConfig({
     d1_databases: [
       {
         binding: "DB",
-        database_name: "uptime-zero",
+        database_id: "f97ea3da-9701-40e5-b92d-9d52e3c30b93",
+        database_name: "uptime-zero-demo",
         migrations_dir: "./db/migrations",
       },
     ],
