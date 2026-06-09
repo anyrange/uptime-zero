@@ -20,5 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Force update demo branch
-        run: git push origin HEAD:demo --force
+      - name: Rebase demo branch on main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main demo
+          git checkout -B demo origin/demo
+          git rebase origin/main
+          git push origin demo --force-with-lease
