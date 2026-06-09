@@ -18,9 +18,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrations:prepare": "find drizzle -mindepth 2 -name '*.sql' -exec sh -c 'cp \"$1\" \"drizzle/$(basename \"$(dirname \"$1\")\").sql\"' _ {} \\;",
     "db:migrations:cleanup": "rm drizzle/*.sql",
-    "db:migrate": "pnpm run db:migrations:prepare && sh -c 'wrangler d1 migrations apply DB --local; status=$?; pnpm run db:migrations:cleanup; exit $status'",
-    "db:migrate-remote": "pnpm run db:migrations:prepare && sh -c 'wrangler d1 migrations apply DB --remote; status=$?; pnpm run db:migrations:cleanup; exit $status'",
-    "deploy": "pnpm run db:migrate-remote && pnpm run build && wrangler deploy --config dist/uptime_zero/wrangler.json"
+    "predb:migrate": "pnpm run db:migrations:prepare",
+    "db:migrate": "wrangler d1 migrations apply DB --local",
+    "postdb:migrate": "pnpm run db:migrations:cleanup",
+    "predb:migrate-remote": "pnpm run db:migrations:prepare",
+    "db:migrate-remote": "wrangler d1 migrations apply DB --remote",
+    "postdb:migrate-remote": "pnpm run db:migrations:cleanup",
+    "deploy": "pnpm run db:migrate-remote && wrangler deploy"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.14",
