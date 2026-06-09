@@ -7,7 +7,7 @@ import type { AppEnv } from "@/ctx";
 import type { IncidentListFilters } from "@/types";
 
 import { createAppDb } from "@/api/db";
-import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
+import { runMonitorNow } from "@/api/durable/scheduler-actor";
 
 const incidentFiltersSchema = z.object({
   status: z.enum(["open", "closed", "all"]).default("all"),
@@ -50,11 +50,7 @@ export const dashboardApi = new Hono<AppEnv>()
       Object.fromEntries(
         monitorIds.map((monitorId) => [
           monitorId,
-          () =>
-            getMonitorActorStub(ctx.env, monitorId).runNow(
-              "dashboard-manual",
-              monitorId,
-            ),
+          () => runMonitorNow(ctx.env, monitorId, "dashboard-manual"),
         ]),
       ),
     );

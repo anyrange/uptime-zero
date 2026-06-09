@@ -32,12 +32,19 @@ export const DEFAULT_HEARTBEAT_CRON = "0 * * * *";
 export const DEFAULT_HEARTBEAT_GRACE_SEC = 300;
 export const DEFAULT_HEARTBEAT_TIMEZONE = "UTC";
 export const DEFAULT_NOTIFICATION_GRACE_SEC = 0;
+export const MIN_MONITOR_INTERVAL_SEC = 60;
 
 export const monitorConfigObjectSchema = z.object({
   name: z.string().trim().min(1),
   kind: z.enum(["http", "dns", "push"]),
   target: z.string().default(""),
-  intervalSec: z.coerce.number().int().min(1).default(60),
+  intervalSec: z.coerce
+    .number()
+    .int()
+    .min(MIN_MONITOR_INTERVAL_SEC, {
+      message: m.validation_interval_minimum(),
+    })
+    .default(MIN_MONITOR_INTERVAL_SEC),
   timeoutMs: z.coerce.number().int().min(1).default(10000),
   retries: z.coerce.number().int().min(0).default(0),
   assertions: z.array(monitorAssertionSchema).default([]),

@@ -1,6 +1,6 @@
 import type { EvlogVariables } from "evlog/hono";
 
-import type { MonitorActor } from "@/api/durable/monitor-actor";
+import type { SchedulerActor } from "@/api/durable/scheduler-actor";
 
 export type Bindings = Env & {
   BETTER_AUTH_SECRET?: string;

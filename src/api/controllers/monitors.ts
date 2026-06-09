@@ -7,8 +7,10 @@ import type { AppEnv } from "@/ctx";
 import type { MonitorRecord } from "@/types";
 
 import { createAppDb } from "@/api/db";
-import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
-import { runMonitorCheckNow } from "@/api/lib/monitoring-scheduler";
+import {
+  queueSchedulerSync,
+  runMonitorNow,
+} from "@/api/durable/scheduler-actor";
 import {
   monitorConfigSchema,
   parseMonitorConfigForStorage,
@@ -90,7 +92,7 @@ export const monitorsApi = new Hono<AppEnv>()
     if (!savedMonitor) {
       throw new HTTPException(500, { message: "Failed to save monitor" });
     }
-    await syncSavedMonitor(ctx, savedMonitor);
+    await syncSavedMonitor(ctx, savedMonitor, "sync", "monitor-resume");
 
     return ctx.json(savedMonitor);
   })
@@ -100,12 +102,9 @@ export const monitorsApi = new Hono<AppEnv>()
       action: "monitor_delete",
       monitor: { id: monitorId },
     });
-    await getMonitorActorStub(ctx.env, monitorId).deactivate(
-      "monitor-delete",
-      monitorId,
-    );
     const db = createAppDb(ctx.env.DB);
     await db.monitor.delete(monitorId);
+    queueSchedulerSync(ctx, "monitor-delete");
 
     return ctx.json({ ok: true });
   })
@@ -119,10 +118,7 @@ export const monitorsApi = new Hono<AppEnv>()
     if (!savedMonitor) {
       throw new HTTPException(404, { message: "Monitor not found" });
     }
-    await getMonitorActorStub(ctx.env, monitorId).deactivate(
-      "monitor-pause",
-      monitorId,
-    );
+    queueSchedulerSync(ctx, "monitor-pause");
 
     return ctx.json(savedMonitor);
   })
@@ -143,7 +139,7 @@ export const monitorsApi = new Hono<AppEnv>()
   .post("/:id/run", async (ctx) => {
     const monitorId = ctx.req.param("id");
     const db = createAppDb(ctx.env.DB);
-    const result = await runMonitorCheckNow(db, monitorId, "manual");
+    const result = await runMonitorNow(ctx.env, monitorId, "manual");
     const detail = await db.monitor.getDetailData(monitorId);
 
     return ctx.json({ result, detail });
@@ -160,19 +156,16 @@ async function syncSavedMonitor(
   },
   monitor: MonitorRecord,
   activeMode: "run" | "sync" = "sync",
+  syncReason = "monitor-update",
 ) {
   if (monitor.active === 1) {
     if (activeMode === "run") {
-      await runMonitorCheckNow(createAppDb(ctx.env.DB), monitor.id, "save");
+      await runMonitorNow(ctx.env, monitor.id, "save");
       return;
     }
+    queueSchedulerSync(ctx, syncReason);
     return;
   }
 
-  ctx.executionCtx.waitUntil(
-    getMonitorActorStub(ctx.env, monitor.id).deactivate(
-      "monitor-paused",
-      monitor.id,
-    ),
-  );
+  queueSchedulerSync(ctx, "monitor-pause");
 }

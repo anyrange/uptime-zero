@@ -15,9 +15,7 @@ import {
   publicStatusApi,
   statusPagesApi,
 } from "@/api/controllers/status-pages";
-import { createAppDb } from "@/api/db";
-import { MonitorActor } from "@/api/durable/monitor-actor";
-import { runDueMonitorBatch } from "@/api/lib/monitoring-scheduler";
+import { SchedulerActor } from "@/api/durable/scheduler-actor";
 import { loadSession } from "@/api/middleware/auth";
 import { requireApiAdmin, requireApiSession } from "@/api/middleware/guards";
 
@@ -67,15 +65,11 @@ app.onError((error, ctx) => {
 registerPushRoutes(app);
 app.route("/api", api);
 
-export { MonitorActor };
+export { SchedulerActor };
 
 const worker: ExportedHandler<Env> = {
   fetch(request, env, executionCtx) {
     return app.fetch(request, env, executionCtx);
-  },
-  async scheduled(_controller, env, executionCtx) {
-    const db = createAppDb(env.DB);
-    executionCtx.waitUntil(runDueMonitorBatch(db));
   },
 };
 

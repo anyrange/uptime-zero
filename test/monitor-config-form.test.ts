@@ -183,7 +183,7 @@ describe("monitor config form helpers", () => {
       validateMonitorConfigForm({ ...validState(), intervalSec: 0 }),
     ).toEqual({
       ok: false,
-      error: "Use an interval above 0.",
+      error: "Use an interval of at least 60 seconds.",
     });
     expect(
       validateMonitorConfigForm({ ...validState(), timeoutMs: 0 }),

@@ -74,7 +74,7 @@ function formatMonitorConfigFormError(error: {
     return m.validation_name_required();
   }
   if (field === "intervalSec") {
-    return m.validation_interval_positive();
+    return m.validation_interval_minimum();
   }
   if (field === "timeoutMs") {
     return m.validation_timeout_positive();

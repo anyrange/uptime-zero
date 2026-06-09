@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import type { AppEnv } from "@/ctx";
 
 import { createAppDb } from "@/api/db";
+import { recordPushHeartbeat } from "@/api/durable/scheduler-actor";
 
 export function registerPushRoutes(app: Hono<AppEnv>) {
   app.post("/api/push/:token", async (ctx) => {
@@ -19,7 +20,7 @@ export function registerPushRoutes(app: Hono<AppEnv>) {
     if (!monitor) {
       throw new HTTPException(404, { message: "Heartbeat monitor not found" });
     }
-    await db.lifecycle.recordPushHeartbeat(monitor);
+    await recordPushHeartbeat(ctx.env, monitor.id, "push");
     return ctx.json({ ok: true });
   });
 }

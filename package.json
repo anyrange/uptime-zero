@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "pnpm run paraglide:compile && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "dev:worker": "wrangler dev --test-scheduled --port 8788",
+    "dev:worker": "wrangler dev --port 8788",
     "lint": "pnpm run paraglide:compile && oxlint .",
     "format": "oxfmt",
     "format:check": "oxfmt --check",

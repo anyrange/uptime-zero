@@ -35,16 +35,17 @@
       "tag": "v1",
       "new_sqlite_classes": ["MonitorActor"],
     },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["SchedulerActor"],
+    },
   ],
   "durable_objects": {
     "bindings": [
       {
-        "name": "MONITOR_ACTOR",
-        "class_name": "MonitorActor",
+        "name": "SCHEDULER_ACTOR",
+        "class_name": "SchedulerActor",
       },
     ],
-  },
-  "triggers": {
-    "crons": ["* * * * *"],
   },
 }
