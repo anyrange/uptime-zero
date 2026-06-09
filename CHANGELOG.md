@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.2...uptime-zero-v0.7.0) (2026-06-09)
+
+
+### Features
+
+* replace ssl checks with graceful period ([dec2505](https://github.com/anyrange/uptime-zero/commit/dec250543defcce3197a35ba876c11a0d2bcf3ca))
+
+
+### Bug Fixes
+
+* clean up issues ([9a77f5a](https://github.com/anyrange/uptime-zero/commit/9a77f5ae1df7b69a075df6e5289c61747c43223e))
+* update query invalidation ([501cefd](https://github.com/anyrange/uptime-zero/commit/501cefdbb2700ecd531877130740f704c2e2fde8))
+
+
+### Continuous Integration
+
+* update sync action ([6a46be3](https://github.com/anyrange/uptime-zero/commit/6a46be3deb90fcbe7b192f67f06010168b7ffb44))
+
 ## [0.6.2](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.1...uptime-zero-v0.6.2) (2026-06-09)
 
 
