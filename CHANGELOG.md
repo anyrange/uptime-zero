@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.8.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.7.0...uptime-zero-v0.8.0) (2026-06-09)
+
+
+### Features
+
+* clean up dashboard ([3efccf4](https://github.com/anyrange/uptime-zero/commit/3efccf4c9b04badad71d149879a2cb136f090d76))
+* show live incident duration ([4a424fc](https://github.com/anyrange/uptime-zero/commit/4a424fcd4de922f8a4b3cf9d9b16f131afefd77a))
+* update dashboard ([c5c4250](https://github.com/anyrange/uptime-zero/commit/c5c4250d0f1439172efb64acd64a0f57d48b59e7))
+* update dashboard look and feel ([ae5b630](https://github.com/anyrange/uptime-zero/commit/ae5b630a0722ccfc2c84f240fed6422532b335bf))
+
+
+### Bug Fixes
+
+* migrate off properly ([aaa2a42](https://github.com/anyrange/uptime-zero/commit/aaa2a4240279fae541c34f634c32ab0723641581))
+* support old import format ([024504d](https://github.com/anyrange/uptime-zero/commit/024504db68323291b7fd25e9b2d86ea27d67d66b))
+
+
+### Styles
+
+* format changes ([1206c30](https://github.com/anyrange/uptime-zero/commit/1206c30e9da38b97244b64b32f1ea88e262ae7de))
+
+
+### Code Refactoring
+
+* replace cron monitor checks with SchedulerActor ([6b5cb62](https://github.com/anyrange/uptime-zero/commit/6b5cb62ddd23ac0a10b3ed5dc32bdc4461425782))
+
+
+### Continuous Integration
+
+* make demo sync update source sha ([d289c8b](https://github.com/anyrange/uptime-zero/commit/d289c8b0696600415c7bd9748544b3340a478b4a))
+
 ## [0.7.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.6.2...uptime-zero-v0.7.0) (2026-06-09)
 
 
