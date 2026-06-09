@@ -160,6 +160,50 @@ describe("monitor import/export API", () => {
     ]);
   });
 
+  it("imports legacy monitor exports with shorter positive intervals", async () => {
+    const cookie = await setupAdminSession();
+    const db = getDb(env.DB);
+
+    const importResponse = await apiFetch("/api/settings/monitors/import", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        kind: "uptime-monitor-export",
+        version: 1,
+        exportedAt: "2026-05-07T00:00:00.000Z",
+        monitors: [
+          {
+            name: "Legacy API",
+            kind: "http",
+            target: "http://example.com/health",
+            intervalSec: 20,
+            timeoutMs: 10000,
+            retries: 0,
+            assertions: [],
+            active: true,
+          },
+        ],
+      }),
+    });
+
+    expect(importResponse.status).toBe(200);
+    await expect(importResponse.json()).resolves.toMatchObject({
+      imported: 1,
+      monitors: [expect.objectContaining({ name: "Legacy API" })],
+    });
+
+    const rows = await db.select().from(schema.monitors);
+    expect(rows).toEqual([
+      expect.objectContaining({
+        name: "Legacy API",
+        intervalSec: 60,
+      }),
+    ]);
+  });
+
   it("rejects invalid import envelopes and monitor payloads", async () => {
     const cookie = await setupAdminSession();
 

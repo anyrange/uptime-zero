@@ -11,6 +11,7 @@ import {
   runMonitorNow,
 } from "@/api/durable/scheduler-actor";
 import {
+  MIN_MONITOR_INTERVAL_SEC,
   monitorConfigObjectSchema,
   parseMonitorConfigForStorage,
 } from "@/lib/monitor-config";
@@ -20,15 +21,23 @@ const retentionInputSchema = z.object({
   incidentRetentionDays: z.coerce.number().int().min(1),
 });
 
-const monitorExportItemSchema = monitorConfigObjectSchema.omit({
-  notificationDestinationIds: true,
-});
+const monitorImportItemSchema = monitorConfigObjectSchema
+  .extend({
+    intervalSec: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .default(MIN_MONITOR_INTERVAL_SEC),
+  })
+  .omit({
+    notificationDestinationIds: true,
+  });
 
 const monitorImportSchema = z.object({
   kind: z.literal("uptime-monitor-export"),
   version: z.literal(1),
   exportedAt: z.string(),
-  monitors: z.array(monitorExportItemSchema).min(1),
+  monitors: z.array(monitorImportItemSchema).min(1),
 });
 
 export const settingsApi = new Hono<AppEnv>()
@@ -78,11 +87,16 @@ export const settingsApi = new Hono<AppEnv>()
       const savedMonitors = [];
 
       for (const item of body.monitors) {
+        const monitorConfig = monitorConfigObjectSchema.parse({
+          ...item,
+          intervalSec: Math.max(
+            item.intervalSec,
+            MIN_MONITOR_INTERVAL_SEC,
+          ),
+          notificationDestinationIds: [],
+        });
         const savedMonitor = await db.monitor.createOrUpdate({
-          ...parseMonitorConfigForStorage({
-            ...item,
-            notificationDestinationIds: [],
-          }),
+          ...parseMonitorConfigForStorage(monitorConfig),
           notificationDestinationIds: [],
         });
         if (!savedMonitor) {

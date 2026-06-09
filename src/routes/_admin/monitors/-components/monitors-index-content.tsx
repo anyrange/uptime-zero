@@ -192,7 +192,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
                   variant="outline"
                 >
                   <Download className="size-4" />
-                  Export selected
+                  {m.monitor_export_selected()}
                 </Button>
                 <Button
                   onClick={() => setBulkDeleteOpen(true)}
@@ -200,7 +200,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
                   variant="destructive"
                 >
                   <Trash2 className="size-4" />
-                  Delete selected
+                  {m.monitor_delete_selected()}
                 </Button>
               </>
             ) : null}
@@ -220,7 +220,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
               variant="outline"
             >
               <Upload className="size-4" />
-              Import
+              {m.monitor_import()}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -569,6 +569,11 @@ function exportMonitors(monitors: MonitorRecord[]) {
       timeoutMs: monitor.timeoutMs,
       retries: monitor.retries,
       assertions: monitor.assertions,
+      heartbeatMode: monitor.heartbeatMode,
+      heartbeatCron: monitor.heartbeatCron,
+      heartbeatGraceSec: monitor.heartbeatGraceSec,
+      heartbeatTimezone: monitor.heartbeatTimezone,
+      notificationGraceSec: monitor.notificationGraceSec,
       active: monitor.active === 1,
     })),
   };
@@ -612,7 +617,7 @@ function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
           <DropdownMenuItem asChild>
             <Link params={{ monitorId: monitor.id }} to="/monitors/$monitorId">
               <ExternalLink className="size-4" />
-              Open
+              {m.common_open()}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
@@ -621,7 +626,7 @@ function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
               to="/monitors/$monitorId/edit"
             >
               <Pencil className="size-4" />
-              Edit
+              {m.common_edit()}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

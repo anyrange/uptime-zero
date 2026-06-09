@@ -264,6 +264,9 @@
   "monitor_open_actions": "Open actions for {name}",
   "monitor_select_row": "Select {name}",
   "monitor_import_failed": "Failed to import monitors.",
+  "monitor_import": "Import",
+  "monitor_export_selected": "Export selected",
+  "monitor_delete_selected": "Delete selected",
   "monitor_mttr_minutes": "{minutes} min",
   "monitor_assertion_status_summary": "Status equals {expected}",
   "monitor_assertion_header_summary": "Header {header} {operator} {value}",
@@ -324,7 +327,6 @@
     }
   ],
   "monitor_deleting": "Deleting...",
-  "monitor_delete_selected": "Delete selected",
   "monitor_delete_description": "This will permanently remove {name} and its monitoring history.",
   "monitor_toggle_columns": "Toggle columns",
   "monitor_showing_zero_checks": "Showing 0 checks",
