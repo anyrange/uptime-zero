@@ -17,10 +17,10 @@ export function MonitorsSkeleton() {
         ))}
       </div>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Skeleton className="h-9 w-full md:max-w-xs" />
+        <Skeleton className="h-8 w-full md:max-w-xs" />
         <div className="flex gap-2">
-          <Skeleton className="h-9 w-24" />
-          <Skeleton className="h-9 w-28" />
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-8 w-24" />
         </div>
       </div>
       <Card className="overflow-hidden py-0">
@@ -35,11 +35,10 @@ export function MonitorsSkeleton() {
 
 export function MonitorFormSkeleton() {
   return (
-    <Card className="max-w-5xl px-5 py-5">
+    <Card className="max-w-4xl px-5 py-5">
       <div className="grid gap-5">
-        <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <div className="grid gap-4 border-b border-border/70 pb-5">
           <FieldSkeleton />
-          <Skeleton className="h-9 w-24" />
         </div>
         <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-2">
           <FieldSkeleton />

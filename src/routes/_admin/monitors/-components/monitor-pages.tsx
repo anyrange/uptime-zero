@@ -102,11 +102,16 @@ export function NewMonitorPage() {
             {m.monitor_configuration_description()}
           </AppPageSubtitle>
         </AppPageHeaderContent>
+        <AppPageActions>
+          <Button asChild variant="outline">
+            <Link to="/monitors">{m.common_back()}</Link>
+          </Button>
+        </AppPageActions>
       </AppPageHeader>
       {data.status === "pending" ? <MonitorFormSkeleton /> : null}
       {data.status === "error" ? <Error message={data.error.message} /> : null}
       {data.status === "success" ? (
-        <MonitorConfigShell>
+        <MonitorConfigLayout>
           <MonitorForm
             destinations={data.data.notificationDestinations}
             onSubmit={async (payload) => {
@@ -115,7 +120,7 @@ export function NewMonitorPage() {
             }}
             pending={create.isPending}
           />
-        </MonitorConfigShell>
+        </MonitorConfigLayout>
       ) : null}
     </AppPage>
   );
@@ -221,7 +226,7 @@ export function MonitorSettingsPage({ monitorId }: { monitorId: string }) {
         ) : list.status === "error" ? (
           <Error message={list.error.message} />
         ) : (
-          <MonitorConfigShell wide>
+          <MonitorConfigLayout wide>
             <MonitorForm
               destinations={list.data.notificationDestinations}
               monitor={data.monitor}
@@ -239,7 +244,7 @@ export function MonitorSettingsPage({ monitorId }: { monitorId: string }) {
               pending={update.isPending || remove.isPending}
               selectedDestinationIds={data.notificationDestinationIds}
             />
-          </MonitorConfigShell>
+          </MonitorConfigLayout>
         )
       }
     </MonitorWorkspacePage>
@@ -250,7 +255,7 @@ export function EditMonitorPage({ monitorId }: { monitorId: string }) {
   return <MonitorSettingsPage monitorId={monitorId} />;
 }
 
-function MonitorConfigShell({
+function MonitorConfigLayout({
   children,
   wide = false,
 }: {
@@ -258,7 +263,7 @@ function MonitorConfigShell({
   wide?: boolean;
 }) {
   return (
-    <Card className={`${wide ? "w-full" : "max-w-5xl"} px-5 py-5`}>
+    <Card className={`${wide ? "w-full" : "max-w-4xl"} px-5 py-5`}>
       {children}
     </Card>
   );
@@ -341,7 +346,13 @@ function MonitorForm({
   }
   return (
     <form className="grid gap-5" onSubmit={handleSubmit}>
-      <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <div
+        className={
+          monitor
+            ? "grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
+            : "grid gap-4 border-b border-border/70 pb-5"
+        }
+      >
         <Field>
           <FieldLabel>Monitor name</FieldLabel>
           <Input

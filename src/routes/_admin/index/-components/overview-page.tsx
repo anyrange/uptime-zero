@@ -91,11 +91,7 @@ function OverviewContent({ data }: { data: DashboardData }) {
         </Card>
         <Card size="sm">
           <CardContent>
-            <Link
-              className="grid gap-1.5"
-              search={{ monitor: undefined, q: undefined, status: "all" }}
-              to="/incidents"
-            >
+            <Link className="grid gap-1.5" to="/incidents">
               <CardDescription>{m.monitor_open_incidents()}</CardDescription>
               <CardTitle>{data.openIncidentCount}</CardTitle>
             </Link>
@@ -103,11 +99,7 @@ function OverviewContent({ data }: { data: DashboardData }) {
         </Card>
         <Card size="sm">
           <CardContent>
-            <Link
-              className="grid gap-1.5"
-              search={{ monitor: undefined, q: undefined, status: "all" }}
-              to="/incidents"
-            >
+            <Link className="grid gap-1.5" to="/incidents">
               <CardDescription>{m.overview_recent_incident()}</CardDescription>
               <CardTitle>
                 {recentIncident ? (
@@ -237,7 +229,13 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         </Button>
       </div>
     ),
-    size: 220,
+    size: 320,
+  },
+  {
+    accessorFn: (row) => row.heartbeat.status,
+    header: m.common_status(),
+    cell: ({ row }) => <StatusBadge status={row.original.heartbeat.status} />,
+    size: 110,
   },
   {
     accessorFn: (row) => row.heartbeat.createdAt,
@@ -250,12 +248,6 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
       />
     ),
     size: 200,
-  },
-  {
-    accessorFn: (row) => row.heartbeat.status,
-    header: m.common_status(),
-    cell: ({ row }) => <StatusBadge status={row.original.heartbeat.status} />,
-    size: 140,
   },
   {
     accessorFn: (row) => row.heartbeat.statusCode,
@@ -285,7 +277,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {row.original.heartbeat.source}
       </span>
     ),
-    size: 120,
+    size: 80,
   },
   {
     id: "details",
@@ -295,7 +287,7 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
         {row.original.heartbeat.error ?? m.common_healthy()}
       </span>
     ),
-    size: 220,
+    size: 120,
   },
 ];
 
@@ -368,7 +360,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
     cell: ({ row }) => (
       <IncidentStatusBadge status={row.original.incident.status} />
     ),
-    size: 120,
+    size: 110,
   },
   {
     accessorFn: (row) => row.incident.openedAt,

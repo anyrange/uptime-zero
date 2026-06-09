@@ -118,7 +118,6 @@ export function AppSidebar() {
                     className:
                       "bg-sidebar-accent text-sidebar-accent-foreground",
                   }}
-                  search={{ monitor: undefined, q: undefined, status: "all" }}
                   to="/incidents"
                 >
                   <ClipboardList />

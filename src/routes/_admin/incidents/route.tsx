@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   type ColumnDef,
   getCoreRowModel,
@@ -20,7 +20,6 @@ import {
   AppPageLabel,
   AppPageSubtitle,
 } from "@/components/page";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -38,7 +37,7 @@ import { IncidentsSkeleton } from "./-components/incidents-skeleton";
 const incidentsSearchSchema = z.object({
   monitor: z.string().optional().catch(undefined),
   q: z.string().optional().catch(undefined),
-  status: z.enum(["open", "closed", "all"]).catch("all").default("all"),
+  status: z.enum(["open", "closed", "all"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/_admin/incidents")({
@@ -50,7 +49,11 @@ const ALL_MONITORS_VALUE = "__all_monitors__";
 
 function IncidentsRoute() {
   const navigate = Route.useNavigate();
-  const search = Route.useSearch();
+  const routeSearch = Route.useSearch();
+  const search = {
+    ...routeSearch,
+    status: routeSearch.status ?? "all",
+  };
   const [statusValue, setStatusValue] = useState(search.status);
   const [monitorValue, setMonitorValue] = useState(
     search.monitor ?? ALL_MONITORS_VALUE,
@@ -73,7 +76,7 @@ function IncidentsRoute() {
     await navigate({
       to: "/incidents",
       search: () => ({
-        status: next.status ?? "all",
+        status: next.status && next.status !== "all" ? next.status : undefined,
         monitor:
           next.monitor && next.monitor !== ALL_MONITORS_VALUE
             ? next.monitor
@@ -121,58 +124,48 @@ function IncidentsRoute() {
           <AppPageSubtitle>{m.incident_description()}</AppPageSubtitle>
         </AppPageHeaderContent>
       </AppPageHeader>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="grid gap-3 md:grid-cols-[180px_260px_minmax(280px,1fr)] md:items-center">
-          <Select onValueChange={handleStatusChange} value={statusValue}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={m.incident_all()} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{m.incident_all()}</SelectItem>
-              <SelectItem value="open">{m.incident_open()}</SelectItem>
-              <SelectItem value="closed">{m.incident_closed()}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            onValueChange={(value) => {
-              setMonitorValue(value);
-              void updateSearch({
-                status: statusValue,
-                monitor: value,
-                q: queryValue,
-              });
-            }}
-            value={monitorValue}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={m.incident_all_monitors()} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_MONITORS_VALUE}>
-                {m.incident_all_monitors()}
+      <div className="grid gap-3 md:grid-cols-[180px_260px_minmax(280px,1fr)] md:items-center">
+        <Select onValueChange={handleStatusChange} value={statusValue}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={m.incident_all()} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.incident_all()}</SelectItem>
+            <SelectItem value="open">{m.incident_open()}</SelectItem>
+            <SelectItem value="closed">{m.incident_closed()}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          onValueChange={(value) => {
+            setMonitorValue(value);
+            void updateSearch({
+              status: statusValue,
+              monitor: value,
+              q: queryValue,
+            });
+          }}
+          value={monitorValue}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={m.incident_all_monitors()} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_MONITORS_VALUE}>
+              {m.incident_all_monitors()}
+            </SelectItem>
+            {dashboard.data?.monitors.map((monitor) => (
+              <SelectItem key={monitor.id} value={monitor.id}>
+                {monitor.name}
               </SelectItem>
-              {dashboard.data?.monitors.map((monitor) => (
-                <SelectItem key={monitor.id} value={monitor.id}>
-                  {monitor.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            name="q"
-            onChange={(event) => setQueryValue(event.target.value)}
-            placeholder={m.common_search()}
-            value={queryValue}
-          />
-        </div>
-        <Button asChild className="md:ml-auto" variant="ghost">
-          <Link
-            search={{ monitor: undefined, q: undefined, status: "all" }}
-            to="/incidents"
-          >
-            {m.incident_reset()}
-          </Link>
-        </Button>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          name="q"
+          onChange={(event) => setQueryValue(event.target.value)}
+          placeholder={m.common_search()}
+          value={queryValue}
+        />
       </div>
       {incidents.status === "pending" ? <IncidentsSkeleton /> : null}
       {incidents.status === "error" ? (
@@ -213,13 +206,15 @@ const incidentColumns: ColumnDef<IncidentListRecord>[] = [
     header: m.incident_incident(),
     cell: ({ row }) => (
       <div className="min-w-0">
-        <p className="truncate font-medium">{row.original.title}</p>
-        <p className="mt-1 truncate text-sm text-muted-foreground">
+        <p className="font-medium break-words whitespace-normal">
+          {row.original.title}
+        </p>
+        <p className="mt-1 text-sm break-words whitespace-normal text-muted-foreground">
           {row.original.body ?? m.incident_no_summary()}
         </p>
       </div>
     ),
-    size: 300,
+    size: 240,
   },
   {
     accessorKey: "monitorName",

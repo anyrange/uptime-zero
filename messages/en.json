@@ -430,7 +430,6 @@
   "incident_description": "Review and manage monitor incidents.",
   "incident_open": "Open",
   "incident_closed": "Closed",
-  "incident_reset": "Reset",
   "incident_no_summary": "No summary.",
   "incident_no_summary_short": "No incident summary.",
   "incident_latest_for_monitor": "Latest incidents connected to this monitor.",

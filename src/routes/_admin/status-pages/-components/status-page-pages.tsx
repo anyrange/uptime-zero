@@ -309,7 +309,7 @@ export function NewStatusPagePage() {
         <Error message={pages.error.message} />
       ) : null}
       {pages.status === "success" ? (
-        <StatusPageConfigShell>
+        <StatusPageConfigLayout>
           <StatusPageForm
             monitors={pages.data.monitors}
             onSubmit={async (payload) => {
@@ -318,7 +318,7 @@ export function NewStatusPagePage() {
             }}
             pending={create.isPending}
           />
-        </StatusPageConfigShell>
+        </StatusPageConfigLayout>
       ) : null}
     </AppPage>
   );
@@ -349,6 +349,9 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
               ? m.status_page_edit_named({ title: page.data.page.title })
               : m.status_page_edit()}
           </AppPageLabel>
+          <AppPageSubtitle>
+            {m.status_page_settings_description()}
+          </AppPageSubtitle>
         </AppPageHeaderContent>
         <AppPageActions>
           <Button asChild variant="outline">
@@ -360,15 +363,7 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
       {page.status === "error" ? <Error message={page.error.message} /> : null}
       {page.status === "success" ? (
         <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
-          <StatusPageConfigShell>
-            <StatusPageConfigShellHeader>
-              <StatusPageConfigShellTitle>
-                {m.status_page_settings()}
-              </StatusPageConfigShellTitle>
-              <StatusPageConfigShellDescription>
-                {m.status_page_settings_description()}
-              </StatusPageConfigShellDescription>
-            </StatusPageConfigShellHeader>
+          <StatusPageConfigLayout>
             <StatusPageForm
               deletePending={remove.isPending}
               deleteError={deleteError}
@@ -383,7 +378,7 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
               selectedMonitorIds={page.data.monitorIds}
               submitError={submitError}
             />
-          </StatusPageConfigShell>
+          </StatusPageConfigLayout>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
@@ -706,22 +701,6 @@ function StatusPageForm({
   );
 }
 
-function StatusPageConfigShell({ children }: { children: ReactNode }) {
+function StatusPageConfigLayout({ children }: { children: ReactNode }) {
   return <Card className="max-w-4xl px-5 py-5">{children}</Card>;
-}
-
-function StatusPageConfigShellHeader({ children }: { children: ReactNode }) {
-  return <div className="mb-5 border-b border-border/70 pb-4">{children}</div>;
-}
-
-function StatusPageConfigShellTitle({ children }: { children: ReactNode }) {
-  return <h2 className="text-lg font-semibold">{children}</h2>;
-}
-
-function StatusPageConfigShellDescription({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return <p className="mt-1 text-sm text-muted-foreground">{children}</p>;
 }
