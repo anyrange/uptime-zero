@@ -39,6 +39,10 @@
       "tag": "v2",
       "new_sqlite_classes": ["SchedulerActor"],
     },
+    {
+      "tag": "v3",
+      "deleted_classes": ["MonitorActor"],
+    },
   ],
   "durable_objects": {
     "bindings": [
