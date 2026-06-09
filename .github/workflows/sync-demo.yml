@@ -1,0 +1,24 @@
+name: Sync demo branch
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: sync-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync-demo:
+    if: github.repository == 'anyrange/uptime-zero'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Force update demo branch
+        run: git push origin HEAD:demo --force
