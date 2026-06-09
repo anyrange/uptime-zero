@@ -355,7 +355,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
           <Link
             className="truncate"
             params={{ monitorId: row.original.incident.monitorId }}
-            to="/monitors/$monitorId"
+            to="/monitors/$monitorId/incidents"
           >
             {row.original.monitorName ?? row.original.incident.title}
           </Link>

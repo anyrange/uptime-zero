@@ -178,7 +178,6 @@ export function AppSidebar() {
           onLogout={() =>
             logout.mutate(undefined, {
               onSuccess: async () => {
-                await router.invalidate();
                 await router.navigate({ replace: true, to: "/login" });
               },
             })

@@ -104,7 +104,7 @@ export function useDeleteAccountMutation() {
 }
 
 async function invalidateSignedOutQueries(queryClient: QueryClient) {
-  await queryClient.invalidateQueries({ queryKey: privateKey() });
+  await queryClient.cancelQueries({ queryKey: privateKey() });
   queryClient.removeQueries({ queryKey: privateKey() });
   queryClient.removeQueries({ queryKey: ["auth", "account"] });
   queryClient.setQueryData(sessionQueryOptions().queryKey, { user: null });
