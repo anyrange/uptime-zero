@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseDateMs } from "@/api/lib/dates";
+import { parseDateMs } from "@/server/lib/dates";
 import {
   compareJsonValue,
   computeAggregateStatus,
@@ -8,7 +8,7 @@ import {
   isCronHeartbeatOverdue,
   isPushMonitorOverdue,
   readJsonPath,
-} from "@/api/lib/monitoring";
+} from "@/server/lib/monitoring";
 
 describe("monitoring helpers", () => {
   it("computes aggregate status with down taking precedence", () => {

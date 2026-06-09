@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
@@ -25,22 +25,5 @@ export function useIncidentsQuery(filters: IncidentFilters) {
     queryKey: privateKey("incidents", filters),
     queryFn: () =>
       parseResponse(apiClient.dashboard.incidents.$get({ query: filters })),
-  });
-}
-
-export function useRunChecksMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => parseResponse(apiClient.dashboard["run-checks"].$post()),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: privateKey("dashboard"),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: privateKey("incidents"),
-      });
-      await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
-    },
   });
 }

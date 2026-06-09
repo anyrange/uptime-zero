@@ -4,9 +4,9 @@ import {
 } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 
-import { getDb } from "@/api/db";
-import * as schema from "@/api/db/schema";
-import worker from "@/api/index";
+import { getDrizzle } from "@/server/db";
+import * as schema from "@/server/db/schema";
+import worker from "@/server/index";
 
 export async function setupAdminSession() {
   const response = await apiFetch("/api/auth/setup", {
@@ -27,11 +27,12 @@ export async function setupAdminSession() {
 }
 
 export async function downgradeAdminToUser() {
-  await getDb(env.DB).update(schema.user).set({ role: "user" });
+  await getDrizzle(env.DB).update(schema.user).set({ role: "user" });
 }
 
 export async function seedMonitorWithHeartbeats(count: number) {
-  const db = getDb(env.DB);
+  const db = getDrizzle(env.DB);
+
   const monitorId = crypto.randomUUID();
   const now = "2026-05-01T12:00:00.000Z";
 

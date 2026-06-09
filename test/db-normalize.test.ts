@@ -1,23 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  mapHeartbeatRecord,
   mapIncidentListRecord,
   mapIncidentRecord,
+} from "@/server/db/models/incident";
+import {
+  mapHeartbeatRecord,
   mapMonitorRecord,
-  mapNotificationDestinationRecord,
-  mapStatusPageRecord,
-  normalizeHeartbeatSource,
-  normalizeIncidentStatus,
-  normalizeMonitorKind,
-  normalizeMonitorStatus,
-  normalizeNotificationProvider,
-} from "@/api/db/normalize";
+} from "@/server/db/models/monitor";
+import { mapNotificationDestinationRecord } from "@/server/db/models/notification";
+import { mapStatusPageRecord } from "@/server/db/models/status-page";
+import {
+  readHeartbeatSource,
+  readIncidentStatus,
+  readMonitorKind,
+  readMonitorStatus,
+  readNotificationProvider,
+} from "@/server/db/values";
 
 const now = "2026-05-01T00:00:00.000Z";
 
-describe("database record normalization", () => {
-  it("normalizes monitor rows and assertions", () => {
+describe("database record mapping", () => {
+  it("maps monitor rows and parses assertions", () => {
     const record = mapMonitorRecord({
       id: "monitor-api",
       name: "API",
@@ -53,7 +57,7 @@ describe("database record normalization", () => {
     ]);
   });
 
-  it("normalizes heartbeat, incident, status page, and incident list rows", () => {
+  it("maps heartbeat, incident, status page, and incident list rows", () => {
     expect(
       mapHeartbeatRecord({
         id: "heartbeat-1",
@@ -113,7 +117,7 @@ describe("database record normalization", () => {
     ).toMatchObject({ slug: "status" });
   });
 
-  it("normalizes notification providers before parsing config", () => {
+  it("reads notification providers before parsing config", () => {
     const record = mapNotificationDestinationRecord({
       id: "destination-1",
       name: "Fallback webhook",
@@ -134,15 +138,15 @@ describe("database record normalization", () => {
   });
 
   it("keeps valid enum values and falls back invalid values", () => {
-    expect(normalizeMonitorKind("dns")).toBe("dns");
-    expect(normalizeMonitorKind("tcp")).toBe("http");
-    expect(normalizeMonitorStatus("down")).toBe("down");
-    expect(normalizeMonitorStatus("pending")).toBe("unknown");
-    expect(normalizeHeartbeatSource("push")).toBe("push");
-    expect(normalizeHeartbeatSource("manual")).toBe("system");
-    expect(normalizeIncidentStatus("open")).toBe("open");
-    expect(normalizeIncidentStatus("pending")).toBe("closed");
-    expect(normalizeNotificationProvider("telegram")).toBe("telegram");
-    expect(normalizeNotificationProvider("email")).toBe("webhook");
+    expect(readMonitorKind("dns")).toBe("dns");
+    expect(readMonitorKind("tcp")).toBe("http");
+    expect(readMonitorStatus("down")).toBe("down");
+    expect(readMonitorStatus("pending")).toBe("unknown");
+    expect(readHeartbeatSource("push")).toBe("push");
+    expect(readHeartbeatSource("manual")).toBe("system");
+    expect(readIncidentStatus("open")).toBe("open");
+    expect(readIncidentStatus("pending")).toBe("closed");
+    expect(readNotificationProvider("telegram")).toBe("telegram");
+    expect(readNotificationProvider("email")).toBe("webhook");
   });
 });

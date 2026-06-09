@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { all } from "better-all";
 
-import type { MonitorPayload } from "@/lib/monitor-config";
+import type { MonitorPayload } from "@/lib/monitor/config";
 import type { HeartbeatPage } from "@/types";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
 
-export type { MonitorPayload } from "@/lib/monitor-config";
+export type { MonitorPayload } from "@/lib/monitor/config";
 
 export const MONITOR_LIST_POLL_INTERVAL_MS = 30_000;
 
@@ -102,9 +103,15 @@ export function useDeleteMonitorsMutation() {
 
   return useMutation({
     mutationFn: (ids: string[]) =>
-      Promise.all(
-        ids.map((id) =>
-          parseResponse(apiClient.monitors[":id"].$delete({ param: { id } })),
+      all(
+        Object.fromEntries(
+          ids.map((id) => [
+            id,
+            () =>
+              parseResponse(
+                apiClient.monitors[":id"].$delete({ param: { id } }),
+              ),
+          ]),
         ),
       ),
     onSuccess: async () => {
@@ -115,26 +122,6 @@ export function useDeleteMonitorsMutation() {
         queryKey: privateKey("incidents"),
       });
       await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
-    },
-  });
-}
-
-export function useRunMonitorMutation(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () =>
-      parseResponse(apiClient.monitors[":id"].run.$post({ param: { id } })),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: privateKey("dashboard"),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: privateKey("incidents"),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: privateKey("monitors", id),
-      });
     },
   });
 }

@@ -1,6 +1,6 @@
 import { hc } from "hono/client";
 
-import type { ApiType } from "@/api";
+import type { ApiType } from "@/server";
 
 export const apiClient = hc<ApiType>("/api", {
   init: {

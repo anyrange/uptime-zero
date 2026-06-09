@@ -1,0 +1,367 @@
+import { all } from "better-all";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+
+import type {
+  HeartbeatRecord,
+  MonitorCheckResult,
+  MonitorRecord,
+  MonitorStatus,
+} from "@/types";
+
+import { parseMonitorAssertions } from "@/lib/monitor/assertions";
+import { schema, type DrizzleDatabase } from "@/server/db";
+import {
+  readHeartbeatMode,
+  readHeartbeatSource,
+  readMonitorKind,
+  readMonitorStatus,
+} from "@/server/db/values";
+import { nowIso } from "@/server/lib/dates";
+
+type MonitorRow = typeof schema.monitors.$inferSelect;
+type HeartbeatRow = typeof schema.heartbeats.$inferSelect;
+
+export class MonitorModel {
+  constructor(private readonly db: DrizzleDatabase) {}
+
+  async createOrUpdate(
+    payload: Partial<MonitorRecord> & {
+      id?: string;
+      notificationDestinationIds?: string[];
+    },
+  ) {
+    const now = nowIso();
+    const id = payload.id ?? crypto.randomUUID();
+    const existing = payload.id
+      ? await this.db
+          .select()
+          .from(schema.monitors)
+          .where(eq(schema.monitors.id, payload.id))
+          .get()
+      : null;
+    const kind = readMonitorKind(payload.kind ?? existing?.kind ?? "http");
+    const assertions = parseMonitorAssertions(
+      payload.assertions ?? existing?.assertionsJson ?? null,
+    );
+    const pushToken =
+      kind === "push"
+        ? (existing?.pushToken ?? payload.pushToken ?? crypto.randomUUID())
+        : null;
+
+    if (existing) {
+      await this.db
+        .update(schema.monitors)
+        .set({
+          name: payload.name ?? existing.name,
+          kind,
+          target: payload.target ?? existing.target,
+          intervalSec: payload.intervalSec ?? existing.intervalSec,
+          timeoutMs: payload.timeoutMs ?? existing.timeoutMs,
+          retries: payload.retries ?? existing.retries,
+          assertionsJson: JSON.stringify(assertions),
+          heartbeatMode:
+            kind === "push"
+              ? (payload.heartbeatMode ?? existing.heartbeatMode)
+              : "interval",
+          heartbeatCron:
+            kind === "push"
+              ? (payload.heartbeatCron ?? existing.heartbeatCron)
+              : null,
+          heartbeatGraceSec:
+            kind === "push"
+              ? (payload.heartbeatGraceSec ?? existing.heartbeatGraceSec)
+              : null,
+          heartbeatTimezone:
+            kind === "push"
+              ? (payload.heartbeatTimezone ?? existing.heartbeatTimezone)
+              : null,
+          notificationGraceSec:
+            payload.notificationGraceSec ?? existing.notificationGraceSec,
+          pushToken,
+          active: payload.active ?? existing.active,
+          updatedAt: now,
+        })
+        .where(eq(schema.monitors.id, id));
+    } else {
+      await this.db.insert(schema.monitors).values({
+        id,
+        name: payload.name ?? "New monitor",
+        kind,
+        target: payload.target ?? "",
+        intervalSec: payload.intervalSec ?? 60,
+        timeoutMs: payload.timeoutMs ?? 10_000,
+        retries: payload.retries ?? 0,
+        assertionsJson: JSON.stringify(assertions),
+        heartbeatMode:
+          kind === "push" ? (payload.heartbeatMode ?? "interval") : "interval",
+        heartbeatCron: kind === "push" ? (payload.heartbeatCron ?? null) : null,
+        heartbeatGraceSec:
+          kind === "push" ? (payload.heartbeatGraceSec ?? null) : null,
+        heartbeatTimezone:
+          kind === "push" ? (payload.heartbeatTimezone ?? null) : null,
+        notificationGraceSec: payload.notificationGraceSec ?? 0,
+        pushToken,
+        active: payload.active ?? 1,
+        lastStatus: "unknown",
+        lastCheckedAt: null,
+        lastDurationMs: null,
+        lastError: null,
+        lastDownNotifiedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    if (payload.notificationDestinationIds) {
+      await this.replaceNotificationDestinationBindings(
+        id,
+        payload.notificationDestinationIds,
+      );
+    }
+
+    const monitor = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(eq(schema.monitors.id, id))
+      .get();
+    return monitor ? mapMonitorRecord(monitor) : null;
+  }
+
+  async getById(id: string) {
+    const monitor = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(eq(schema.monitors.id, id))
+      .get();
+    return monitor ? mapMonitorRecord(monitor) : null;
+  }
+
+  async listActiveIds() {
+    const rows = await this.db
+      .select({ id: schema.monitors.id })
+      .from(schema.monitors)
+      .where(eq(schema.monitors.active, 1))
+      .orderBy(asc(schema.monitors.createdAt));
+    return rows.map((row) => row.id);
+  }
+
+  async listActive() {
+    const rows = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(eq(schema.monitors.active, 1))
+      .orderBy(asc(schema.monitors.createdAt));
+    return rows.map(mapMonitorRecord);
+  }
+
+  async listByName() {
+    const rows = await this.db
+      .select()
+      .from(schema.monitors)
+      .orderBy(asc(schema.monitors.name));
+    return rows.map(mapMonitorRecord);
+  }
+
+  listAll() {
+    return this.listByName();
+  }
+
+  async listByIdsByName(ids: string[]) {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(inArray(schema.monitors.id, ids))
+      .orderBy(asc(schema.monitors.name));
+    return rows.map(mapMonitorRecord);
+  }
+
+  async getByPushToken(token: string) {
+    const monitor = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(eq(schema.monitors.pushToken, token))
+      .get();
+    return monitor ? mapMonitorRecord(monitor) : null;
+  }
+
+  delete(id: string) {
+    return this.db.delete(schema.monitors).where(eq(schema.monitors.id, id));
+  }
+
+  deleteAll() {
+    return this.db.delete(schema.monitors);
+  }
+
+  async exists(id: string) {
+    const row = await this.db
+      .select({ id: schema.monitors.id })
+      .from(schema.monitors)
+      .where(eq(schema.monitors.id, id))
+      .get();
+    return Boolean(row);
+  }
+
+  async listSuccessfulDurations(limit: number) {
+    return this.db
+      .select({
+        monitorId: schema.heartbeats.monitorId,
+        durationMs: schema.heartbeats.durationMs,
+      })
+      .from(schema.heartbeats)
+      .where(eq(schema.heartbeats.status, "up"))
+      .orderBy(desc(schema.heartbeats.createdAt))
+      .limit(limit);
+  }
+
+  async listHeartbeats(monitorId: string, limit: number) {
+    const rows = await this.db
+      .select()
+      .from(schema.heartbeats)
+      .where(eq(schema.heartbeats.monitorId, monitorId))
+      .orderBy(desc(schema.heartbeats.createdAt))
+      .limit(limit);
+    return rows.map(mapHeartbeatRecord);
+  }
+
+  async listRecentHeartbeats(limit: number) {
+    const rows = await this.db
+      .select()
+      .from(schema.heartbeats)
+      .orderBy(desc(schema.heartbeats.createdAt))
+      .limit(limit);
+    return rows.map(mapHeartbeatRecord);
+  }
+
+  async countHeartbeatsSince(cutoff: string) {
+    const rows = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.heartbeats)
+      .where(sql`${schema.heartbeats.createdAt} >= ${cutoff}`);
+    return rows[0]?.count ?? 0;
+  }
+
+  async listHeartbeatsForMonitors(
+    monitorIds: string[],
+    limitPerMonitor: number,
+  ) {
+    const rowsByMonitor = await all(
+      Object.fromEntries(
+        monitorIds.map((monitorId) => [
+          monitorId,
+          () => this.listHeartbeats(monitorId, limitPerMonitor),
+        ]),
+      ),
+    );
+    return Object.values(rowsByMonitor).flat();
+  }
+
+  async countHeartbeats(monitorId: string) {
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.heartbeats)
+      .where(eq(schema.heartbeats.monitorId, monitorId));
+    return count ?? 0;
+  }
+
+  async listHeartbeatPage(monitorId: string, limit: number, offset: number) {
+    const rows = await this.db
+      .select()
+      .from(schema.heartbeats)
+      .where(eq(schema.heartbeats.monitorId, monitorId))
+      .orderBy(desc(schema.heartbeats.createdAt))
+      .limit(limit)
+      .offset(offset);
+    return rows.map(mapHeartbeatRecord);
+  }
+
+  insertHeartbeat(
+    monitorId: string,
+    result: MonitorCheckResult,
+    source: HeartbeatRecord["source"],
+    createdAt: string,
+  ) {
+    return this.db.insert(schema.heartbeats).values({
+      id: crypto.randomUUID(),
+      monitorId,
+      status: result.status,
+      statusCode: result.statusCode,
+      durationMs: result.durationMs,
+      error: result.error,
+      createdAt,
+      source,
+    });
+  }
+
+  updateState(
+    monitorId: string,
+    status: MonitorStatus,
+    checkedAt: string,
+    durationMs: number,
+    error: string | null,
+  ) {
+    return this.db
+      .update(schema.monitors)
+      .set({
+        lastStatus: status,
+        lastCheckedAt: checkedAt,
+        lastDurationMs: durationMs,
+        lastError: error,
+        updatedAt: checkedAt,
+      })
+      .where(eq(schema.monitors.id, monitorId));
+  }
+
+  markDownNotificationDelivered(monitorId: string, checkedAt: string) {
+    return this.db
+      .update(schema.monitors)
+      .set({ lastDownNotifiedAt: checkedAt, updatedAt: checkedAt })
+      .where(eq(schema.monitors.id, monitorId));
+  }
+
+  clearDownNotificationDelivered(monitorId: string, checkedAt: string) {
+    return this.db
+      .update(schema.monitors)
+      .set({ lastDownNotifiedAt: null, updatedAt: checkedAt })
+      .where(eq(schema.monitors.id, monitorId));
+  }
+
+  private async replaceNotificationDestinationBindings(
+    monitorId: string,
+    notificationDestinationIds: string[],
+  ) {
+    const dedupedIds = [...new Set(notificationDestinationIds)];
+    await this.db
+      .delete(schema.monitorNotificationDestinations)
+      .where(eq(schema.monitorNotificationDestinations.monitorId, monitorId));
+    if (dedupedIds.length === 0) {
+      return;
+    }
+    await this.db.insert(schema.monitorNotificationDestinations).values(
+      dedupedIds.map((notificationDestinationId) => ({
+        monitorId,
+        notificationDestinationId,
+      })),
+    );
+  }
+}
+
+export function mapMonitorRecord(row: MonitorRow) {
+  return {
+    ...row,
+    kind: readMonitorKind(row.kind),
+    assertions: parseMonitorAssertions(row.assertionsJson ?? null),
+    lastStatus: readMonitorStatus(row.lastStatus),
+    heartbeatMode: readHeartbeatMode(row.heartbeatMode),
+  } satisfies MonitorRecord;
+}
+
+export function mapHeartbeatRecord(row: HeartbeatRow) {
+  return {
+    ...row,
+    status: readMonitorStatus(row.status),
+    source: readHeartbeatSource(row.source),
+  } satisfies HeartbeatRecord;
+}

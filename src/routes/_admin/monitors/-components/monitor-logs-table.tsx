@@ -12,7 +12,7 @@ import { LiveTime } from "@/components/live-time";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDurationMs } from "@/lib/formatters";
-import { getMonitorLogsPageRange } from "@/lib/monitor-logs";
+import { getMonitorLogsPageRange } from "@/lib/monitor/logs";
 import { m } from "@/paraglide/messages.js";
 
 export function MonitorLogsTable({

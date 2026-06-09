@@ -13,7 +13,7 @@ import {
   removeMonitorAssertion,
   updateMonitorAssertion,
   validateMonitorConfigForm,
-} from "@/lib/monitor-config-form";
+} from "@/lib/monitor/form";
 
 describe("monitor config form helpers", () => {
   it("creates new monitor defaults", () => {
@@ -207,6 +207,95 @@ describe("monitor config form helpers", () => {
     ).toEqual({
       ok: false,
       error: "DNS monitors need at least one record assertion.",
+    });
+  });
+
+  it("validates cron heartbeat settings for push monitors", () => {
+    expect(
+      validateMonitorConfigForm({
+        ...validState(),
+        kind: "push",
+        target: "",
+        assertions: [],
+        heartbeatMode: "cron",
+        heartbeatCron: "",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Cron expression is required.",
+    });
+
+    expect(
+      validateMonitorConfigForm({
+        ...validState(),
+        kind: "push",
+        target: "",
+        assertions: [],
+        heartbeatMode: "cron",
+        heartbeatCron: "not a cron",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Use a valid cron expression.",
+    });
+
+    expect(
+      validateMonitorConfigForm({
+        ...validState(),
+        kind: "push",
+        target: "",
+        assertions: [],
+        heartbeatMode: "cron",
+        heartbeatTimezone: "Mars/Base",
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Use a valid IANA timezone.",
+    });
+  });
+
+  it("keeps cron heartbeat settings only for push cron monitors", () => {
+    const pushResult = validateMonitorConfigForm({
+      ...validState(),
+      kind: "push",
+      target: "",
+      assertions: [createStatusAssertion()],
+      heartbeatMode: "cron",
+      heartbeatCron: "*/15 * * * *",
+      heartbeatGraceSec: 120,
+      heartbeatTimezone: "America/New_York",
+      notificationGraceSec: 180,
+    });
+
+    expect(pushResult).toMatchObject({
+      ok: true,
+      payload: {
+        assertions: [],
+        heartbeatMode: "cron",
+        heartbeatCron: "*/15 * * * *",
+        heartbeatGraceSec: 120,
+        heartbeatTimezone: "America/New_York",
+        notificationGraceSec: 180,
+      },
+    });
+
+    expect(
+      validateMonitorConfigForm({
+        ...validState(),
+        kind: "http",
+        heartbeatMode: "cron",
+        heartbeatCron: "*/15 * * * *",
+        heartbeatGraceSec: 120,
+        heartbeatTimezone: "America/New_York",
+      }),
+    ).toMatchObject({
+      ok: true,
+      payload: {
+        heartbeatMode: "interval",
+        heartbeatCron: null,
+        heartbeatGraceSec: null,
+        heartbeatTimezone: null,
+      },
     });
   });
 });

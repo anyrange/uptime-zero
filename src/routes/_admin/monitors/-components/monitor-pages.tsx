@@ -48,7 +48,7 @@ import {
   dnsRecordTypes,
   jsonOperators,
   textAssertionOperators,
-} from "@/lib/monitor-assertions";
+} from "@/lib/monitor/assertions";
 import {
   addMonitorAssertion,
   applyMonitorKindChange,
@@ -61,7 +61,7 @@ import {
   removeMonitorAssertion,
   updateMonitorAssertion,
   validateMonitorConfigForm,
-} from "@/lib/monitor-config-form";
+} from "@/lib/monitor/form";
 import {
   useCreateMonitorMutation,
   useDeleteMonitorMutation,

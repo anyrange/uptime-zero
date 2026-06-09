@@ -16,7 +16,7 @@ export default defineConfig({
       const migrations = await readNestedD1Migrations(migrationsPath);
 
       return {
-        main: "./src/api/index.ts",
+        main: "./src/server/index.ts",
         wrangler: {
           configPath: "./wrangler.jsonc",
         },

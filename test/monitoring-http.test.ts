@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { MonitorAssertion, MonitorRecord } from "@/types";
 
-import { runHttpCheck } from "@/api/lib/monitoring";
+import { runHttpCheck } from "@/server/lib/monitoring";
 
 describe("monitor runtime assertions", () => {
   it("passes HTTP status, header, and JSON body assertions", async () => {

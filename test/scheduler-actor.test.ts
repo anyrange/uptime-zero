@@ -3,15 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MonitorRecord } from "@/types";
 
-import { createAppDb, getDb } from "@/api/db";
-import * as schema from "@/api/db/schema";
+import { createDatabase, getDrizzle } from "@/server/db";
+import * as schema from "@/server/db/schema";
+import { parseDateMs } from "@/server/lib/dates";
+import { MonitorService } from "@/server/services/monitor";
 import {
   recordPushHeartbeatAndReschedule,
   runDueMonitorsAndReschedule,
   runMonitorNowAndReschedule,
   syncScheduler,
-} from "@/api/durable/scheduler-actor";
-import { parseDateMs } from "@/api/lib/dates";
+} from "@/server/services/scheduler";
 
 describe("scheduler actor service", () => {
   beforeEach(() => {
@@ -26,7 +27,7 @@ describe("scheduler actor service", () => {
   });
 
   it("clears the alarm when no active monitors exist", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm(parseDateMs("2026-05-01T12:00:00.000Z"));
 
     const result = await syncScheduler(db, {
@@ -40,7 +41,7 @@ describe("scheduler actor service", () => {
   });
 
   it("schedules the earliest active monitor due time", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     await seedMonitor({
       lastCheckedAt: "2026-05-01T12:00:00.000Z",
@@ -62,7 +63,7 @@ describe("scheduler actor service", () => {
   });
 
   it("records due HTTP checks and reschedules from updated monitor state", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       kind: "http",
@@ -74,7 +75,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: parseDateMs("2026-05-01T12:01:00.000Z"),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result).toMatchObject({ active: 1, due: 1, checked: 1 });
     expect(detail?.monitor.lastStatus).toBe("up");
@@ -87,7 +90,7 @@ describe("scheduler actor service", () => {
   });
 
   it("skips not-due monitors and keeps their next alarm", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       lastCheckedAt: "2026-05-01T12:00:00.000Z",
@@ -98,7 +101,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: parseDateMs("2026-05-01T12:00:30.000Z"),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result).toMatchObject({ active: 1, due: 0, checked: 0 });
     expect(detail?.heartbeats).toHaveLength(0);
@@ -106,7 +111,7 @@ describe("scheduler actor service", () => {
   });
 
   it("records push overdue heartbeats when due", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       kind: "push",
@@ -120,7 +125,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: parseDateMs("2026-05-01T12:01:01.000Z"),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result.checked).toBe(1);
     expect(detail?.monitor.lastStatus).toBe("down");
@@ -132,7 +139,7 @@ describe("scheduler actor service", () => {
   });
 
   it("records cron heartbeat monitor overdue after schedule plus grace", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       kind: "push",
@@ -148,7 +155,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: parseDateMs("2026-05-01T13:01:00.000Z"),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result.checked).toBe(1);
     expect(detail?.monitor.lastStatus).toBe("down");
@@ -161,7 +170,7 @@ describe("scheduler actor service", () => {
   });
 
   it("manual run bypasses due checks", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       lastCheckedAt: new Date().toISOString(),
@@ -172,7 +181,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: Date.now(),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result.ran).toBe(true);
     expect(detail?.heartbeats).toHaveLength(1);
@@ -180,7 +191,7 @@ describe("scheduler actor service", () => {
   });
 
   it("records push heartbeats and reschedules", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const monitor = await seedMonitor({
       kind: "push",
@@ -192,7 +203,9 @@ describe("scheduler actor service", () => {
       alarm,
       now: Date.now(),
     });
-    const detail = await db.monitor.getDetailData(monitor.id);
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
 
     expect(result.ran).toBe(true);
     expect(detail?.monitor.lastStatus).toBe("up");
@@ -205,7 +218,7 @@ describe("scheduler actor service", () => {
   });
 
   it("honors batch limits and schedules another near-term alarm", async () => {
-    const db = createAppDb(env.DB);
+    const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const now = parseDateMs("2026-05-01T12:01:00.000Z");
     await seedMonitor({ lastCheckedAt: "2026-05-01T12:00:00.000Z" });
@@ -217,7 +230,9 @@ describe("scheduler actor service", () => {
       now,
       batchSize: 2,
     });
-    const heartbeats = await getDb(env.DB).select().from(schema.heartbeats);
+    const heartbeats = await getDrizzle(env.DB)
+      .select()
+      .from(schema.heartbeats);
 
     expect(result).toMatchObject({ active: 3, due: 3, checked: 2 });
     expect(heartbeats).toHaveLength(2);
@@ -275,9 +290,9 @@ async function seedMonitor(payload: Partial<MonitorRecord> = {}) {
     updatedAt: payload.updatedAt ?? now,
   } satisfies typeof schema.monitors.$inferInsert;
 
-  await getDb(env.DB).insert(schema.monitors).values(monitor);
+  await getDrizzle(env.DB).insert(schema.monitors).values(monitor);
 
-  const db = createAppDb(env.DB);
+  const db = createDatabase(env.DB);
   const savedMonitor = await db.monitor.getById(monitor.id);
   if (!savedMonitor) {
     throw new Error("Failed to seed monitor");

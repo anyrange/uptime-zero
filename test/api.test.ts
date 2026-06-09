@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-import { getDb } from "@/api/db";
-import * as schema from "@/api/db/schema";
+import { getDrizzle } from "@/server/db";
+import * as schema from "@/server/db/schema";
 
 import {
   apiFetch,
@@ -74,7 +74,7 @@ describe("monitor import/export API", () => {
 
   it("imports monitors as new rows and regenerates push tokens", async () => {
     const cookie = await setupAdminSession();
-    const db = getDb(env.DB);
+    const db = getDrizzle(env.DB);
     const existingPushId = crypto.randomUUID();
 
     await db.insert(schema.monitors).values({
@@ -162,7 +162,7 @@ describe("monitor import/export API", () => {
 
   it("imports legacy monitor exports with shorter positive intervals", async () => {
     const cookie = await setupAdminSession();
-    const db = getDb(env.DB);
+    const db = getDrizzle(env.DB);
 
     const importResponse = await apiFetch("/api/settings/monitors/import", {
       method: "POST",
@@ -419,7 +419,7 @@ describe("monitor API", () => {
 describe("status page API", () => {
   it("dedupes linked monitors and returns public heartbeat history per monitor", async () => {
     const cookie = await setupAdminSession();
-    const db = getDb(env.DB);
+    const db = getDrizzle(env.DB);
     const busyMonitorId = crypto.randomUUID();
     const quietMonitorId = crypto.randomUUID();
 

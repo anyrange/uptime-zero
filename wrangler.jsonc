@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "uptime-zero",
-  "main": "src/api/index.ts",
+  "main": "src/server/index.ts",
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -19,6 +19,9 @@
     "traces": {
       "head_sampling_rate": 0.25,
     },
+  },
+  "triggers": {
+    "crons": ["0 2 * * *"],
   },
   "d1_databases": [
     {

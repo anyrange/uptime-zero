@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { IncidentListRecord } from "@/types";
 
-import { filterIncidentListRecords } from "@/api/lib/incidents";
+import { filterIncidentListRecords } from "@/server/lib/incidents";
 
 const incidents: IncidentListRecord[] = [
   {

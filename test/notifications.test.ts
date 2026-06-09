@@ -5,7 +5,7 @@ import type { MonitorRecord, NotificationDestinationRecord } from "@/types";
 import {
   dispatchNotificationEvent,
   deliverNotificationDestination,
-} from "@/api/lib/notifications";
+} from "@/server/services/notifications/delivery";
 
 const monitor: MonitorRecord = {
   id: "monitor-api",

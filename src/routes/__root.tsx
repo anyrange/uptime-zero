@@ -5,10 +5,12 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import type { AppRouterContext } from "@/lib/router-auth";
 
+import { NotFoundPage } from "@/components/not-found-page";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
   component: Root,
+  notFoundComponent: NotFoundPage,
 });
 
 function Root() {

@@ -4,8 +4,7 @@ import {
   clampMonitorLogsPage,
   getMonitorLogsPageRange,
   MONITOR_LOGS_PAGE_SIZE,
-  normalizeMonitorLogsPage,
-} from "@/lib/monitor-logs";
+} from "@/lib/monitor/logs";
 
 import {
   apiFetch,
@@ -14,14 +13,6 @@ import {
 } from "./api-test-utils";
 
 describe("monitor log pagination helpers", () => {
-  it("normalizes invalid page input to the first page", () => {
-    expect(normalizeMonitorLogsPage(undefined)).toBe(1);
-    expect(normalizeMonitorLogsPage(null)).toBe(1);
-    expect(normalizeMonitorLogsPage("abc")).toBe(1);
-    expect(normalizeMonitorLogsPage("0")).toBe(1);
-    expect(normalizeMonitorLogsPage(-2)).toBe(1);
-  });
-
   it("clamps page numbers to the nearest available page", () => {
     expect(clampMonitorLogsPage(3, 0)).toBe(1);
     expect(clampMonitorLogsPage(0, 4)).toBe(1);
