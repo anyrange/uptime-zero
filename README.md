@@ -2,10 +2,25 @@
 
 **Simple self-hostable uptime monitoring, built to run on Cloudflare.**
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/wsehl/uptime)
+
 Uptime Zero is heavily inspired by [Uptime Kuma](https://github.com/louislam/uptime-kuma) and [OpenStatus](https://github.com/openstatusHQ/openstatus), but built for people who want a simple monitor dashboard, public status pages, and webhook alerts without keeping a separate server around.
 
 > [!WARNING]
 > Uptime Zero is still early-stage software. Expect breaking changes, rough edges, and missing pieces while the project is actively taking shape.
+
+## Live Demo
+
+Try the hosted demo at [uptime-zero-demo.anyranges.workers.dev](https://uptime-zero-demo.anyranges.workers.dev/).
+
+```txt
+Email: admin@gmail.com
+Password: AdminPass24!
+```
+
+## Preview
+
+![Uptime Zero admin overview dashboard](docs/assets/admin-overview.png)
 
 ## ✨ Features
 
