@@ -5,7 +5,6 @@ import { HTTPException } from "hono/http-exception";
 import type { AppEnv } from "@/ctx";
 
 import { createAppDb } from "@/api/db";
-import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
 
 export function registerPushRoutes(app: Hono<AppEnv>) {
   app.post("/api/push/:token", async (ctx) => {
@@ -20,10 +19,7 @@ export function registerPushRoutes(app: Hono<AppEnv>) {
     if (!monitor) {
       throw new HTTPException(404, { message: "Heartbeat monitor not found" });
     }
-    await getMonitorActorStub(ctx.env, monitor.id).recordPushHeartbeat(
-      "push",
-      monitor.id,
-    );
+    await db.lifecycle.recordPushHeartbeat(monitor);
     return ctx.json({ ok: true });
   });
 }

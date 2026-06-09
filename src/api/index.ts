@@ -17,7 +17,7 @@ import {
 } from "@/api/controllers/status-pages";
 import { createAppDb } from "@/api/db";
 import { MonitorActor } from "@/api/durable/monitor-actor";
-import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
+import { runDueMonitorBatch } from "@/api/lib/monitoring-scheduler";
 import { loadSession } from "@/api/middleware/auth";
 import { requireApiAdmin, requireApiSession } from "@/api/middleware/guards";
 
@@ -75,31 +75,8 @@ const worker: ExportedHandler<Env> = {
   },
   async scheduled(_controller, env, executionCtx) {
     const db = createAppDb(env.DB);
-    const activeMonitorIds = await db.monitor.listActiveIds();
-    const monitorIds = selectCronMonitorBatch(activeMonitorIds, Date.now());
-    executionCtx.waitUntil(
-      Promise.all(
-        monitorIds.map((monitorId) =>
-          getMonitorActorStub(env, monitorId).syncConfig("cron", monitorId),
-        ),
-      ),
-    );
+    executionCtx.waitUntil(runDueMonitorBatch(db));
   },
 };
 
 export default worker;
-
-export function selectCronMonitorBatch(
-  monitorIds: string[],
-  now: number,
-  batchSize = 30,
-) {
-  if (monitorIds.length <= batchSize) {
-    return monitorIds;
-  }
-
-  const start = (Math.floor(now / 60_000) * batchSize) % monitorIds.length;
-  return Array.from({ length: batchSize }, (_, index) => {
-    return monitorIds[(start + index) % monitorIds.length];
-  });
-}

@@ -1,5 +1,5 @@
 import { all } from "better-all";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { schema, type AppDrizzleDb } from "@/api/db";
 import {
@@ -85,7 +85,8 @@ export class StatusPageModel {
     const links = await this.db
       .select({ monitorId: schema.statusPageMonitors.monitorId })
       .from(schema.statusPageMonitors)
-      .where(eq(schema.statusPageMonitors.statusPageId, id));
+      .where(eq(schema.statusPageMonitors.statusPageId, id))
+      .orderBy(sql`rowid`);
     return {
       page: mapStatusPageRecord(page),
       monitorIds: links.map((link) => link.monitorId),
@@ -116,7 +117,8 @@ export class StatusPageModel {
     const links = await this.db
       .select({ monitorId: schema.statusPageMonitors.monitorId })
       .from(schema.statusPageMonitors)
-      .where(eq(schema.statusPageMonitors.statusPageId, page.id));
+      .where(eq(schema.statusPageMonitors.statusPageId, page.id))
+      .orderBy(sql`rowid`);
     const monitorIds = links.map((link) => link.monitorId);
 
     const { monitors, incidents, heartbeats } = monitorIds.length

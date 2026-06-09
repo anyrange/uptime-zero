@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { AppEnv } from "@/ctx";
 
 import { createAppDb } from "@/api/db";
-import { runMonitorNow } from "@/api/durable/monitor-actor-client";
+import { runMonitorCheckNow } from "@/api/lib/monitoring-scheduler";
 import {
   monitorConfigObjectSchema,
   parseMonitorConfigForStorage,
@@ -90,13 +90,13 @@ export const settingsApi = new Hono<AppEnv>()
       }
 
       const activeMonitorIds = savedMonitors
-        .filter((monitor) => monitor.active === 1)
+        .filter((monitor) => monitor.active === 1 && monitor.kind !== "push")
         .map((monitor) => monitor.id);
       if (activeMonitorIds.length > 0) {
         ctx.executionCtx.waitUntil(
           Promise.all(
             activeMonitorIds.map((monitorId) =>
-              runMonitorNow(ctx.env, monitorId, "monitor-import"),
+              runMonitorCheckNow(db, monitorId, "monitor-import"),
             ),
           ),
         );

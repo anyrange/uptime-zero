@@ -7,11 +7,8 @@ import type { AppEnv } from "@/ctx";
 import type { MonitorRecord } from "@/types";
 
 import { createAppDb } from "@/api/db";
-import {
-  getMonitorActorStub,
-  queueMonitorSync,
-  runMonitorNow,
-} from "@/api/durable/monitor-actor-client";
+import { getMonitorActorStub } from "@/api/durable/monitor-actor-client";
+import { runMonitorCheckNow } from "@/api/lib/monitoring-scheduler";
 import {
   monitorConfigSchema,
   parseMonitorConfigForStorage,
@@ -145,11 +142,8 @@ export const monitorsApi = new Hono<AppEnv>()
   })
   .post("/:id/run", async (ctx) => {
     const monitorId = ctx.req.param("id");
-    const result = await getMonitorActorStub(ctx.env, monitorId).runNow(
-      "monitor-manual",
-      monitorId,
-    );
     const db = createAppDb(ctx.env.DB);
+    const result = await runMonitorCheckNow(db, monitorId, "manual");
     const detail = await db.monitor.getDetailData(monitorId);
 
     return ctx.json({ result, detail });
@@ -169,10 +163,9 @@ async function syncSavedMonitor(
 ) {
   if (monitor.active === 1) {
     if (activeMode === "run") {
-      await runMonitorNow(ctx.env, monitor.id, "monitor-save");
+      await runMonitorCheckNow(createAppDb(ctx.env.DB), monitor.id, "save");
       return;
     }
-    queueMonitorSync(ctx, monitor.id, "monitor-save");
     return;
   }
 

@@ -27,10 +27,9 @@ export class MonitorActor extends DurableObject<MonitorActorEnv> {
           kind: monitor?.kind ?? null,
         },
       });
-      const result =
-        await this.createOrchestrator(db).syncMonitor(resolvedMonitorId);
+      const result = await this.createOrchestrator(db).deactivateMonitor();
       log.emit({ status: 200 });
-      return result;
+      return { ...result, active: monitor?.active === 1, scheduledFor: null };
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));
       log.emit({ status: 500 });
@@ -140,7 +139,7 @@ export class MonitorActor extends DurableObject<MonitorActorEnv> {
           target: monitor?.target,
         },
       });
-      await this.createOrchestrator(db).runMonitorNow(monitorId, "alarm");
+      await this.createOrchestrator(db).deactivateMonitor();
       log.emit({ status: 200 });
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));

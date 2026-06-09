@@ -162,6 +162,15 @@ export class MonitorModel {
     return rows.map((row) => row.id);
   }
 
+  async listActive() {
+    const rows = await this.db
+      .select()
+      .from(schema.monitors)
+      .where(eq(schema.monitors.active, 1))
+      .orderBy(asc(schema.monitors.createdAt));
+    return rows.map(mapMonitorRecord);
+  }
+
   async getByPushToken(token: string) {
     const monitor = await this.db
       .select()
