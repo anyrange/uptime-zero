@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.9.0...uptime-zero-v0.10.0) (2026-06-09)
+
+
+### Features
+
+* add more utils ([223f9d6](https://github.com/anyrange/uptime-zero/commit/223f9d6a17754ea383022b62e36082ea3a5eb288))
+
+
+### Bug Fixes
+
+* update overview skeleton ([ba39579](https://github.com/anyrange/uptime-zero/commit/ba3957928f33cf2b45832d14a18ed0c056394db1))
+
 ## [0.9.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.8.0...uptime-zero-v0.9.0) (2026-06-09)
 
 
