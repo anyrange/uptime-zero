@@ -100,6 +100,7 @@
   "auth_administrator": "Administrator",
   "auth_uptime_console": "Uptime Zero console",
   "auth_account": "Account",
+  "auth_account_settings": "Account settings",
   "validation_email_valid": "Enter a valid email address.",
   "validation_password_required": "Password is required.",
   "validation_name_required": "Name is required.",

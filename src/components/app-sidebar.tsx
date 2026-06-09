@@ -1,7 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import {
   Bell,
   ClipboardList,
@@ -46,6 +46,7 @@ import { useLogoutMutation, useSessionQuery } from "@/lib/queries/auth";
 import { m } from "@/paraglide/messages.js";
 
 export function AppSidebar() {
+  const router = useRouter();
   const session = useSessionQuery();
   const logout = useLogoutMutation();
 
@@ -174,7 +175,14 @@ export function AppSidebar() {
       <SidebarFooter>
         <SessionFooter
           isLoggingOut={logout.isPending}
-          onLogout={() => logout.mutate()}
+          onLogout={() =>
+            logout.mutate(undefined, {
+              onSuccess: async () => {
+                await router.invalidate();
+                await router.navigate({ replace: true, to: "/login" });
+              },
+            })
+          }
           session={session}
         />
       </SidebarFooter>
@@ -275,7 +283,7 @@ function SessionFooter({
               <DropdownMenuItem asChild>
                 <Link to="/settings/$section" params={{ section: "account" }}>
                   <User />
-                  <span>Account settings</span>
+                  <span>{m.auth_account_settings()}</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem

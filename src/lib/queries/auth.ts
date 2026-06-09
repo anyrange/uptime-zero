@@ -1,4 +1,5 @@
 import {
+  type QueryClient,
   queryOptions,
   useMutation,
   useQuery,
@@ -8,6 +9,7 @@ import {
 import type { AccountData } from "@/types";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
+import { privateKey } from "@/lib/queries/keys";
 
 export function setupStateQueryOptions() {
   return queryOptions({
@@ -73,7 +75,7 @@ export function useLogoutMutation() {
   return useMutation({
     mutationFn: () => parseResponse(apiClient.auth.logout.$post()),
     onSuccess: async () => {
-      queryClient.clear();
+      await invalidateSignedOutQueries(queryClient);
     },
   });
 }
@@ -96,7 +98,14 @@ export function useDeleteAccountMutation() {
   return useMutation({
     mutationFn: () => parseResponse(apiClient.auth.account.$delete()),
     onSuccess: async () => {
-      queryClient.clear();
+      await invalidateSignedOutQueries(queryClient);
     },
   });
+}
+
+async function invalidateSignedOutQueries(queryClient: QueryClient) {
+  await queryClient.invalidateQueries({ queryKey: privateKey() });
+  queryClient.removeQueries({ queryKey: privateKey() });
+  queryClient.removeQueries({ queryKey: ["auth", "account"] });
+  queryClient.setQueryData(sessionQueryOptions().queryKey, { user: null });
 }
