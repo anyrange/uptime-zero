@@ -1,4 +1,4 @@
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { m } from "@/paraglide/messages.js";
 
@@ -13,10 +13,10 @@ export function OverviewSkeleton() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, index) => (
           <Card key={index} size="sm">
-            <CardHeader>
+            <CardContent className="grid gap-1.5">
               <Skeleton className="h-5 w-28" />
               <Skeleton className="h-6 w-16" />
-            </CardHeader>
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -25,37 +25,64 @@ export function OverviewSkeleton() {
           <Skeleton className="h-7 w-44" />
           <Skeleton className="h-4 w-80 max-w-full" />
         </div>
+        <Card className="min-w-0 overflow-hidden py-0">
+          <div className="grid min-w-230 grid-cols-[260px_110px_220px_220px_110px] gap-4 border-b border-border/70 px-4 py-3">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              className="grid min-w-230 grid-cols-[260px_110px_220px_220px_110px] gap-4 border-b border-border/70 px-4 py-3 last:border-b-0"
+              key={index}
+            >
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-5 w-10" />
+            </div>
+          ))}
+        </Card>
+      </section>
+      <section className="flex flex-col gap-3">
+        <div className="grid gap-2">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-80 max-w-full" />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 2 }, (_, index) => (
             <Card key={index} size="sm">
-              <CardHeader>
-                <Skeleton className="h-5 w-32" />
+              <CardContent className="grid gap-1.5">
+                <Skeleton className="h-5 w-36" />
                 <Skeleton className="h-6 w-16" />
-              </CardHeader>
+              </CardContent>
             </Card>
           ))}
         </div>
-        <Card className="overflow-hidden py-0">
-          <div className="grid grid-cols-[220px_200px_140px_90px_130px_120px_220px] gap-4 border-b border-border/70 px-4 py-3">
+        <Card className="min-w-0 overflow-hidden py-0">
+          <div className="grid min-w-263 grid-cols-[320px_110px_200px_90px_130px_80px_120px] gap-4 border-b border-border/70 px-4 py-3">
             <Skeleton className="ml-5 h-5 w-20" />
-            <Skeleton className="h-5 w-24" />
             <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-20" />
             <Skeleton className="h-5 w-12" />
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-5 w-16" />
             <Skeleton className="h-5 w-20" />
           </div>
-          {Array.from({ length: 10 }, (_, index) => (
+          {Array.from({ length: 7 }, (_, index) => (
             <div
-              className="grid grid-cols-[220px_200px_140px_90px_130px_120px_220px] gap-4 border-b border-border/70 px-4 py-3 last:border-b-0"
+              className="grid min-w-263 grid-cols-[320px_110px_200px_90px_130px_80px_120px] gap-4 border-b border-border/70 px-4 py-3 last:border-b-0"
               key={index}
             >
               <Skeleton className="ml-5 h-5 w-40" />
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-5 w-24" />
               <Skeleton className="h-5 w-12" />
-              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-5 w-12" />
               <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-12" />
               <Skeleton className="h-5 w-28" />
             </div>
           ))}
