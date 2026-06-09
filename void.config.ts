@@ -7,6 +7,7 @@ export default defineConfig({
   },
   cloudflare: {
     name: "uptime-zero",
+    account_id: "070a91f36bb99185a44495c5dc870132",
     observability: {
       enabled: true,
       head_sampling_rate: 1,
@@ -16,6 +17,7 @@ export default defineConfig({
     d1_databases: [
       {
         binding: "DB",
+        database_id: "aec0bdce-7207-4445-adee-033194c52979",
         database_name: "uptime-zero",
         migrations_dir: "./db/migrations",
       },
