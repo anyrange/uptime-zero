@@ -89,10 +89,7 @@ export const settingsApi = new Hono<AppEnv>()
       for (const item of body.monitors) {
         const monitorConfig = monitorConfigObjectSchema.parse({
           ...item,
-          intervalSec: Math.max(
-            item.intervalSec,
-            MIN_MONITOR_INTERVAL_SEC,
-          ),
+          intervalSec: Math.max(item.intervalSec, MIN_MONITOR_INTERVAL_SEC),
           notificationDestinationIds: [],
         });
         const savedMonitor = await db.monitor.createOrUpdate({
