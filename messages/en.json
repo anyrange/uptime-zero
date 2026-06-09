@@ -8,6 +8,86 @@
   "common_never": "Never",
   "common_unknown": "Unknown",
   "common_just_now": "Just now",
+  "common_seconds_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} second ago",
+        "countPlural=other": "{count} seconds ago"
+      }
+    }
+  ],
+  "common_minutes_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} minute ago",
+        "countPlural=other": "{count} minutes ago"
+      }
+    }
+  ],
+  "common_hours_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} hour ago",
+        "countPlural=other": "{count} hours ago"
+      }
+    }
+  ],
+  "common_days_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} day ago",
+        "countPlural=other": "{count} days ago"
+      }
+    }
+  ],
+  "common_seconds_from_now": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "in {count} second",
+        "countPlural=other": "in {count} seconds"
+      }
+    }
+  ],
+  "common_minutes_from_now": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "in {count} minute",
+        "countPlural=other": "in {count} minutes"
+      }
+    }
+  ],
+  "common_hours_from_now": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "in {count} hour",
+        "countPlural=other": "in {count} hours"
+      }
+    }
+  ],
+  "common_days_from_now": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "in {count} day",
+        "countPlural=other": "in {count} days"
+      }
+    }
+  ],
   "common_not_available": "N/A",
   "common_no_data": "No data",
   "common_no_details": "No details",
@@ -394,6 +474,8 @@
   "notification_remove_header": "Remove",
   "notification_no_custom_headers": "No custom headers configured.",
   "notification_bot_token": "Bot token",
+  "notification_show_sensitive_field": "Show sensitive field",
+  "notification_hide_sensitive_field": "Hide sensitive field",
   "notification_chat_id": "Chat ID",
   "notification_message_thread_id": "Message thread ID",
   "notification_assigned_monitors": "Assigned monitors",

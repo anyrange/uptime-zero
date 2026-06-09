@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 
 import { Error } from "@/components/error";
+import { LiveTime } from "@/components/live-time";
 import { AppPage } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatDateTime,
   formatDurationMs,
-  formatRelativeDateTime,
   notificationSummary,
 } from "@/lib/formatters";
 import { useMonitorQuery } from "@/lib/queries/monitors";
@@ -124,7 +124,7 @@ function MonitorOverviewContent({
               {m.monitor_last_checked()}
             </CardDescription>
             <CardTitle className="text-2xl sm:text-3xl">
-              {formatRelativeDateTime(data.metrics.lastCheckedAt)}
+              <LiveTime value={data.metrics.lastCheckedAt} />
             </CardTitle>
           </OverviewMetricCardBody>
           <OverviewMetricCardMeta>

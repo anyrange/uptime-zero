@@ -25,6 +25,7 @@ import { useRef, useState, type ReactNode } from "react";
 import type { MonitorRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
+import { LiveTime } from "@/components/live-time";
 import { StatusBadge } from "@/components/status-badge";
 import {
   AlertDialog,
@@ -54,7 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { formatDurationMs, formatRelativeDateTime } from "@/lib/formatters";
+import { formatDurationMs } from "@/lib/formatters";
 import {
   useDeleteMonitorMutation,
   useDeleteMonitorsMutation,
@@ -505,9 +506,10 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
       </SortableHeader>
     ),
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {formatRelativeDateTime(row.original.lastCheckedAt)}
-      </span>
+      <LiveTime
+        className="text-muted-foreground"
+        value={row.original.lastCheckedAt}
+      />
     ),
   },
   {

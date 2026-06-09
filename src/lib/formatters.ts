@@ -1,4 +1,4 @@
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { format } from "date-fns";
 
 import type { HeartbeatRecord, NotificationDestinationRecord } from "@/types";
 
@@ -14,10 +14,13 @@ export function formatDateTime(value: string | null | undefined) {
     return m.common_unknown();
   }
 
-  return format(date, "PP p");
+  return format(date, "PP pp");
 }
 
-export function formatRelativeDateTime(value: string | null | undefined) {
+export function formatRelativeDateTime(
+  value: string | null | undefined,
+  now = Date.now(),
+) {
   if (!value) {
     return m.common_never();
   }
@@ -27,12 +30,34 @@ export function formatRelativeDateTime(value: string | null | undefined) {
     return m.common_unknown();
   }
 
-  const deltaMs = Date.now() - date.getTime();
-  if (deltaMs < 60_000) {
-    return m.common_just_now();
+  const deltaMs = now - date.getTime();
+  const absSeconds = Math.max(0, Math.floor(Math.abs(deltaMs) / 1000));
+  const suffix = deltaMs >= 0 ? "ago" : "from_now";
+
+  if (absSeconds < 60) {
+    return suffix === "ago"
+      ? m.common_seconds_ago({ count: absSeconds })
+      : m.common_seconds_from_now({ count: absSeconds });
   }
 
-  return formatDistanceToNowStrict(date, { addSuffix: true });
+  const minutes = Math.floor(absSeconds / 60);
+  if (minutes < 60) {
+    return suffix === "ago"
+      ? m.common_minutes_ago({ count: minutes })
+      : m.common_minutes_from_now({ count: minutes });
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return suffix === "ago"
+      ? m.common_hours_ago({ count: hours })
+      : m.common_hours_from_now({ count: hours });
+  }
+
+  const days = Math.floor(hours / 24);
+  return suffix === "ago"
+    ? m.common_days_ago({ count: days })
+    : m.common_days_from_now({ count: days });
 }
 
 export function formatDurationMs(value: number | null | undefined) {

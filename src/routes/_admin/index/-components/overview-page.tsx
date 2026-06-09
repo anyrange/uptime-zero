@@ -12,6 +12,7 @@ import { DataTable } from "@/components/data-table";
 import { Error } from "@/components/error";
 import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
+import { LiveTime } from "@/components/live-time";
 import {
   AppPage,
   AppPageHeader,
@@ -28,21 +29,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
-import {
-  formatDateTime,
-  formatDurationMs,
-  formatRelativeDateTime,
-} from "@/lib/formatters";
-import {
-  DASHBOARD_POLL_INTERVAL_MS,
-  useDashboardQuery,
-} from "@/lib/queries/dashboard";
+import { formatDateTime, formatDurationMs } from "@/lib/formatters";
+import { useDashboardQuery } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 import { OverviewSkeleton } from "./overview-skeleton";
 
 export function OverviewPage() {
-  const dashboard = useDashboardQuery(DASHBOARD_POLL_INTERVAL_MS);
+  const dashboard = useDashboardQuery();
 
   return (
     <AppPage title={m.overview_title()}>
@@ -116,9 +110,11 @@ function OverviewContent({ data }: { data: DashboardData }) {
             >
               <CardDescription>{m.overview_recent_incident()}</CardDescription>
               <CardTitle>
-                {recentIncident
-                  ? formatRelativeDateTime(recentIncident.openedAt)
-                  : m.common_none()}
+                {recentIncident ? (
+                  <LiveTime value={recentIncident.openedAt} />
+                ) : (
+                  m.common_none()
+                )}
               </CardTitle>
             </Link>
           </CardContent>
@@ -247,9 +243,11 @@ const latestCheckColumns: ColumnDef<LatestCheckRow>[] = [
     accessorFn: (row) => row.heartbeat.createdAt,
     header: m.monitor_timestamp(),
     cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {formatDateTime(row.original.heartbeat.createdAt)}
-      </span>
+      <LiveTime
+        className="text-muted-foreground"
+        mode="absolute"
+        value={row.original.heartbeat.createdAt}
+      />
     ),
     size: 200,
   },

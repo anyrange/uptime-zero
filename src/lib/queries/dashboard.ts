@@ -9,13 +9,13 @@ export type IncidentFilters = {
   q?: string;
 };
 
-export const DASHBOARD_POLL_INTERVAL_MS = 60_000;
+export const DASHBOARD_POLL_INTERVAL_MS = 30_000;
 
-export function useDashboardQuery(pollingIntervalMs?: number) {
+export function useDashboardQuery() {
   return useQuery({
     queryKey: privateKey("dashboard"),
     queryFn: () => parseResponse(apiClient.dashboard.$get()),
-    refetchInterval: pollingIntervalMs,
+    refetchInterval: DASHBOARD_POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
   });
 }

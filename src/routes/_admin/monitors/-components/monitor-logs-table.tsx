@@ -8,9 +8,10 @@ import {
 import type { HeartbeatPage, HeartbeatRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
+import { LiveTime } from "@/components/live-time";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { formatDateTime, formatDurationMs } from "@/lib/formatters";
+import { formatDurationMs } from "@/lib/formatters";
 import { getMonitorLogsPageRange } from "@/lib/monitor-logs";
 import { m } from "@/paraglide/messages.js";
 
@@ -44,9 +45,11 @@ const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
     accessorKey: "createdAt",
     header: () => <span className="pl-5">{m.monitor_timestamp()}</span>,
     cell: ({ row }) => (
-      <span className="pl-5 text-muted-foreground">
-        {formatDateTime(row.original.createdAt)}
-      </span>
+      <LiveTime
+        className="pl-5 text-muted-foreground"
+        mode="absolute"
+        value={row.original.createdAt}
+      />
     ),
   },
   {

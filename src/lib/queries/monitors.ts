@@ -8,13 +8,13 @@ import { privateKey } from "@/lib/queries/keys";
 
 export type { MonitorPayload } from "@/lib/monitor-config";
 
-export const MONITOR_LIST_POLL_INTERVAL_MS = 10_000;
+export const MONITOR_LIST_POLL_INTERVAL_MS = 30_000;
 
-export function useMonitorListQuery(pollingIntervalMs?: number) {
+export function useMonitorListQuery() {
   return useQuery({
     queryKey: privateKey("monitors"),
     queryFn: () => parseResponse(apiClient.monitors.$get()),
-    refetchInterval: pollingIntervalMs,
+    refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
   });
 }
 
@@ -23,6 +23,7 @@ export function useMonitorQuery(id: string) {
     queryKey: privateKey("monitors", id),
     queryFn: () =>
       parseResponse(apiClient.monitors[":id"].$get({ param: { id } })),
+    refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
   });
 }
 
@@ -36,6 +37,7 @@ export function useMonitorLogsQuery(id: string, page: number) {
           query: { page: String(page) },
         }),
       ) as Promise<HeartbeatPage>,
+    refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
   });
 }
 

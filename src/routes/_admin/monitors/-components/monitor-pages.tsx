@@ -63,7 +63,6 @@ import {
   validateMonitorConfigForm,
 } from "@/lib/monitor-config-form";
 import {
-  MONITOR_LIST_POLL_INTERVAL_MS,
   useCreateMonitorMutation,
   useDeleteMonitorMutation,
   useMonitorListQuery,
@@ -123,7 +122,7 @@ export function NewMonitorPage() {
 }
 
 export function MonitorsIndexPage() {
-  const data = useMonitorListQuery(MONITOR_LIST_POLL_INTERVAL_MS);
+  const data = useMonitorListQuery();
 
   return (
     <AppPage title={m.monitor_monitors()}>

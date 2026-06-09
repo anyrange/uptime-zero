@@ -12,6 +12,7 @@ import type {
   WebhookNotificationConfig,
 } from "@/types";
 
+import { SensitiveInput } from "@/components/sensitive-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty } from "@/components/ui/empty";
@@ -248,7 +249,8 @@ export function NotificationForm({
         <div className="grid gap-4">
           <Field>
             <FieldLabel>{m.notification_bot_token()}</FieldLabel>
-            <Input
+            <SensitiveInput
+              autoComplete="off"
               onChange={(event) =>
                 setFormState((current) => ({
                   ...current,
