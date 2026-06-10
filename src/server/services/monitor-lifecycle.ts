@@ -79,6 +79,17 @@ export class MonitorLifecycle {
       source,
       checkedAt,
     );
+
+    if (await this.shouldSuppressDownTransition(monitor, result, checkedAt)) {
+      await this.db.monitor.updateCheckAttempt(
+        monitor.id,
+        checkedAt,
+        result.durationMs,
+        result.error,
+      );
+      return;
+    }
+
     await this.db.monitor.updateState(
       monitor.id,
       result.status,
@@ -92,6 +103,51 @@ export class MonitorLifecycle {
       checkedAt,
       result.error,
     );
+  }
+
+  private async shouldSuppressDownTransition(
+    monitor: MonitorRecord,
+    result: MonitorCheckResult,
+    checkedAt: string,
+  ) {
+    if (
+      result.status !== "down" ||
+      monitor.lastStatus === "down" ||
+      monitor.notificationGraceSec === 0
+    ) {
+      return false;
+    }
+
+    const firstDownAt = await this.getFirstConsecutiveDownAt(
+      monitor.id,
+      checkedAt,
+    );
+    if (!firstDownAt) {
+      return false;
+    }
+
+    const downtimeMs = Date.parse(checkedAt) - Date.parse(firstDownAt);
+    return downtimeMs < monitor.notificationGraceSec * 1000;
+  }
+
+  private async getFirstConsecutiveDownAt(
+    monitorId: string,
+    checkedAt: string,
+  ) {
+    const heartbeats = await this.db.monitor.listHeartbeats(monitorId, 100);
+    let firstDownAt: string | null = null;
+
+    for (const heartbeat of heartbeats) {
+      if (Date.parse(heartbeat.createdAt) > Date.parse(checkedAt)) {
+        continue;
+      }
+      if (heartbeat.status !== "down") {
+        break;
+      }
+      firstDownAt = heartbeat.createdAt;
+    }
+
+    return firstDownAt;
   }
 
   private async handleTransition(
@@ -113,18 +169,11 @@ export class MonitorLifecycle {
         body: error,
         openedAt: checkedAt,
       });
-      if (monitor.notificationGraceSec === 0) {
-        await this.deliverMonitorNotifications(
-          monitor,
-          "down",
-          checkedAt,
-          error,
-        );
-        await this.db.monitor.markDownNotificationDelivered(
-          monitor.id,
-          checkedAt,
-        );
-      }
+      await this.deliverMonitorNotifications(monitor, "down", checkedAt, error);
+      await this.db.monitor.markDownNotificationDelivered(
+        monitor.id,
+        checkedAt,
+      );
       return;
     }
     if (nextStatus === "up") {

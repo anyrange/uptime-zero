@@ -314,6 +314,23 @@ export class MonitorModel {
       .where(eq(schema.monitors.id, monitorId));
   }
 
+  updateCheckAttempt(
+    monitorId: string,
+    checkedAt: string,
+    durationMs: number,
+    error: string | null,
+  ) {
+    return this.db
+      .update(schema.monitors)
+      .set({
+        lastCheckedAt: checkedAt,
+        lastDurationMs: durationMs,
+        lastError: error,
+        updatedAt: checkedAt,
+      })
+      .where(eq(schema.monitors.id, monitorId));
+  }
+
   markDownNotificationDelivered(monitorId: string, checkedAt: string) {
     return this.db
       .update(schema.monitors)

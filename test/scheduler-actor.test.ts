@@ -24,6 +24,7 @@ describe("scheduler actor service", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("clears the alarm when no active monitors exist", async () => {
@@ -87,6 +88,84 @@ describe("scheduler actor service", () => {
       status: "up",
     });
     expect(alarm.value).toBe(result.nextAlarmAt);
+  });
+
+  it("keeps a monitor up during notification grace after a failed check", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime("2026-05-01T12:01:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("bad gateway", { status: 502 })),
+    );
+    const db = createDatabase(env.DB);
+    const alarm = new FakeAlarm();
+    const monitor = await seedMonitor({
+      kind: "http",
+      lastStatus: "up",
+      lastCheckedAt: "2026-05-01T12:00:00.000Z",
+      intervalSec: 60,
+      notificationGraceSec: 10,
+    });
+
+    await runDueMonitorsAndReschedule(db, {
+      alarm,
+      now: parseDateMs("2026-05-01T12:01:00.000Z"),
+    });
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
+
+    expect(detail?.monitor.lastStatus).toBe("up");
+    expect(detail?.monitor.lastCheckedAt).toBe("2026-05-01T12:01:00.000Z");
+    expect(detail?.heartbeats[0]).toMatchObject({
+      monitorId: monitor.id,
+      source: "poll",
+      status: "down",
+      statusCode: 502,
+    });
+    expect(detail?.incidents).toHaveLength(0);
+  });
+
+  it("opens a down incident after consecutive failures exceed notification grace", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime("2026-05-01T12:01:00.000Z");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("bad gateway", { status: 502 })),
+    );
+    const db = createDatabase(env.DB);
+    const alarm = new FakeAlarm();
+    const monitor = await seedMonitor({
+      kind: "http",
+      lastStatus: "up",
+      lastCheckedAt: "2026-05-01T12:00:00.000Z",
+      intervalSec: 60,
+      notificationGraceSec: 10,
+    });
+
+    await runDueMonitorsAndReschedule(db, {
+      alarm,
+      now: parseDateMs("2026-05-01T12:01:00.000Z"),
+    });
+
+    vi.setSystemTime("2026-05-01T12:02:00.000Z");
+    await runDueMonitorsAndReschedule(db, {
+      alarm,
+      now: parseDateMs("2026-05-01T12:02:00.000Z"),
+    });
+
+    const monitorService = new MonitorService(db);
+    const detail = await monitorService.getDetailData(monitor.id);
+
+    expect(detail?.monitor.lastStatus).toBe("down");
+    expect(detail?.heartbeats).toHaveLength(2);
+    expect(detail?.incidents).toEqual([
+      expect.objectContaining({
+        monitorId: monitor.id,
+        status: "open",
+        title: "API is down",
+      }),
+    ]);
   });
 
   it("skips not-due monitors and keeps their next alarm", async () => {
