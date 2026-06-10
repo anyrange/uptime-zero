@@ -16,6 +16,7 @@ export function useMonitorListQuery() {
     queryKey: privateKey("monitors"),
     queryFn: () => parseResponse(apiClient.monitors.$get()),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
+    refetchOnWindowFocus: "always",
   });
 }
 
@@ -25,6 +26,7 @@ export function useMonitorQuery(id: string) {
     queryFn: () =>
       parseResponse(apiClient.monitors[":id"].$get({ param: { id } })),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
+    refetchOnWindowFocus: "always",
   });
 }
 
@@ -39,6 +41,7 @@ export function useMonitorLogsQuery(id: string, page: number) {
         }),
       ) as Promise<HeartbeatPage>,
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
+    refetchOnWindowFocus: "always",
   });
 }
 
