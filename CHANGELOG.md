@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.11.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.10.1...uptime-zero-v0.11.0) (2026-06-10)
+
+
+### Features
+
+* **ui:** add number field for numeric inputs ([d7b9fdb](https://github.com/anyrange/uptime-zero/commit/d7b9fdb4577562e022a446f29ecc6b0f327eba2c))
+
+
+### Bug Fixes
+
+* **monitoring:** delay down transitions during grace period ([a2749bb](https://github.com/anyrange/uptime-zero/commit/a2749bbada816ab048ff11acc420817127ee6b87))
+* **monitors:** refetch monitor data on tab focus ([05590af](https://github.com/anyrange/uptime-zero/commit/05590afea9783ea327896f82475815830f6ad45c))
+
 ## [0.10.1](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.10.0...uptime-zero-v0.10.1) (2026-06-09)
 
 
