@@ -1,0 +1,28 @@
+{
+  "kind": "uptime-monitor-export",
+  "version": 1,
+  "exportedAt": "2026-06-10T00:00:00.000Z",
+  "monitors": [
+    {
+      "name": "Imported fixture monitor",
+      "kind": "http",
+      "target": "https://example.com/fixture",
+      "intervalSec": 60,
+      "timeoutMs": 5000,
+      "retries": 1,
+      "assertions": [
+        {
+          "id": "status",
+          "type": "status",
+          "expected": 200
+        }
+      ],
+      "heartbeatMode": "interval",
+      "heartbeatCron": null,
+      "heartbeatGraceSec": 300,
+      "heartbeatTimezone": null,
+      "notificationGraceSec": 0,
+      "active": true
+    }
+  ]
+}

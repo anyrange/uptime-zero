@@ -1,7 +1,11 @@
 node_modules
 .wrangler
+.wrangler/e2e-state
 dist
 coverage
+test-results
+playwright-report
+e2e/.auth
 public/app.css
 .dev.vars
 .env

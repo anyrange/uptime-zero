@@ -20,6 +20,8 @@ const buildInfo = {
   version: `${pkg.version}${commitSha ? `.${commitSha.slice(0, 8)}` : ""}`,
 };
 
+const isE2E = process.env.PLAYWRIGHT_TEST || process.env.E2E;
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   define: {
@@ -38,7 +40,9 @@ const config = defineConfig({
       outdir: "./src/paraglide",
       emitTsDeclarations: true,
     }),
-    cloudflare(),
+    cloudflare({
+      persistState: isE2E ? { path: ".wrangler/e2e-state" } : true,
+    }),
   ],
 });
 
