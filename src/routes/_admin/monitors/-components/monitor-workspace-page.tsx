@@ -40,7 +40,7 @@ export function MonitorWorkspacePage({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">{monitor.kind.toUpperCase()}</Badge>
               {monitor.active === 1 ? (
-                <Badge variant="secondary">{m.common_active()}</Badge>
+                <Badge variant="success">{m.common_active()}</Badge>
               ) : (
                 <Badge variant="outline">{m.common_paused()}</Badge>
               )}

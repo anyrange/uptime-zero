@@ -181,7 +181,7 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
     header: m.common_status(),
     cell: ({ row }) => (
       <Badge
-        variant={row.original.page.published === 1 ? "secondary" : "outline"}
+        variant={row.original.page.published === 1 ? "success" : "outline"}
       >
         {row.original.page.published === 1
           ? m.status_page_published()

@@ -6,7 +6,7 @@ export function StatusBadge({ status }: { status: "up" | "down" | "unknown" }) {
     <Badge
       variant={
         status === "up"
-          ? "secondary"
+          ? "success"
           : status === "down"
             ? "destructive"
             : "outline"

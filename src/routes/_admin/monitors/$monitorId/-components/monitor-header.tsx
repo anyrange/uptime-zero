@@ -269,7 +269,7 @@ function OverviewMetricCard({
   return (
     <Card
       className={
-        accent === "emerald" ? "border-primary/30 bg-primary/5" : undefined
+        accent === "emerald" ? "border-success/30 bg-success/5" : undefined
       }
       size="sm"
     >
