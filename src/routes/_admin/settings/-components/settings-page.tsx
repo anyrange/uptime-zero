@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/number-field";
 import { firstFieldError } from "@/lib/form-errors";
 import { notificationSummary } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   useAccountQuery,
   useDeleteAccountMutation,
@@ -154,6 +155,8 @@ function AccountSettings() {
 function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
   const update = useUpdateAccountMutation();
   const remove = useDeleteAccountMutation();
+  const { check, isReady } = usePermissions();
+  const canDeleteWorkspace = isReady && check("account.deleteWorkspace");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
   const form = useForm({
@@ -279,7 +282,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
         </SettingsRow>
         <SettingsRow>
           <SettingsRowContent>
-            <SettingsRowLabel>Created</SettingsRowLabel>
+            <SettingsRowLabel>{m.settings_created()}</SettingsRowLabel>
             <SettingsRowDescription>
               {formatDateTime(data.user.createdAt)}
             </SettingsRowDescription>
@@ -287,32 +290,33 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
         </SettingsRow>
       </SettingsPanel>
 
-      <SettingsPanel>
-        <SettingsRow>
-          <SettingsRowContent>
-            <SettingsRowLabel>Delete account</SettingsRowLabel>
-            <SettingsRowDescription>
-              Delete this admin account and remove monitors, heartbeat history,
-              incidents, status pages, notification destinations, and settings.
-            </SettingsRowDescription>
-            {remove.error ? (
-              <p className="mt-2 text-sm text-rose-300">
-                {remove.error.message}
-              </p>
-            ) : null}
-          </SettingsRowContent>
-          <SettingsRowAction>
-            <Button
-              onClick={() => setConfirmOpen(true)}
-              type="button"
-              variant="destructive"
-            >
-              <Trash2 className="size-4" />
-              Delete account
-            </Button>
-          </SettingsRowAction>
-        </SettingsRow>
-      </SettingsPanel>
+      {canDeleteWorkspace ? (
+        <SettingsPanel>
+          <SettingsRow>
+            <SettingsRowContent>
+              <SettingsRowLabel>{m.settings_delete_account()}</SettingsRowLabel>
+              <SettingsRowDescription>
+                {m.settings_delete_account_panel_description()}
+              </SettingsRowDescription>
+              {remove.error ? (
+                <p className="mt-2 text-sm text-rose-300">
+                  {remove.error.message}
+                </p>
+              ) : null}
+            </SettingsRowContent>
+            <SettingsRowAction>
+              <Button
+                onClick={() => setConfirmOpen(true)}
+                type="button"
+                variant="destructive"
+              >
+                <Trash2 className="size-4" />
+                {m.settings_delete_account()}
+              </Button>
+            </SettingsRowAction>
+          </SettingsRow>
+        </SettingsPanel>
+      ) : null}
 
       <AlertDialog
         onOpenChange={(open) => {
@@ -431,6 +435,8 @@ function DataSettings({ data }: { data: SettingsData }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const exportMonitors = useExportMonitorsMutation();
   const importMonitors = useImportMonitorsMutation();
+  const { check, isReady } = usePermissions();
+  const canImport = isReady && check("monitor.import");
   const [importError, setImportError] = useState<string | null>(null);
 
   async function handleExport() {
@@ -486,44 +492,46 @@ function DataSettings({ data }: { data: SettingsData }) {
           </Button>
         </SettingsRowAction>
       </SettingsRow>
-      <SettingsRow>
-        <SettingsRowContent>
-          <SettingsRowLabel>{m.settings_import_monitors()}</SettingsRowLabel>
-          <SettingsRowDescription>
-            {m.settings_import_monitors_description()}
-          </SettingsRowDescription>
-          {importedCount ? (
-            <p className="mt-2 text-sm text-emerald-300">
-              {m.settings_imported_monitors({ count: importedCount })}
-            </p>
-          ) : null}
-          {importError || importMonitors.error ? (
-            <p className="mt-2 text-sm text-rose-300">
-              {importError ?? errorMessage(importMonitors.error)}
-            </p>
-          ) : null}
-        </SettingsRowContent>
-        <SettingsRowAction>
-          <input
-            accept="application/json,.json"
-            className="sr-only"
-            onChange={(event) =>
-              void handleImport(event.currentTarget.files?.[0])
-            }
-            ref={fileInputRef}
-            type="file"
-          />
-          <Button
-            disabled={importMonitors.isPending}
-            onClick={() => fileInputRef.current?.click()}
-            type="button"
-            variant="outline"
-          >
-            <Upload className="size-4" />
-            {m.settings_import()}
-          </Button>
-        </SettingsRowAction>
-      </SettingsRow>
+      {canImport ? (
+        <SettingsRow>
+          <SettingsRowContent>
+            <SettingsRowLabel>{m.settings_import_monitors()}</SettingsRowLabel>
+            <SettingsRowDescription>
+              {m.settings_import_monitors_description()}
+            </SettingsRowDescription>
+            {importedCount ? (
+              <p className="mt-2 text-sm text-emerald-300">
+                {m.settings_imported_monitors({ count: importedCount })}
+              </p>
+            ) : null}
+            {importError || importMonitors.error ? (
+              <p className="mt-2 text-sm text-rose-300">
+                {importError ?? errorMessage(importMonitors.error)}
+              </p>
+            ) : null}
+          </SettingsRowContent>
+          <SettingsRowAction>
+            <input
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={(event) =>
+                void handleImport(event.currentTarget.files?.[0])
+              }
+              ref={fileInputRef}
+              type="file"
+            />
+            <Button
+              disabled={importMonitors.isPending}
+              onClick={() => fileInputRef.current?.click()}
+              type="button"
+              variant="outline"
+            >
+              <Upload className="size-4" />
+              {m.settings_import()}
+            </Button>
+          </SettingsRowAction>
+        </SettingsRow>
+      ) : null}
     </SettingsPanel>
   );
 }
@@ -660,6 +668,8 @@ function NotificationsSettings() {
 
 function RetentionSettings({ data }: { data: SettingsData }) {
   const update = useUpdateRetentionMutation();
+  const { check, isReady } = usePermissions();
+  const canUpdateRetention = isReady && check("settings.updateRetention");
   const form = useForm({
     defaultValues: {
       heartbeatRetentionDays: data.settings.heartbeatRetentionDays,
@@ -780,7 +790,10 @@ function RetentionSettings({ data }: { data: SettingsData }) {
         </p>
       ) : null}
       <div className="flex justify-end px-4 py-4">
-        <Button disabled={update.isPending} type="submit">
+        <Button
+          disabled={update.isPending || !canUpdateRetention}
+          type="submit"
+        >
           {m.settings_save_changes()}
         </Button>
       </div>

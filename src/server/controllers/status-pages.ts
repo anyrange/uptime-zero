@@ -8,6 +8,7 @@ import type { AppEnv } from "@/ctx";
 
 import { createDatabase } from "@/server/db";
 import { computeAggregateStatus } from "@/server/lib/monitoring";
+import { requireApiPermission } from "@/server/middleware/permissions";
 
 const statusPageInputSchema = z.object({
   id: z.string().optional(),
@@ -33,27 +34,32 @@ export const statusPagesApi = new Hono<AppEnv>()
       links,
     });
   })
-  .post("/", zValidator("json", statusPageInputSchema), async (ctx) => {
-    const body = ctx.req.valid("json");
+  .post(
+    "/",
+    requireApiPermission("statusPage.create"),
+    zValidator("json", statusPageInputSchema),
+    async (ctx) => {
+      const body = ctx.req.valid("json");
 
-    const db = createDatabase(ctx.env.DB);
+      const db = createDatabase(ctx.env.DB);
 
-    await db.statusPage.createOrUpdate({
-      id: body.id,
-      slug: body.slug,
-      title: body.title,
-      description: body.description ?? null,
-      published: body.published ? 1 : 0,
-      showHistory: body.showHistory ? 1 : 0,
-      monitorIds: body.monitorIds,
-    });
+      await db.statusPage.createOrUpdate({
+        id: body.id,
+        slug: body.slug,
+        title: body.title,
+        description: body.description ?? null,
+        published: body.published ? 1 : 0,
+        showHistory: body.showHistory ? 1 : 0,
+        monitorIds: body.monitorIds,
+      });
 
-    const pages = await db.statusPage.list();
-    const page = pages.find((item) => item.slug === body.slug);
-    const saved = page ? await db.statusPage.getById(page.id) : null;
+      const pages = await db.statusPage.list();
+      const page = pages.find((item) => item.slug === body.slug);
+      const saved = page ? await db.statusPage.getById(page.id) : null;
 
-    return ctx.json(saved, 201);
-  })
+      return ctx.json(saved, 201);
+    },
+  )
   .get("/:id", async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 
@@ -66,26 +72,31 @@ export const statusPagesApi = new Hono<AppEnv>()
 
     return ctx.json({ ...page, monitors });
   })
-  .put("/:id", zValidator("json", statusPageInputSchema), async (ctx) => {
-    const body = ctx.req.valid("json");
-    const pageId = ctx.req.param("id");
+  .put(
+    "/:id",
+    requireApiPermission("statusPage.update"),
+    zValidator("json", statusPageInputSchema),
+    async (ctx) => {
+      const body = ctx.req.valid("json");
+      const pageId = ctx.req.param("id");
 
-    const db = createDatabase(ctx.env.DB);
+      const db = createDatabase(ctx.env.DB);
 
-    await db.statusPage.createOrUpdate({
-      id: pageId,
-      slug: body.slug,
-      title: body.title,
-      description: body.description ?? null,
-      published: body.published ? 1 : 0,
-      showHistory: body.showHistory ? 1 : 0,
-      monitorIds: body.monitorIds,
-    });
-    const saved = await db.statusPage.getById(pageId);
+      await db.statusPage.createOrUpdate({
+        id: pageId,
+        slug: body.slug,
+        title: body.title,
+        description: body.description ?? null,
+        published: body.published ? 1 : 0,
+        showHistory: body.showHistory ? 1 : 0,
+        monitorIds: body.monitorIds,
+      });
+      const saved = await db.statusPage.getById(pageId);
 
-    return ctx.json(saved);
-  })
-  .delete("/:id", async (ctx) => {
+      return ctx.json(saved);
+    },
+  )
+  .delete("/:id", requireApiPermission("statusPage.delete"), async (ctx) => {
     const db = createDatabase(ctx.env.DB);
     await db.statusPage.delete(ctx.req.param("id"));
 

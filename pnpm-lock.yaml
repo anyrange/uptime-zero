@@ -95,6 +95,9 @@ importers:
       lucide-react:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)
+      permix:
+        specifier: ^4.1.0
+        version: 4.1.0(drizzle-orm@1.0.0-beta.22(zod@4.4.3))(express@5.2.1)(hono@4.12.23)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.12)
       radix-ui:
         specifier: ^1.5.0
         version: 1.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -4224,6 +4227,60 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  permix@4.1.0:
+    resolution: {integrity: sha512-+n9nfaCs8VZUQxkJdm9gWt6sCJpujR0WCblr0sQtBkqVbO0GRl0GzyQtbptdrobeuRxkPDF8KTVAqSYV/qrBsw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@orpc/server': '>=1'
+      '@tanstack/react-start': '>=1'
+      '@trpc/server': '>=11'
+      drizzle-orm: '>=0.30.0 || >=1.0.0-rc.3'
+      effect: '>=3'
+      elysia: '>=1'
+      express: '>=4'
+      fastify: '>=5'
+      fastify-plugin: '>=5'
+      hono: '>=4'
+      next: '>=14'
+      react: '>=18'
+      react-dom: '>=18'
+      solid-js: '>=1'
+      svelte: '>=5'
+      vue: '>=3'
+    peerDependenciesMeta:
+      '@orpc/server':
+        optional: true
+      '@tanstack/react-start':
+        optional: true
+      '@trpc/server':
+        optional: true
+      drizzle-orm:
+        optional: true
+      effect:
+        optional: true
+      elysia:
+        optional: true
+      express:
+        optional: true
+      fastify:
+        optional: true
+      fastify-plugin:
+        optional: true
+      hono:
+        optional: true
+      next:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -8385,6 +8442,15 @@ snapshots:
   path-to-regexp@8.4.2: {}
 
   pathe@2.0.3: {}
+
+  permix@4.1.0(drizzle-orm@1.0.0-beta.22(zod@4.4.3))(express@5.2.1)(hono@4.12.23)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(solid-js@1.9.12):
+    optionalDependencies:
+      drizzle-orm: 1.0.0-beta.22(zod@4.4.3)
+      express: 5.2.1
+      hono: 4.12.23
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      solid-js: 1.9.12
 
   picocolors@1.1.1: {}
 

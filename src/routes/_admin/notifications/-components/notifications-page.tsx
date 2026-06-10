@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
 import { formatDateTime, notificationSummary } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   providerLabel,
   useCreateNotificationMutation,
@@ -66,6 +67,11 @@ export function NotificationsPage() {
   const create = useCreateNotificationMutation();
   const remove = useDeleteNotificationMutation();
   const test = useTestNotificationMutation();
+  const { check, isReady } = usePermissions();
+  const canCreate = isReady && check("notification.create");
+  const canUpdate = isReady && check("notification.update");
+  const canDelete = isReady && check("notification.delete");
+  const canTest = isReady && check("notification.test");
 
   const [createProvider, setCreateProvider] =
     useState<NotificationProvider | null>(null);
@@ -145,9 +151,15 @@ export function NotificationsPage() {
                     <NotifierCard
                       destination={destination}
                       key={destination.id}
-                      onDelete={() => remove.mutate(destination.id)}
-                      onEdit={() => setEditingId(destination.id)}
-                      onTest={() => test.mutate(destination.id)}
+                      onDelete={
+                        canDelete ? () => remove.mutate(destination.id) : null
+                      }
+                      onEdit={
+                        canUpdate ? () => setEditingId(destination.id) : null
+                      }
+                      onTest={
+                        canTest ? () => test.mutate(destination.id) : null
+                      }
                       pending={
                         remove.isPending || test.isPending || create.isPending
                       }
@@ -157,39 +169,43 @@ export function NotificationsPage() {
               </div>
             </section>
 
-            <section className="grid content-start gap-4">
-              <div className="grid gap-1">
-                <h2 className="font-heading text-base font-medium">
-                  {m.notification_create_new()}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {m.notification_create_description()}
-                </p>
-              </div>
-              <div className="grid gap-3">
-                {providerCards.map((item) => (
-                  <Card key={item.provider} size="sm">
-                    <CardContent>
-                      <div className="flex items-start gap-3">
-                        <NotificationProviderIcon provider={item.provider} />
-                        <div className="min-w-0 flex-1">
-                          <CardTitle>{item.title}</CardTitle>
-                          <CardDescription>{item.description}</CardDescription>
+            {canCreate ? (
+              <section className="grid content-start gap-4">
+                <div className="grid gap-1">
+                  <h2 className="font-heading text-base font-medium">
+                    {m.notification_create_new()}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {m.notification_create_description()}
+                  </p>
+                </div>
+                <div className="grid gap-3">
+                  {providerCards.map((item) => (
+                    <Card key={item.provider} size="sm">
+                      <CardContent>
+                        <div className="flex items-start gap-3">
+                          <NotificationProviderIcon provider={item.provider} />
+                          <div className="min-w-0 flex-1">
+                            <CardTitle>{item.title}</CardTitle>
+                            <CardDescription>
+                              {item.description}
+                            </CardDescription>
+                          </div>
+                          <Button
+                            onClick={() => setCreateProvider(item.provider)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            {m.common_add()}
+                          </Button>
                         </div>
-                        <Button
-                          onClick={() => setCreateProvider(item.provider)}
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                        >
-                          {m.common_add()}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -220,9 +236,9 @@ function NotifierCard({
   pending,
 }: {
   destination: NotificationDestinationListItem;
-  onEdit: () => void;
-  onDelete: () => void;
-  onTest: () => void;
+  onEdit: (() => void) | null;
+  onDelete: (() => void) | null;
+  onTest: (() => void) | null;
   pending: boolean;
 }) {
   return (
@@ -270,32 +286,38 @@ function NotifierCard({
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                onClick={onEdit}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {m.common_edit()}
-              </Button>
-              <Button
-                disabled={pending}
-                onClick={onTest}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {m.notification_test()}
-              </Button>
-              <Button
-                disabled={pending}
-                onClick={onDelete}
-                size="sm"
-                type="button"
-                variant="destructive"
-              >
-                {m.common_delete()}
-              </Button>
+              {onEdit ? (
+                <Button
+                  onClick={onEdit}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {m.common_edit()}
+                </Button>
+              ) : null}
+              {onTest ? (
+                <Button
+                  disabled={pending}
+                  onClick={onTest}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {m.notification_test()}
+                </Button>
+              ) : null}
+              {onDelete ? (
+                <Button
+                  disabled={pending}
+                  onClick={onDelete}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                >
+                  {m.common_delete()}
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>

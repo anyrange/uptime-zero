@@ -7,6 +7,7 @@ import type { AppEnv } from "@/ctx";
 
 import { createDatabase } from "@/server/db";
 import { NotificationDestinationValidationError } from "@/server/db/models/notification";
+import { requireApiPermission } from "@/server/middleware/permissions";
 import { NotificationService } from "@/server/services/notifications";
 import { parseNotificationHeaders } from "@/server/services/notifications/config";
 
@@ -59,64 +60,74 @@ export const notificationsApi = new Hono<AppEnv>()
 
     return ctx.json(detail);
   })
-  .post("/", zValidator("json", notificationInputSchema), async (ctx) => {
-    const input = ctx.req.valid("json");
-    const destinationInput = parseDestinationInput(input);
+  .post(
+    "/",
+    requireApiPermission("notification.create"),
+    zValidator("json", notificationInputSchema),
+    async (ctx) => {
+      const input = ctx.req.valid("json");
+      const destinationInput = parseDestinationInput(input);
 
-    try {
-      const db = createDatabase(ctx.env.DB);
-      const destination = await db.notification.create(
-        destinationInput.name,
-        destinationInput.provider,
-        destinationInput.config,
-        destinationInput.monitorIds,
-      );
-      return ctx.json(destination, 201);
-    } catch (error) {
-      if (error instanceof NotificationDestinationValidationError) {
-        throw new HTTPException(400, { message: error.message });
+      try {
+        const db = createDatabase(ctx.env.DB);
+        const destination = await db.notification.create(
+          destinationInput.name,
+          destinationInput.provider,
+          destinationInput.config,
+          destinationInput.monitorIds,
+        );
+        return ctx.json(destination, 201);
+      } catch (error) {
+        if (error instanceof NotificationDestinationValidationError) {
+          throw new HTTPException(400, { message: error.message });
+        }
+        throw new HTTPException(500, {
+          message: "Failed to create notification",
+        });
       }
-      throw new HTTPException(500, {
-        message: "Failed to create notification",
-      });
-    }
-  })
-  .put("/:id", zValidator("json", notificationInputSchema), async (ctx) => {
-    const input = ctx.req.valid("json");
-    const destinationInput = parseDestinationInput(input);
+    },
+  )
+  .put(
+    "/:id",
+    requireApiPermission("notification.update"),
+    zValidator("json", notificationInputSchema),
+    async (ctx) => {
+      const input = ctx.req.valid("json");
+      const destinationInput = parseDestinationInput(input);
 
-    try {
-      const db = createDatabase(ctx.env.DB);
-      const destination = await db.notification.update(ctx.req.param("id"), {
-        name: destinationInput.name,
-        provider: destinationInput.provider,
-        config: destinationInput.config,
-        monitorIds: destinationInput.monitorIds,
-      });
-      if (!destination) {
-        throw new HTTPException(404, { message: "Notification not found" });
+      try {
+        const db = createDatabase(ctx.env.DB);
+        const destination = await db.notification.update(ctx.req.param("id"), {
+          name: destinationInput.name,
+          provider: destinationInput.provider,
+          config: destinationInput.config,
+          monitorIds: destinationInput.monitorIds,
+        });
+        if (!destination) {
+          throw new HTTPException(404, { message: "Notification not found" });
+        }
+        return ctx.json(destination);
+      } catch (error) {
+        if (error instanceof HTTPException) {
+          throw error;
+        }
+        if (error instanceof NotificationDestinationValidationError) {
+          throw new HTTPException(400, { message: error.message });
+        }
+        throw new HTTPException(500, {
+          message: "Failed to update notification",
+        });
       }
-      return ctx.json(destination);
-    } catch (error) {
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-      if (error instanceof NotificationDestinationValidationError) {
-        throw new HTTPException(400, { message: error.message });
-      }
-      throw new HTTPException(500, {
-        message: "Failed to update notification",
-      });
-    }
-  })
-  .delete("/:id", async (ctx) => {
+    },
+  )
+  .delete("/:id", requireApiPermission("notification.delete"), async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 
     await db.notification.delete(ctx.req.param("id"));
 
     return ctx.json({ ok: true });
   })
-  .post("/:id/test", async (ctx) => {
+  .post("/:id/test", requireApiPermission("notification.test"), async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 
     const notificationService = new NotificationService(db);

@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import { buildInfo } from "@/lib/build-info";
+import { AppPermissionsProvider } from "@/lib/permissions-provider";
 
 import * as TanstackQuery from "./lib/providers/query-provider";
 import { getRouter, routerContext } from "./router";
@@ -20,7 +21,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <TanstackQuery.Provider {...routerContext}>
-        <RouterProvider router={router} />
+        <AppPermissionsProvider>
+          <RouterProvider router={router} />
+        </AppPermissionsProvider>
       </TanstackQuery.Provider>
     </StrictMode>,
   );

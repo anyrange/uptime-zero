@@ -18,7 +18,8 @@ import {
 import { createDatabase } from "@/server/db";
 import { SchedulerActor } from "@/server/durable/scheduler-actor";
 import { loadSession } from "@/server/middleware/auth";
-import { requireApiAdmin, requireApiSession } from "@/server/middleware/guards";
+import { requireApiSession } from "@/server/middleware/guards";
+import { requireApiPermission } from "@/server/middleware/permissions";
 import { MaintenanceService } from "@/server/services/maintenance";
 
 initWorkersLogger({
@@ -36,16 +37,19 @@ export const api = new Hono<AppEnv>()
   .route("/auth", authApi)
   .route("/status", publicStatusApi)
   .use("*", requireApiSession)
+  .use("/dashboard", requireApiPermission("monitor.read"))
   .route("/dashboard", dashboardApi)
+  .use("/monitors", requireApiPermission("monitor.read"))
+  .use("/monitors/*", requireApiPermission("monitor.read"))
   .route("/monitors", monitorsApi)
-  .use("/settings", requireApiAdmin)
-  .use("/settings/*", requireApiAdmin)
+  .use("/settings", requireApiPermission("settings.read"))
+  .use("/settings/*", requireApiPermission("settings.read"))
   .route("/settings", settingsApi)
-  .use("/status-pages", requireApiAdmin)
-  .use("/status-pages/*", requireApiAdmin)
+  .use("/status-pages", requireApiPermission("statusPage.read"))
+  .use("/status-pages/*", requireApiPermission("statusPage.read"))
   .route("/status-pages", statusPagesApi)
-  .use("/notifications", requireApiAdmin)
-  .use("/notifications/*", requireApiAdmin)
+  .use("/notifications", requireApiPermission("notification.read"))
+  .use("/notifications/*", requireApiPermission("notification.read"))
   .route("/notifications", notificationsApi);
 
 export type ApiType = typeof api;

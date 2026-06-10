@@ -56,6 +56,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { firstFieldError } from "@/lib/form-errors";
 import { formatDateTime } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   useCreateStatusPageMutation,
   useDeleteStatusPageMutation,
@@ -218,6 +219,8 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
 function StatusPageRowActions({ page }: { page: StatusPageRecord }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const remove = useDeleteStatusPageMutation(page.id);
+  const { check, isReady } = usePermissions();
+  const canDelete = isReady && check("statusPage.delete");
 
   return (
     <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
@@ -249,17 +252,21 @@ function StatusPageRowActions({ page }: { page: StatusPageRecord }) {
               {m.common_edit()}
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={(event) => {
-              event.preventDefault();
-              setConfirmOpen(true);
-            }}
-            variant="destructive"
-          >
-            <Trash2 className="size-4" />
-            {m.common_delete()}
-          </DropdownMenuItem>
+          {canDelete ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setConfirmOpen(true);
+                }}
+                variant="destructive"
+              >
+                <Trash2 className="size-4" />
+                {m.common_delete()}
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
       <AlertDialogContent>
@@ -330,6 +337,8 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
   const remove = useDeleteStatusPageMutation(pageId);
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { check, isReady } = usePermissions();
+  const canDelete = isReady && check("statusPage.delete");
 
   const submitError = update.error?.message ?? null;
   const deleteError = remove.error?.message ?? null;
@@ -368,7 +377,7 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
               deletePending={remove.isPending}
               deleteError={deleteError}
               monitors={page.data.monitors}
-              onDelete={() => setConfirmOpen(true)}
+              onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
               onSubmit={async (payload) => {
                 await update.mutateAsync(payload);
                 await navigate({ to: "/status-pages" });

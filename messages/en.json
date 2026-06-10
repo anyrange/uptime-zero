@@ -577,8 +577,10 @@
       }
     }
   ],
+  "settings_created": "Created",
   "settings_delete_account_title": "Delete account and all data?",
   "settings_delete_account_description": "This permanently removes the admin account and all monitoring data in this instance. Type {email} to confirm.",
+  "settings_delete_account_panel_description": "Delete this admin account and remove monitors, heartbeat history, incidents, status pages, notification destinations, and settings.",
   "settings_delete_account": "Delete account",
   "settings_deleting": "Deleting...",
   "settings_new_monitor": "New monitor",

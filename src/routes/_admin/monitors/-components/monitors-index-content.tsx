@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { formatDurationMs } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   useDeleteMonitorMutation,
   useDeleteMonitorsMutation,
@@ -131,6 +132,9 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const importMonitors = useImportMonitorsMutation();
   const removeSelected = useDeleteMonitorsMutation();
+  const { check, isReady } = usePermissions();
+  const canDelete = isReady && check("monitor.delete");
+  const canImport = isReady && check("monitor.import");
 
   const table = useReactTable({
     data: monitors,
@@ -195,34 +199,40 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
                   <Download className="size-4" />
                   {m.monitor_export_selected()}
                 </Button>
+                {canDelete ? (
+                  <Button
+                    onClick={() => setBulkDeleteOpen(true)}
+                    type="button"
+                    variant="destructive"
+                  >
+                    <Trash2 className="size-4" />
+                    {m.monitor_delete_selected()}
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+            {canImport ? (
+              <>
+                <input
+                  accept="application/json,.json"
+                  className="sr-only"
+                  onChange={(event) =>
+                    void handleImport(event.currentTarget.files?.[0])
+                  }
+                  ref={fileInputRef}
+                  type="file"
+                />
                 <Button
-                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={importMonitors.isPending}
+                  onClick={() => fileInputRef.current?.click()}
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                 >
-                  <Trash2 className="size-4" />
-                  {m.monitor_delete_selected()}
+                  <Upload className="size-4" />
+                  {m.monitor_import()}
                 </Button>
               </>
             ) : null}
-            <input
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={(event) =>
-                void handleImport(event.currentTarget.files?.[0])
-              }
-              ref={fileInputRef}
-              type="file"
-            />
-            <Button
-              disabled={importMonitors.isPending}
-              onClick={() => fileInputRef.current?.click()}
-              type="button"
-              variant="outline"
-            >
-              <Upload className="size-4" />
-              {m.monitor_import()}
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="outline">
@@ -602,6 +612,8 @@ function errorMessage(error: unknown) {
 function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const remove = useDeleteMonitorMutation(monitor.id);
+  const { check, isReady } = usePermissions();
+  const canDelete = isReady && check("monitor.delete");
 
   return (
     <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
@@ -631,17 +643,21 @@ function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
               {m.common_edit()}
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={(event) => {
-              event.preventDefault();
-              setConfirmOpen(true);
-            }}
-            variant="destructive"
-          >
-            <Trash2 className="size-4" />
-            {m.common_delete()}
-          </DropdownMenuItem>
+          {canDelete ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setConfirmOpen(true);
+                }}
+                variant="destructive"
+              >
+                <Trash2 className="size-4" />
+                {m.common_delete()}
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
       <AlertDialogContent>

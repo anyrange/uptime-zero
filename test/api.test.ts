@@ -29,7 +29,7 @@ describe("private API auth", () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({
-      error: "Admin access required",
+      error: "Permission denied",
     });
   });
 });

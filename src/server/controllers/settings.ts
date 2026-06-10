@@ -16,6 +16,7 @@ import {
   queueSchedulerSync,
   runMonitorNow,
 } from "@/server/durable/scheduler-actor";
+import { requireApiPermission } from "@/server/middleware/permissions";
 
 const retentionInputSchema = z.object({
   heartbeatRetentionDays: z.coerce.number().int().min(1),
@@ -70,40 +71,45 @@ export const settingsApi = new Hono<AppEnv>()
       notificationDestinations,
     });
   })
-  .get("/monitors/export", async (ctx) => {
-    const db = createDatabase(ctx.env.DB);
+  .get(
+    "/monitors/export",
+    requireApiPermission("monitor.export"),
+    async (ctx) => {
+      const db = createDatabase(ctx.env.DB);
 
-    const monitors = await db.monitor.listAll();
+      const monitors = await db.monitor.listAll();
 
-    return ctx.json(
-      {
-        kind: "uptime-monitor-export",
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        monitors: monitors.map((monitor) => ({
-          name: monitor.name,
-          kind: monitor.kind,
-          target: monitor.target,
-          intervalSec: monitor.intervalSec,
-          timeoutMs: monitor.timeoutMs,
-          retries: monitor.retries,
-          assertions: monitor.assertions,
-          heartbeatMode: monitor.heartbeatMode,
-          heartbeatCron: monitor.heartbeatCron,
-          heartbeatGraceSec: monitor.heartbeatGraceSec,
-          heartbeatTimezone: monitor.heartbeatTimezone,
-          notificationGraceSec: monitor.notificationGraceSec,
-          active: monitor.active === 1,
-        })),
-      },
-      200,
-      {
-        "content-disposition": `attachment; filename="uptime-monitors-${new Date().toISOString().slice(0, 10)}.json"`,
-      },
-    );
-  })
+      return ctx.json(
+        {
+          kind: "uptime-monitor-export",
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          monitors: monitors.map((monitor) => ({
+            name: monitor.name,
+            kind: monitor.kind,
+            target: monitor.target,
+            intervalSec: monitor.intervalSec,
+            timeoutMs: monitor.timeoutMs,
+            retries: monitor.retries,
+            assertions: monitor.assertions,
+            heartbeatMode: monitor.heartbeatMode,
+            heartbeatCron: monitor.heartbeatCron,
+            heartbeatGraceSec: monitor.heartbeatGraceSec,
+            heartbeatTimezone: monitor.heartbeatTimezone,
+            notificationGraceSec: monitor.notificationGraceSec,
+            active: monitor.active === 1,
+          })),
+        },
+        200,
+        {
+          "content-disposition": `attachment; filename="uptime-monitors-${new Date().toISOString().slice(0, 10)}.json"`,
+        },
+      );
+    },
+  )
   .post(
     "/monitors/import",
+    requireApiPermission("monitor.import"),
     zValidator("json", monitorImportSchema),
     async (ctx) => {
       const body = ctx.req.valid("json");
@@ -152,15 +158,20 @@ export const settingsApi = new Hono<AppEnv>()
       });
     },
   )
-  .put("/retention", zValidator("json", retentionInputSchema), async (ctx) => {
-    const body = ctx.req.valid("json");
+  .put(
+    "/retention",
+    requireApiPermission("settings.updateRetention"),
+    zValidator("json", retentionInputSchema),
+    async (ctx) => {
+      const body = ctx.req.valid("json");
 
-    const db = createDatabase(ctx.env.DB);
+      const db = createDatabase(ctx.env.DB);
 
-    const settings = await db.settings.update({
-      heartbeatRetentionDays: body.heartbeatRetentionDays,
-      incidentRetentionDays: body.incidentRetentionDays,
-    });
+      const settings = await db.settings.update({
+        heartbeatRetentionDays: body.heartbeatRetentionDays,
+        incidentRetentionDays: body.incidentRetentionDays,
+      });
 
-    return ctx.json(settings);
-  });
+      return ctx.json(settings);
+    },
+  );

@@ -15,6 +15,7 @@ import {
   queueSchedulerSync,
   runMonitorNow,
 } from "@/server/durable/scheduler-actor";
+import { requireApiPermission } from "@/server/middleware/permissions";
 import { MonitorService } from "@/server/services/monitor";
 
 const monitorLogsQuerySchema = z.object({
@@ -31,31 +32,36 @@ export const monitorsApi = new Hono<AppEnv>()
 
     return ctx.json(listData);
   })
-  .post("/", zValidator("json", monitorConfigSchema), async (ctx) => {
-    const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
+  .post(
+    "/",
+    requireApiPermission("monitor.create"),
+    zValidator("json", monitorConfigSchema),
+    async (ctx) => {
+      const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
 
-    ctx.get("log").set({
-      action: "monitor_create",
-      monitor: {
-        kind: monitor.kind,
-        name: monitor.name,
-        intervalSec: monitor.intervalSec,
-      },
-    });
-    const db = createDatabase(ctx.env.DB);
+      ctx.get("log").set({
+        action: "monitor_create",
+        monitor: {
+          kind: monitor.kind,
+          name: monitor.name,
+          intervalSec: monitor.intervalSec,
+        },
+      });
+      const db = createDatabase(ctx.env.DB);
 
-    const savedMonitor = await db.monitor.createOrUpdate(monitor);
-    if (!savedMonitor) {
-      throw new HTTPException(500, { message: "Failed to save monitor" });
-    }
-    if (savedMonitor.active === 1) {
-      await runMonitorNow(ctx.env, savedMonitor.id, "save");
-    } else {
-      queueSchedulerSync(ctx, "monitor-pause");
-    }
+      const savedMonitor = await db.monitor.createOrUpdate(monitor);
+      if (!savedMonitor) {
+        throw new HTTPException(500, { message: "Failed to save monitor" });
+      }
+      if (savedMonitor.active === 1) {
+        await runMonitorNow(ctx.env, savedMonitor.id, "save");
+      } else {
+        queueSchedulerSync(ctx, "monitor-pause");
+      }
 
-    return ctx.json(savedMonitor, 201);
-  })
+      return ctx.json(savedMonitor, 201);
+    },
+  )
   .get("/:id", async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 
@@ -89,33 +95,38 @@ export const monitorsApi = new Hono<AppEnv>()
       return ctx.json(detail);
     },
   )
-  .put("/:id", zValidator("json", monitorConfigSchema), async (ctx) => {
-    const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
+  .put(
+    "/:id",
+    requireApiPermission("monitor.update"),
+    zValidator("json", monitorConfigSchema),
+    async (ctx) => {
+      const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
 
-    ctx.get("log").set({
-      action: "monitor_update",
-      monitor: {
+      ctx.get("log").set({
+        action: "monitor_update",
+        monitor: {
+          id: ctx.req.param("id"),
+          kind: monitor.kind,
+          name: monitor.name,
+          intervalSec: monitor.intervalSec,
+        },
+      });
+
+      const db = createDatabase(ctx.env.DB);
+
+      const savedMonitor = await db.monitor.createOrUpdate({
+        ...monitor,
         id: ctx.req.param("id"),
-        kind: monitor.kind,
-        name: monitor.name,
-        intervalSec: monitor.intervalSec,
-      },
-    });
+      });
+      if (!savedMonitor) {
+        throw new HTTPException(500, { message: "Failed to save monitor" });
+      }
+      queueSchedulerForSavedMonitor(ctx, savedMonitor, "monitor-resume");
 
-    const db = createDatabase(ctx.env.DB);
-
-    const savedMonitor = await db.monitor.createOrUpdate({
-      ...monitor,
-      id: ctx.req.param("id"),
-    });
-    if (!savedMonitor) {
-      throw new HTTPException(500, { message: "Failed to save monitor" });
-    }
-    queueSchedulerForSavedMonitor(ctx, savedMonitor, "monitor-resume");
-
-    return ctx.json(savedMonitor);
-  })
-  .delete("/:id", async (ctx) => {
+      return ctx.json(savedMonitor);
+    },
+  )
+  .delete("/:id", requireApiPermission("monitor.delete"), async (ctx) => {
     const monitorId = ctx.req.param("id");
     ctx.get("log").set({
       action: "monitor_delete",
@@ -130,7 +141,7 @@ export const monitorsApi = new Hono<AppEnv>()
 
     return ctx.json({ ok: true });
   })
-  .post("/:id/pause", async (ctx) => {
+  .post("/:id/pause", requireApiPermission("monitor.pause"), async (ctx) => {
     const monitorId = ctx.req.param("id");
 
     const db = createDatabase(ctx.env.DB);
@@ -147,7 +158,7 @@ export const monitorsApi = new Hono<AppEnv>()
 
     return ctx.json(savedMonitor);
   })
-  .post("/:id/resume", async (ctx) => {
+  .post("/:id/resume", requireApiPermission("monitor.resume"), async (ctx) => {
     const monitorId = ctx.req.param("id");
 
     const db = createDatabase(ctx.env.DB);

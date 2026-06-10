@@ -7,6 +7,7 @@ import type { AppEnv } from "@/ctx";
 
 import { createDatabase } from "@/server/db";
 import { authFor } from "@/server/lib/auth";
+import { requireApiPermission } from "@/server/middleware/permissions";
 
 const authCredentialsSchema = z.object({
   email: z.email(),
@@ -129,18 +130,22 @@ export const authApi = new Hono<AppEnv>()
       return ctx.json(account);
     },
   )
-  .delete("/account", async (ctx) => {
-    const userId = ctx.get("sessionUserId");
+  .delete(
+    "/account",
+    requireApiPermission("account.deleteWorkspace"),
+    async (ctx) => {
+      const userId = ctx.get("sessionUserId");
 
-    if (!userId) {
-      throw new HTTPException(401, { message: "Authentication required" });
-    }
+      if (!userId) {
+        throw new HTTPException(401, { message: "Authentication required" });
+      }
 
-    const db = createDatabase(ctx.env.DB);
-    await db.user.deleteUserAndWorkspaceData(userId);
+      const db = createDatabase(ctx.env.DB);
+      await db.user.deleteUserAndWorkspaceData(userId);
 
-    return ctx.json({ ok: true });
-  });
+      return ctx.json({ ok: true });
+    },
+  );
 
 function jsonWithAuthCookies(source: Response, body: unknown) {
   const headers = new Headers(source.headers);
