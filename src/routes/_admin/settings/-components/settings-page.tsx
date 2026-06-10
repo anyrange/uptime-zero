@@ -31,6 +31,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  NumberField,
+  NumberFieldDecrement,
+  NumberFieldGroup,
+  NumberFieldIncrement,
+  NumberFieldInput,
+} from "@/components/ui/number-field";
 import { firstFieldError } from "@/lib/form-errors";
 import { notificationSummary } from "@/lib/formatters";
 import {
@@ -697,7 +704,7 @@ function RetentionSettings({ data }: { data: SettingsData }) {
                   <FieldLabel htmlFor={field.name}>
                     {m.settings_days()}
                   </FieldLabel>
-                  <Input
+                  <NumberField
                     aria-invalid={
                       field.state.meta.isTouched && !field.state.meta.isValid
                     }
@@ -705,13 +712,15 @@ function RetentionSettings({ data }: { data: SettingsData }) {
                     id={field.name}
                     min={1}
                     name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(event) =>
-                      field.handleChange(Number(event.target.value || 0))
-                    }
-                    type="number"
+                    onValueChange={(value) => field.handleChange(value ?? 0)}
                     value={field.state.value}
-                  />
+                  >
+                    <NumberFieldGroup>
+                      <NumberFieldDecrement />
+                      <NumberFieldInput onBlur={field.handleBlur} />
+                      <NumberFieldIncrement />
+                    </NumberFieldGroup>
+                  </NumberField>
                   {error ? <FieldError>{error}</FieldError> : null}
                 </Field>
               </SettingsRowAction>
@@ -741,7 +750,7 @@ function RetentionSettings({ data }: { data: SettingsData }) {
                   <FieldLabel htmlFor={field.name}>
                     {m.settings_days()}
                   </FieldLabel>
-                  <Input
+                  <NumberField
                     aria-invalid={
                       field.state.meta.isTouched && !field.state.meta.isValid
                     }
@@ -749,13 +758,15 @@ function RetentionSettings({ data }: { data: SettingsData }) {
                     id={field.name}
                     min={1}
                     name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(event) =>
-                      field.handleChange(Number(event.target.value || 0))
-                    }
-                    type="number"
+                    onValueChange={(value) => field.handleChange(value ?? 0)}
                     value={field.state.value}
-                  />
+                  >
+                    <NumberFieldGroup>
+                      <NumberFieldDecrement />
+                      <NumberFieldInput onBlur={field.handleBlur} />
+                      <NumberFieldIncrement />
+                    </NumberFieldGroup>
+                  </NumberField>
                   {error ? <FieldError>{error}</FieldError> : null}
                 </Field>
               </SettingsRowAction>

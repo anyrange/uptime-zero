@@ -36,6 +36,13 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import {
+  NumberField,
+  NumberFieldDecrement,
+  NumberFieldGroup,
+  NumberFieldIncrement,
+  NumberFieldInput,
+} from "@/components/ui/number-field";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -435,29 +442,45 @@ function MonitorForm({
       <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-3">
         <Field>
           <FieldLabel>{m.monitor_interval_seconds()}</FieldLabel>
-          <Input
-            onChange={(event) =>
-              setIntervalSec(Number(event.target.value || 0))
-            }
-            type="number"
+          <NumberField
+            min={0}
+            onValueChange={(value) => setIntervalSec(value ?? 0)}
             value={intervalSec}
-          />
+          >
+            <NumberFieldGroup>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldGroup>
+          </NumberField>
         </Field>
         <Field>
           <FieldLabel>{m.monitor_timeout_ms()}</FieldLabel>
-          <Input
-            onChange={(event) => setTimeoutMs(Number(event.target.value || 0))}
-            type="number"
+          <NumberField
+            min={0}
+            onValueChange={(value) => setTimeoutMs(value ?? 0)}
             value={timeoutMs}
-          />
+          >
+            <NumberFieldGroup>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldGroup>
+          </NumberField>
         </Field>
         <Field>
           <FieldLabel>{m.monitor_retries()}</FieldLabel>
-          <Input
-            onChange={(event) => setRetries(Number(event.target.value || 0))}
-            type="number"
+          <NumberField
+            min={0}
+            onValueChange={(value) => setRetries(value ?? 0)}
             value={retries}
-          />
+          >
+            <NumberFieldGroup>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldGroup>
+          </NumberField>
         </Field>
       </div>
 
@@ -513,13 +536,17 @@ function MonitorForm({
                 </Field>
                 <Field>
                   <FieldLabel>{m.monitor_heartbeat_grace_seconds()}</FieldLabel>
-                  <Input
-                    onChange={(event) =>
-                      setHeartbeatGraceSec(Number(event.target.value || 0))
-                    }
-                    type="number"
+                  <NumberField
+                    min={0}
+                    onValueChange={(value) => setHeartbeatGraceSec(value ?? 0)}
                     value={heartbeatGraceSec ?? 0}
-                  />
+                  >
+                    <NumberFieldGroup>
+                      <NumberFieldDecrement />
+                      <NumberFieldInput />
+                      <NumberFieldIncrement />
+                    </NumberFieldGroup>
+                  </NumberField>
                 </Field>
               </>
             ) : null}
@@ -648,14 +675,17 @@ function MonitorForm({
         </div>
         <Field>
           <FieldLabel>{m.monitor_notification_grace_seconds()}</FieldLabel>
-          <Input
+          <NumberField
             min={0}
-            onChange={(event) =>
-              setNotificationGraceSec(Number(event.target.value || 0))
-            }
-            type="number"
+            onValueChange={(value) => setNotificationGraceSec(value ?? 0)}
             value={notificationGraceSec}
-          />
+          >
+            <NumberFieldGroup>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldGroup>
+          </NumberField>
           <FieldDescription>
             {m.monitor_notification_grace_seconds_description()}
           </FieldDescription>
@@ -759,16 +789,22 @@ function AssertionEditor({
       {assertion.type === "status" ? (
         <Field>
           <FieldLabel>Expected status</FieldLabel>
-          <Input
-            onChange={(event) =>
+          <NumberField
+            min={100}
+            onValueChange={(value) =>
               onChange({
                 ...assertion,
-                expected: Number(event.target.value || 0),
+                expected: value ?? 0,
               })
             }
-            type="number"
             value={assertion.expected}
-          />
+          >
+            <NumberFieldGroup>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldGroup>
+          </NumberField>
         </Field>
       ) : null}
 
