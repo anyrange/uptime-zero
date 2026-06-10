@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { MonitorRecord, NotificationDestinationRecord } from "@/types";
 
+import { NotificationService } from "@/server/services/notifications";
 import {
   dispatchNotificationEvent,
   deliverNotificationDestination,
@@ -357,5 +358,23 @@ describe("notification delivery", () => {
     ).resolves.toBeUndefined();
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("surfaces provider failures for explicit test sends", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 500 }));
+    const notificationService = new NotificationService({
+      notification: {
+        getById: vi.fn(async () => webhookDestination),
+      },
+    } as never);
+
+    await expect(
+      notificationService.sendTestNotification(
+        webhookDestination.id,
+        fetchMock as typeof fetch,
+      ),
+    ).rejects.toThrow("webhook notification failed for Ops Webhook: HTTP 500");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,4 @@
-import { all } from "better-all";
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 
 import type {
   HeartbeatRecord,
@@ -247,15 +246,49 @@ export class MonitorModel {
     monitorIds: string[],
     limitPerMonitor: number,
   ) {
-    const rowsByMonitor = await all(
-      Object.fromEntries(
-        monitorIds.map((monitorId) => [
-          monitorId,
-          () => this.listHeartbeats(monitorId, limitPerMonitor),
-        ]),
-      ),
+    if (monitorIds.length === 0 || limitPerMonitor <= 0) {
+      return [];
+    }
+
+    const rankedHeartbeats = this.db.$with("ranked_heartbeats").as(
+      this.db
+        .select({
+          id: schema.heartbeats.id,
+          monitorId: schema.heartbeats.monitorId,
+          status: schema.heartbeats.status,
+          statusCode: schema.heartbeats.statusCode,
+          durationMs: schema.heartbeats.durationMs,
+          error: schema.heartbeats.error,
+          createdAt: schema.heartbeats.createdAt,
+          source: schema.heartbeats.source,
+          rank: sql<number>`row_number() over (partition by ${schema.heartbeats.monitorId} order by ${schema.heartbeats.createdAt} desc)`.as(
+            "rank",
+          ),
+        })
+        .from(schema.heartbeats)
+        .where(inArray(schema.heartbeats.monitorId, monitorIds)),
     );
-    return Object.values(rowsByMonitor).flat();
+
+    const rows = await this.db
+      .with(rankedHeartbeats)
+      .select({
+        id: rankedHeartbeats.id,
+        monitorId: rankedHeartbeats.monitorId,
+        status: rankedHeartbeats.status,
+        statusCode: rankedHeartbeats.statusCode,
+        durationMs: rankedHeartbeats.durationMs,
+        error: rankedHeartbeats.error,
+        createdAt: rankedHeartbeats.createdAt,
+        source: rankedHeartbeats.source,
+      })
+      .from(rankedHeartbeats)
+      .where(lte(rankedHeartbeats.rank, limitPerMonitor))
+      .orderBy(
+        asc(rankedHeartbeats.monitorId),
+        desc(rankedHeartbeats.createdAt),
+      );
+
+    return rows.map(mapHeartbeatRecord);
   }
 
   async countHeartbeats(monitorId: string) {

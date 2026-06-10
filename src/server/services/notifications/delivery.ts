@@ -29,6 +29,21 @@ export type NotificationEvent =
   | MonitorTransitionNotification
   | TestNotification;
 
+export class NotificationDeliveryError extends Error {
+  constructor(
+    readonly destination: Pick<
+      NotificationDestinationRecord,
+      "name" | "provider"
+    >,
+    readonly status: number,
+  ) {
+    super(
+      `${destination.provider} notification failed for ${destination.name}: HTTP ${status}`,
+    );
+    this.name = "NotificationDeliveryError";
+  }
+}
+
 export function buildTransitionNotificationPayload(
   monitor: MonitorRecord,
   status: "up" | "down",
@@ -164,6 +179,7 @@ export async function dispatchNotificationEvent(
   destinations: NotificationDestinationRecord[],
   event: NotificationEvent,
   fetchImpl: typeof fetch = fetch,
+  options: { throwOnFailure?: boolean } = {},
 ) {
   if (destinations.length === 0) {
     return;
@@ -176,8 +192,11 @@ export async function dispatchNotificationEvent(
         async () => {
           try {
             await deliverNotificationDestination(destination, event, fetchImpl);
-          } catch {
-            // Ignore delivery failures during phase 1 polling and test sends.
+          } catch (error) {
+            if (options.throwOnFailure) {
+              throw error;
+            }
+            // Ignore delivery failures during phase 1 polling.
           }
         },
       ]),
@@ -200,9 +219,7 @@ function assertNotificationResponse(
     return;
   }
 
-  throw new Error(
-    `${destination.provider} notification failed for ${destination.name}: HTTP ${response.status}`,
-  );
+  throw new NotificationDeliveryError(destination, response.status);
 }
 
 function headersToObject(headers?: NotificationHeader[]) {

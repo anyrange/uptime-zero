@@ -263,17 +263,17 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
           </div>
         </div>
         {importMonitors.data?.imported ? (
-          <p className="text-sm text-emerald-300">
+          <p className="text-sm text-primary">
             {m.monitor_imported_count({ count: importMonitors.data.imported })}
           </p>
         ) : null}
         {importError || importMonitors.error ? (
-          <p className="text-sm text-rose-300">
+          <p className="text-sm text-destructive">
             {importError ?? errorMessage(importMonitors.error)}
           </p>
         ) : null}
         {removeSelected.error ? (
-          <p className="text-sm text-rose-300">
+          <p className="text-sm text-destructive">
             {errorMessage(removeSelected.error)}
           </p>
         ) : null}

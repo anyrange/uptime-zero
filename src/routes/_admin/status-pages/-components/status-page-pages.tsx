@@ -160,7 +160,7 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
           {row.original.page.title}
         </Link>
         <p className="mt-1 text-sm text-muted-foreground">
-          {row.original.monitorCount} monitors
+          {m.status_page_monitor_count({ count: row.original.monitorCount })}
         </p>
       </div>
     ),
@@ -181,12 +181,7 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
     header: m.common_status(),
     cell: ({ row }) => (
       <Badge
-        className={
-          row.original.page.published === 1
-            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-            : undefined
-        }
-        variant="outline"
+        variant={row.original.page.published === 1 ? "secondary" : "outline"}
       >
         {row.original.page.published === 1
           ? m.status_page_published()
@@ -680,10 +675,10 @@ function StatusPageForm({
         />
       </div>
       {submitError ? (
-        <p className="text-sm text-rose-300">{submitError}</p>
+        <p className="text-sm text-destructive">{submitError}</p>
       ) : null}
       {deleteError ? (
-        <p className="text-sm text-rose-300">{deleteError}</p>
+        <p className="text-sm text-destructive">{deleteError}</p>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button disabled={pending || deletePending} type="submit">

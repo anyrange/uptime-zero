@@ -746,7 +746,7 @@ function MonitorForm({
       ) : null}
 
       {submitError ? (
-        <p className="text-sm text-rose-300">{submitError}</p>
+        <p className="text-sm text-destructive">{submitError}</p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">

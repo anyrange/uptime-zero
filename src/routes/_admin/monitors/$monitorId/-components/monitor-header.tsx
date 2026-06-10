@@ -1,19 +1,8 @@
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { Link } from "@tanstack/react-router";
+import type { MonitorAssertion, MonitorDetailData } from "@/types";
 
-import type {
-  MonitorAssertion,
-  MonitorDetailData,
-  MonitorRecord,
-} from "@/types";
-
-import { Error } from "@/components/error";
 import { LiveTime } from "@/components/live-time";
-import { AppPage } from "@/components/page";
-import { StatusBadge } from "@/components/status-badge";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -21,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatDateTime,
   formatDurationMs,
@@ -33,7 +21,7 @@ import { m } from "@/paraglide/messages.js";
 
 import { CheckHistory } from "../-components/check-history";
 import { IncidentList } from "../-components/incident-list";
-import { MonitorDetailSkeleton } from "../../-components/monitors-skeleton";
+import { MonitorWorkspacePage } from "../../-components/monitor-workspace-page";
 
 export function MonitorDetailPage({ monitorId }: { monitorId: string }) {
   const detail = useMonitorQuery(monitorId);
@@ -148,8 +136,7 @@ function MonitorOverviewContent({
                 {m.monitor_availability_windows()}
               </CardTitle>
               <CardDescription>
-                Uptime summaries across the retention windows currently backed
-                by monitor history.
+                {m.monitor_availability_windows_description()}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto grid gap-3 md:grid-cols-3">
@@ -190,7 +177,9 @@ function MonitorOverviewContent({
               </OverviewStatValue>
             </OverviewStat>
             <OverviewStat>
-              <OverviewStatLabel>Open incidents</OverviewStatLabel>
+              <OverviewStatLabel>
+                {m.monitor_open_incidents()}
+              </OverviewStatLabel>
               <OverviewStatValue>
                 {
                   data.incidents.filter(
@@ -200,28 +189,30 @@ function MonitorOverviewContent({
               </OverviewStatValue>
             </OverviewStat>
             <OverviewStat>
-              <OverviewStatLabel>Incidents</OverviewStatLabel>
+              <OverviewStatLabel>{m.monitor_incidents()}</OverviewStatLabel>
               <OverviewStatValue>{data.incidents.length}</OverviewStatValue>
             </OverviewStat>
           </div>
         </div>
         <OverviewList>
           <OverviewListHeader>
-            <CardTitle className="text-base">Assertions</CardTitle>
+            <CardTitle className="text-base">
+              {m.monitor_assertions()}
+            </CardTitle>
             <CardDescription>
-              Expectations the monitor enforces on each run.
+              {m.monitor_assertions_overview_description()}
             </CardDescription>
           </OverviewListHeader>
           <OverviewListContent>
             {data.monitor.assertions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No assertions configured.
+                {m.monitor_no_assertions()}
               </p>
             ) : (
               data.monitor.assertions.map((assertion, index) => (
                 <OverviewListRow key={assertion.id}>
                   <OverviewListRowLabel>
-                    Assertion {index + 1}
+                    {m.monitor_assertion_label({ number: index + 1 })}
                   </OverviewListRowLabel>
                   <OverviewListRowValue>
                     {assertionSummary(assertion)}
@@ -234,15 +225,17 @@ function MonitorOverviewContent({
         <div className="grid gap-4 lg:grid-cols-2">
           <OverviewList>
             <OverviewListHeader>
-              <CardTitle className="text-base">Notifications</CardTitle>
+              <CardTitle className="text-base">
+                {m.monitor_notifications()}
+              </CardTitle>
               <CardDescription>
-                Destinations currently attached to this monitor.
+                {m.monitor_notifications_overview_description()}
               </CardDescription>
             </OverviewListHeader>
             <OverviewListContent>
               {data.notificationDestinations.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No destinations are bound.
+                  {m.monitor_no_destinations()}
                 </p>
               ) : (
                 data.notificationDestinations.map((destination) => (
@@ -266,102 +259,6 @@ function MonitorOverviewContent({
   );
 }
 
-function MonitorWorkspacePage({
-  detail,
-  currentTab,
-  children,
-}: {
-  detail: UseQueryResult<MonitorDetailData, Error>;
-  currentTab: "overview" | "logs" | "incidents" | "settings";
-  children: (data: MonitorDetailData) => ReactNode;
-}) {
-  if (detail.status === "pending") {
-    return <MonitorDetailSkeleton />;
-  }
-  if (detail.status === "error") {
-    return <Error message={detail.error.message} />;
-  }
-
-  const { monitor } = detail.data;
-
-  return (
-    <AppPage title={monitor.name}>
-      <div className="grid gap-4">
-        <div className="flex flex-col gap-8 py-2">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{monitor.kind.toUpperCase()}</Badge>
-              {monitor.active === 1 ? (
-                <Badge
-                  className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                  variant="outline"
-                >
-                  {m.common_active()}
-                </Badge>
-              ) : (
-                <Badge variant="outline">{m.common_paused()}</Badge>
-              )}
-              <StatusBadge status={monitor.lastStatus} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-2xl font-semibold tracking-tight">
-                {monitor.name}
-              </p>
-              <MonitorTargetLink monitor={monitor} />
-              <p className="text-sm text-muted-foreground">
-                {m.monitor_interval_assertion_summary({
-                  interval: monitor.intervalSec,
-                  assertions: m.monitor_assertion_count({
-                    count: monitor.assertions.length,
-                  }),
-                })}
-              </p>
-            </div>
-          </div>
-          <Tabs value={currentTab}>
-            <TabsList>
-              <TabsTrigger asChild value="overview">
-                <Link
-                  params={{ monitorId: monitor.id }}
-                  to="/monitors/$monitorId"
-                >
-                  {m.monitor_overview()}
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger asChild value="logs">
-                <Link
-                  params={{ monitorId: monitor.id }}
-                  search={{ page: 1 }}
-                  to="/monitors/$monitorId/logs"
-                >
-                  {m.monitor_logs()}
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger asChild value="incidents">
-                <Link
-                  params={{ monitorId: monitor.id }}
-                  to="/monitors/$monitorId/incidents"
-                >
-                  {m.nav_incidents()}
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger asChild value="settings">
-                <Link
-                  params={{ monitorId: monitor.id }}
-                  to="/monitors/$monitorId/settings"
-                >
-                  {m.monitor_settings()}
-                </Link>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-        {children(detail.data)}
-      </div>
-    </AppPage>
-  );
-}
-
 function OverviewMetricCard({
   children,
   accent = "default",
@@ -372,9 +269,7 @@ function OverviewMetricCard({
   return (
     <Card
       className={
-        accent === "emerald"
-          ? "border-emerald-500/30 bg-emerald-500/6"
-          : undefined
+        accent === "emerald" ? "border-primary/30 bg-primary/5" : undefined
       }
       size="sm"
     >
@@ -384,7 +279,7 @@ function OverviewMetricCard({
 }
 
 function OverviewMetricCardBody({ children }: { children: ReactNode }) {
-  return <div className="space-y-1">{children}</div>;
+  return <div className="grid gap-1">{children}</div>;
 }
 
 function OverviewMetricCardMeta({ children }: { children: ReactNode }) {
@@ -437,27 +332,6 @@ function OverviewListRowLabel({ children }: { children: ReactNode }) {
 
 function OverviewListRowValue({ children }: { children: ReactNode }) {
   return <p className="text-sm text-foreground">{children}</p>;
-}
-
-function MonitorTargetLink({ monitor }: { monitor: MonitorRecord }) {
-  const target = displayMonitorTarget(monitor);
-
-  return (
-    <a
-      className="w-fit text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-      href={target}
-      rel="noreferrer"
-      target="_blank"
-    >
-      {target}
-    </a>
-  );
-}
-
-function displayMonitorTarget(monitor: MonitorRecord) {
-  return monitor.kind === "push" && monitor.pushToken
-    ? `/api/push/${monitor.pushToken}`
-    : monitor.target;
 }
 
 function assertionSummary(assertion: MonitorAssertion) {

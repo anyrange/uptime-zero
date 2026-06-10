@@ -27,6 +27,7 @@ export class NotificationService {
         },
       },
       fetchImpl,
+      { throwOnFailure: true },
     );
     return true;
   }

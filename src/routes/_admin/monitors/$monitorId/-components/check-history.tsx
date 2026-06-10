@@ -125,7 +125,7 @@ export function CheckHistory({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="gap-3 border-b border-border/70 pb-5">
-        <div className="space-y-1">
+        <div className="grid gap-1">
           <p className="text-sm font-medium text-muted-foreground">
             {m.monitor_checks()}
           </p>

@@ -221,6 +221,7 @@
   "monitor_edit": "Edit monitor",
   "monitor_total": "Total monitors",
   "monitor_open_incidents": "Open incidents",
+  "monitor_incidents": "Incidents",
   "monitor_slowest_p95": "Slowest p95",
   "monitor_no_monitors": "No monitors yet.",
   "monitor_no_heartbeat_logs": "No heartbeat logs yet.",
@@ -245,6 +246,8 @@
   "monitor_push": "Heartbeat",
   "monitor_assertions": "Assertions",
   "monitor_no_assertions": "No assertions configured yet.",
+  "monitor_assertions_overview_description": "Expectations the monitor enforces on each run.",
+  "monitor_assertion_label": "Assertion {number}",
   "monitor_assertion_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -257,6 +260,7 @@
   ],
   "monitor_interval_assertion_summary": "Every {interval}s · {assertions}",
   "monitor_notifications": "Notifications",
+  "monitor_notifications_overview_description": "Destinations currently attached to this monitor.",
   "monitor_no_destinations": "No destinations configured yet.",
   "monitor_checks": "Checks",
   "monitor_recorded_check_count": [
@@ -364,6 +368,7 @@
   "monitor_latest_48_checks": "Latest 48 checks",
   "monitor_latest_48_hours": "Latest 48 hours",
   "monitor_availability_windows": "Availability windows",
+  "monitor_availability_windows_description": "Uptime summaries across the retention windows currently backed by monitor history.",
   "monitor_recent_incidents": "Recent incidents",
   "monitor_latency_over_time": "Latency over time",
   "monitor_latency_empty_description": "Heartbeat monitors and failed checks may not record a usable duration.",
@@ -544,6 +549,16 @@
   "status_page_recent_incidents": "Recent incidents",
   "status_page_included_monitors": "Included monitors",
   "status_page_no_monitors": "No monitors exist yet.",
+  "status_page_monitor_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} monitor",
+        "countPlural=other": "{count} monitors"
+      }
+    }
+  ],
   "settings_monitors": "Monitors",
   "settings_workspace_configuration": "Workspace configuration",
   "settings_general": "General",

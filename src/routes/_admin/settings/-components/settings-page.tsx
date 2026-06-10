@@ -234,7 +234,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
           }}
         />
         {update.error ? (
-          <p className="border-b px-4 py-3 text-sm text-rose-300">
+          <p className="border-b px-4 py-3 text-sm text-destructive">
             {update.error.message}
           </p>
         ) : null}
@@ -299,7 +299,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
                 {m.settings_delete_account_panel_description()}
               </SettingsRowDescription>
               {remove.error ? (
-                <p className="mt-2 text-sm text-rose-300">
+                <p className="mt-2 text-sm text-destructive">
                   {remove.error.message}
                 </p>
               ) : null}
@@ -500,12 +500,12 @@ function DataSettings({ data }: { data: SettingsData }) {
               {m.settings_import_monitors_description()}
             </SettingsRowDescription>
             {importedCount ? (
-              <p className="mt-2 text-sm text-emerald-300">
+              <p className="mt-2 text-sm text-primary">
                 {m.settings_imported_monitors({ count: importedCount })}
               </p>
             ) : null}
             {importError || importMonitors.error ? (
-              <p className="mt-2 text-sm text-rose-300">
+              <p className="mt-2 text-sm text-destructive">
                 {importError ?? errorMessage(importMonitors.error)}
               </p>
             ) : null}
@@ -785,7 +785,7 @@ function RetentionSettings({ data }: { data: SettingsData }) {
         }}
       />
       {update.error ? (
-        <p className="border-b px-4 py-3 text-sm text-rose-300">
+        <p className="border-b px-4 py-3 text-sm text-destructive">
           {update.error.message}
         </p>
       ) : null}

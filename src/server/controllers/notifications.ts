@@ -10,6 +10,7 @@ import { NotificationDestinationValidationError } from "@/server/db/models/notif
 import { requireApiPermission } from "@/server/middleware/permissions";
 import { NotificationService } from "@/server/services/notifications";
 import { parseNotificationHeaders } from "@/server/services/notifications/config";
+import { NotificationDeliveryError } from "@/server/services/notifications/delivery";
 
 const notificationHeaderSchema = z.object({
   key: z.string().trim().min(1, "Header key is required."),
@@ -132,9 +133,17 @@ export const notificationsApi = new Hono<AppEnv>()
 
     const notificationService = new NotificationService(db);
 
-    const sent = await notificationService.sendTestNotification(
-      ctx.req.param("id"),
-    );
+    let sent: boolean;
+    try {
+      sent = await notificationService.sendTestNotification(
+        ctx.req.param("id"),
+      );
+    } catch (error) {
+      if (error instanceof NotificationDeliveryError) {
+        throw new HTTPException(502, { message: error.message });
+      }
+      throw error;
+    }
 
     if (!sent) {
       throw new HTTPException(404, { message: "Notification not found" });

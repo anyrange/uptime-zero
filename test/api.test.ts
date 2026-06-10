@@ -513,19 +513,22 @@ describe("status page API", () => {
     const publicResponse = await apiFetch("/api/status/public");
     expect(publicResponse.status).toBe(200);
     const publicData = (await publicResponse.json()) as {
-      heartbeats: Array<{ monitorId: string }>;
+      heartbeats: Array<{ monitorId: string; createdAt: string }>;
     };
+    const busyHeartbeats = publicData.heartbeats.filter(
+      (heartbeat) => heartbeat.monitorId === busyMonitorId,
+    );
+    const quietHeartbeats = publicData.heartbeats.filter(
+      (heartbeat) => heartbeat.monitorId === quietMonitorId,
+    );
 
-    expect(
-      publicData.heartbeats.filter(
-        (heartbeat) => heartbeat.monitorId === busyMonitorId,
+    expect(busyHeartbeats).toHaveLength(45);
+    expect(busyHeartbeats.map((heartbeat) => heartbeat.createdAt)).toEqual(
+      Array.from({ length: 45 }, (_, index) =>
+        new Date(Date.UTC(2026, 4, 1, 12, 49 - index, 0)).toISOString(),
       ),
-    ).toHaveLength(45);
-    expect(
-      publicData.heartbeats.filter(
-        (heartbeat) => heartbeat.monitorId === quietMonitorId,
-      ),
-    ).toHaveLength(1);
+    );
+    expect(quietHeartbeats).toHaveLength(1);
   });
 });
 
