@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.12.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.11.0...uptime-zero-v0.12.0) (2026-06-11)
+
+
+### Features
+
+* add permix permission gates ([68a91da](https://github.com/anyrange/uptime-zero/commit/68a91da6c22c31cbf0f50b0990415f29fa6db357))
+
+
+### Bug Fixes
+
+* add semantic badge variants for status colors ([6e65dee](https://github.com/anyrange/uptime-zero/commit/6e65dee4ff002b79f55b29f08d0eb36bf5c0d93c))
+* tighten monitoring verification and status page performance ([3b3cc4e](https://github.com/anyrange/uptime-zero/commit/3b3cc4e26e01c5d226b59660cf5cbcbfd4223af6))
+
+
+### Miscellaneous Chores
+
+* install shadcn improve skill ([ced58d8](https://github.com/anyrange/uptime-zero/commit/ced58d885155ecc665481344a193031b8ccc69c7))
+* update skills ([c2147a9](https://github.com/anyrange/uptime-zero/commit/c2147a9355d7a84d31913fe8ccbdf313dea720f1))
+
+
+### Tests
+
+* **e2e:** add manual Playwright coverage ([5b8988f](https://github.com/anyrange/uptime-zero/commit/5b8988f0482f17ca7e187efea29aa7a1c68631d2))
+
 ## [0.11.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.10.1...uptime-zero-v0.11.0) (2026-06-10)
 
 
