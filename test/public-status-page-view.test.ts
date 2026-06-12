@@ -26,6 +26,7 @@ describe("public status page view model", () => {
 
   it("adapts public status page data into render-ready monitor groups", () => {
     const data = publicStatusPageData({
+      historyDays: 30,
       monitors: [
         monitor("http-1", "API", "http", "up"),
         monitor("dns-1", "DNS", "dns", "unknown"),
@@ -46,6 +47,10 @@ describe("public status page view model", () => {
       overallStatus: "error",
       showHistory: true,
     });
+    expect(view.uptimeWindows[0]).toMatchObject({
+      label: "Last 24 hours",
+      uptime: "50%",
+    });
     expect(view.monitorGroups.map((group) => group.title)).toEqual([
       "HTTP monitors",
       "DNS monitors",
@@ -56,12 +61,45 @@ describe("public status page view model", () => {
       "degraded",
       "error",
     ]);
-    expect(view.monitors.find((item) => item.id === "push-1")?.meta).toBe(
-      "Heartbeat monitor",
-    );
+    expect(view.monitors.find((item) => item.id === "push-1")?.meta).toBe("");
     expect(view.monitors.find((item) => item.id === "http-1")?.uptime).toBe(
       "100% uptime",
     );
+    expect(
+      view.monitors.find((item) => item.id === "http-1")?.history,
+    ).toHaveLength(30);
+  });
+
+  it("shows public monitor uptime with useful precision", () => {
+    const data = publicStatusPageData({
+      monitors: [monitor("http-1", "API", "http", "up")],
+      heartbeats: [
+        heartbeat("hb-1", "http-1", "up"),
+        heartbeat("hb-2", "http-1", "up"),
+        heartbeat("hb-3", "http-1", "down"),
+      ],
+    });
+
+    const view = buildPublicStatusPageView(data);
+
+    expect(view.monitors[0]?.uptime).toBe("66.67% uptime");
+  });
+
+  it("hides public monitor targets unless the status page enables them", () => {
+    const hidden = buildPublicStatusPageView(
+      publicStatusPageData({
+        monitors: [monitor("http-1", "API", "http", "up")],
+      }),
+    );
+    const visible = buildPublicStatusPageView(
+      publicStatusPageData({
+        page: { showTarget: 1 },
+        monitors: [monitor("http-1", "API", "http", "up")],
+      }),
+    );
+
+    expect(hidden.monitors[0]?.meta).toBe("");
+    expect(visible.monitors[0]?.meta).toBe("https://http-1.example.com");
   });
 
   it("builds incident views and status reports with affected monitor names", () => {
@@ -156,12 +194,14 @@ function publicStatusPageData({
   monitors = [],
   incidents = [],
   heartbeats = [],
+  historyDays = 30,
   status = "up",
 }: {
   page?: Partial<StatusPageRecord>;
   monitors?: MonitorRecord[];
   incidents?: IncidentRecord[];
   heartbeats?: HeartbeatRecord[];
+  historyDays?: number;
   status?: MonitorStatus;
 }): PublicStatusPageData {
   return {
@@ -172,6 +212,7 @@ function publicStatusPageData({
       description: "Public status",
       published: 1,
       showHistory: 1,
+      showTarget: 0,
       createdAt: "2026-05-01T00:00:00.000Z",
       updatedAt: "2026-05-01T00:00:00.000Z",
       ...page,
@@ -179,6 +220,7 @@ function publicStatusPageData({
     monitors,
     incidents,
     heartbeats,
+    historyDays,
     status,
   };
 }

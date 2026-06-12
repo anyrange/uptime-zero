@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 
 import { groupHeartbeats } from "@/lib/formatters";
+import { formatUptimePercent } from "@/lib/formatters";
 import {
   buildDailyStatusBarData,
   formatMonitorUptime,
@@ -45,12 +46,18 @@ export interface PublicStatusPageIncidentView {
   updates: StatusReport["updates"];
 }
 
+export interface PublicStatusPageUptimeWindow {
+  label: string;
+  uptime: string;
+}
+
 export interface PublicStatusPageViewModel {
   title: string;
   description: string | null;
   overallStatus: Exclude<StatusType, "empty">;
   showHistory: boolean;
   updatedAt: Date;
+  uptimeWindows: PublicStatusPageUptimeWindow[];
   monitors: PublicStatusPageMonitorView[];
   monitorGroups: PublicStatusPageMonitorGroup[];
   incidents: PublicStatusPageIncidentView[];
@@ -60,6 +67,9 @@ export interface PublicStatusPageViewModel {
 export function buildPublicStatusPageView(
   data: PublicStatusPageData,
 ): PublicStatusPageViewModel {
+  const historyDays = Number.isFinite(data.historyDays)
+    ? Math.max(1, data.historyDays)
+    : 30;
   const heartbeatMap = groupHeartbeats(data.heartbeats);
   const monitorMap = new Map(
     data.monitors.map((monitor) => [monitor.id, monitor]),
@@ -73,14 +83,16 @@ export function buildPublicStatusPageView(
       kind: monitor.kind,
       status: monitorStatusToBlockStatus(monitor.lastStatus),
       meta:
-        monitor.kind === "push"
-          ? m.status_page_push_monitor_meta()
-          : monitor.target,
+        data.page.showTarget !== 1
+          ? ""
+          : monitor.kind === "push"
+            ? m.status_page_push_monitor_meta()
+            : monitor.target,
       uptime: formatMonitorUptime(heartbeats),
       history: buildDailyStatusBarData(
         heartbeats,
         data.incidents.filter((incident) => incident.monitorId === monitor.id),
-        45,
+        historyDays,
       ),
     };
   });
@@ -91,6 +103,7 @@ export function buildPublicStatusPageView(
     overallStatus: monitorStatusToBlockStatus(data.status),
     showHistory: data.page.showHistory === 1,
     updatedAt: latestUpdatedAt(data),
+    uptimeWindows: buildPublicUptimeWindows(data.heartbeats),
     monitors,
     monitorGroups: groupPublicMonitors(monitors),
     incidents: data.incidents.map((incident) => ({
@@ -117,6 +130,34 @@ export function buildPublicStatusPageView(
       updates: toIncidentUpdates(incident),
     })),
   };
+}
+
+function buildPublicUptimeWindows(
+  heartbeats: PublicStatusPageData["heartbeats"],
+): PublicStatusPageUptimeWindow[] {
+  return [
+    { days: 1, label: m.status_page_uptime_last_24_hours() },
+    { days: 7, label: m.status_page_uptime_last_7_days() },
+    { days: 30, label: m.status_page_uptime_last_30_days() },
+    { days: 90, label: m.status_page_uptime_last_90_days() },
+  ].map((window) => {
+    const cutoff = Date.now() - window.days * 24 * 60 * 60 * 1000;
+    const relevant = heartbeats.filter((heartbeat) => {
+      const timestamp = new Date(heartbeat.createdAt).getTime();
+      return Number.isFinite(timestamp) && timestamp >= cutoff;
+    });
+    const upChecks = relevant.filter(
+      (heartbeat) => heartbeat.status === "up",
+    ).length;
+    const uptime = relevant.length
+      ? `${formatUptimePercent((upChecks / relevant.length) * 100)}%`
+      : "-";
+
+    return {
+      label: window.label,
+      uptime,
+    };
+  });
 }
 
 function groupPublicMonitors(

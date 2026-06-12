@@ -18,8 +18,8 @@ export function StatusTimestamp({
   date: Date;
   variant?: "simple" | "rich";
 }) {
-  const local = format(date, "MMM dd, yyyy HH:mm");
   const utc = `${format(date, "MMM dd, yyyy HH:mm")} UTC`;
+  const fullDate = format(date, "PP pp");
 
   return (
     <TooltipProvider>
@@ -35,7 +35,7 @@ export function StatusTimestamp({
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{local}</p>
+          <p>{fullDate}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

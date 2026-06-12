@@ -6,6 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Ellipsis, ExternalLink, Pencil, Search, Trash2 } from "lucide-react";
+import { nanoid } from "nanoid";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
 
@@ -77,6 +78,7 @@ const statusPageSchema = z.object({
   description: z.string().nullable(),
   published: z.boolean(),
   showHistory: z.boolean(),
+  showTarget: z.boolean(),
   monitorIds: z.array(z.string()),
 });
 
@@ -451,10 +453,11 @@ function StatusPageForm({
   const form = useForm({
     defaultValues: {
       title: page?.title ?? "",
-      slug: page?.slug ?? "",
+      slug: page?.slug ?? nanoid(10),
       description: page?.description ?? null,
       published: page ? page.published === 1 : true,
       showHistory: page ? page.showHistory === 1 : true,
+      showTarget: page ? page.showTarget === 1 : false,
       monitorIds: selectedMonitorIds,
     },
     validators: {
@@ -668,6 +671,26 @@ function StatusPageForm({
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{m.status_page_show_recent_history()}</ItemTitle>
+                </ItemContent>
+              </label>
+            </Item>
+          )}
+        />
+        <form.Field
+          name="showTarget"
+          children={(field) => (
+            <Item asChild size="sm" variant="outline">
+              <label>
+                <ItemMedia>
+                  <Checkbox
+                    checked={field.state.value}
+                    onCheckedChange={(checked) =>
+                      field.handleChange(Boolean(checked))
+                    }
+                  />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{m.status_page_show_monitor_url()}</ItemTitle>
                 </ItemContent>
               </label>
             </Item>

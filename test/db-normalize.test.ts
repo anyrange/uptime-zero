@@ -111,6 +111,7 @@ describe("database record mapping", () => {
         description: null,
         published: 1,
         showHistory: 1,
+        showTarget: 0,
         createdAt: now,
         updatedAt: now,
       }),

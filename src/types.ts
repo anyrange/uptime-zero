@@ -136,6 +136,7 @@ export interface StatusPageRecord {
   description: string | null;
   published: number;
   showHistory: number;
+  showTarget: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -322,6 +323,7 @@ export interface PublicStatusPageData {
   monitors: MonitorRecord[];
   incidents: IncidentRecord[];
   heartbeats: HeartbeatRecord[];
+  historyDays: number;
   status: MonitorStatus;
 }
 

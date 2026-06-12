@@ -64,6 +64,10 @@ export function formatDurationMs(value: number | null | undefined) {
   return value == null ? m.common_not_available() : m.common_ms({ value });
 }
 
+export function formatUptimePercent(value: number) {
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
 export function formatIncidentDuration(incident: {
   status: "open" | "closed";
   openedAt: string;

@@ -27,7 +27,6 @@ import {
   StatusPageHeader,
   StatusPageHeaderBrand,
   StatusPageHeaderBrandButton,
-  StatusPageHeaderBrandFallback,
   StatusPageHeaderContent,
   StatusPageHeaderNav,
   StatusPageHeaderNavItem,
@@ -38,7 +37,8 @@ import {
 } from "@/components/blocks/status-page-shell";
 import { StatusTimestamp } from "@/components/blocks/status-timestamp";
 import { Error } from "@/components/error";
-import { formatDateTime } from "@/lib/formatters";
+import { LiveTime } from "@/components/live-time";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildPublicStatusPageView } from "@/lib/public-status-page-view";
 import { usePublicStatusPageQuery } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
@@ -72,9 +72,13 @@ function PublicStatusPageView({
         <StatusPageHeader className="border-b border-border/60 bg-card/40 backdrop-blur">
           <StatusPageHeaderContent>
             <StatusPageHeaderBrand>
-              <StatusPageHeaderBrandButton>
+              <StatusPageHeaderBrandButton className="border-transparent bg-transparent shadow-none hover:bg-transparent hover:text-current focus-visible:border-transparent focus-visible:ring-0 active:translate-y-0 dark:hover:bg-transparent">
                 <a href={`/status/${data.page.slug}`}>
-                  <StatusPageHeaderBrandFallback title={view.title} />
+                  <img
+                    alt={m.common_edge_uptime()}
+                    className="aspect-square size-9"
+                    src="/logo.svg"
+                  />
                 </a>
               </StatusPageHeaderBrandButton>
             </StatusPageHeaderBrand>
@@ -97,13 +101,38 @@ function PublicStatusPageView({
             <StatusContent className="gap-4">
               <StatusBanner className="shadow-sm" status={view.overallStatus} />
 
+              <section className="grid gap-3" id="uptime">
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>{m.status_page_overall_uptime()}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {view.uptimeWindows.map((window) => (
+                        <div
+                          className="border-border/60 lg:border-l lg:pl-6 lg:first:border-l-0 lg:first:pl-0"
+                          key={window.label}
+                        >
+                          <div className="text-2xl font-semibold tracking-normal text-foreground">
+                            {window.uptime}
+                          </div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {window.label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+
               <section className="grid gap-3" id="services">
                 <div>
                   <h2 className="text-lg font-semibold">
                     {m.status_page_services()}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Monitors grouped by service type with recent status history.
+                    {m.status_page_services_description()}
                   </p>
                 </div>
                 {view.monitors.length === 0 ? (
@@ -154,7 +183,7 @@ function PublicStatusPageView({
                                 </>
                               ) : (
                                 <p className="text-sm text-muted-foreground">
-                                  History hidden.
+                                  {m.status_page_history_hidden()}
                                 </p>
                               )}
                               <div className="flex items-center justify-between gap-3 sm:hidden">
@@ -193,13 +222,19 @@ function PublicStatusPageView({
         <StatusPageFooter className="border-t border-border/60 bg-card/30">
           <StatusPageFooterContent>
             <StatusPagePoweredBy>
-              <a className="underline underline-offset-4" href="/">
-                Uptime
+              <a
+                className="underline underline-offset-4"
+                href="https://github.com/anyrange/uptime-zero"
+                rel="noreferrer"
+                target="_blank"
+              >
+                {m.status_page_powered_by()}
               </a>
             </StatusPagePoweredBy>
             <StatusPageFooterActions>
               <StatusTimestamp className="text-xs" date={view.updatedAt}>
-                Refreshed {formatDateTime(view.updatedAt.toISOString())}
+                {m.status_page_refreshed()}{" "}
+                <LiveTime value={view.updatedAt.toISOString()} />
               </StatusTimestamp>
             </StatusPageFooterActions>
           </StatusPageFooterContent>

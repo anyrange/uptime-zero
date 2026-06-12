@@ -148,6 +148,7 @@ export const statusPages = sqliteTable("statusPages", {
   description: text("description"),
   published: integer("published").notNull().default(1),
   showHistory: integer("showHistory").notNull().default(1),
+  showTarget: integer("showTarget").notNull().default(0),
   createdAt: text("createdAt").notNull(),
   updatedAt: text("updatedAt").notNull(),
 });

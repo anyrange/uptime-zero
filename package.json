@@ -61,6 +61,7 @@
     "kysely": "0.28.17",
     "lodash.throttle": "^4.1.1",
     "lucide-react": "^1.17.0",
+    "nanoid": "^5.1.11",
     "permix": "^4.1.0",
     "radix-ui": "^1.5.0",
     "react": "^19.2.7",

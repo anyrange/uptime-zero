@@ -9,6 +9,7 @@ export type StatusPagePayload = {
   description: string | null;
   published: boolean;
   showHistory: boolean;
+  showTarget: boolean;
   monitorIds: string[];
 };
 

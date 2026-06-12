@@ -1,0 +1,1 @@
+ALTER TABLE `statusPages` ADD `showTarget` integer DEFAULT 0 NOT NULL;

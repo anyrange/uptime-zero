@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 import type {
   HeartbeatRecord,
@@ -286,6 +286,28 @@ export class MonitorModel {
       .orderBy(
         asc(rankedHeartbeats.monitorId),
         desc(rankedHeartbeats.createdAt),
+      );
+
+    return rows.map(mapHeartbeatRecord);
+  }
+
+  async listHeartbeatsForMonitorsSince(monitorIds: string[], cutoff: string) {
+    if (monitorIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db
+      .select()
+      .from(schema.heartbeats)
+      .where(
+        and(
+          inArray(schema.heartbeats.monitorId, monitorIds),
+          gte(schema.heartbeats.createdAt, cutoff),
+        ),
+      )
+      .orderBy(
+        asc(schema.heartbeats.monitorId),
+        desc(schema.heartbeats.createdAt),
       );
 
     return rows.map(mapHeartbeatRecord);

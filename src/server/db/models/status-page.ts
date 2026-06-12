@@ -17,6 +17,7 @@ export class StatusPageModel {
     description?: string | null;
     published: number;
     showHistory: number;
+    showTarget: number;
     monitorIds: string[];
   }) {
     const now = nowIso();
@@ -39,6 +40,7 @@ export class StatusPageModel {
           description: payload.description ?? null,
           published: payload.published,
           showHistory: payload.showHistory,
+          showTarget: payload.showTarget,
           updatedAt: now,
         })
         .where(eq(schema.statusPages.id, id));
@@ -50,6 +52,7 @@ export class StatusPageModel {
         description: payload.description ?? null,
         published: payload.published,
         showHistory: payload.showHistory,
+        showTarget: payload.showTarget,
         createdAt: now,
         updatedAt: now,
       });

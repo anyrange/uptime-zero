@@ -7,6 +7,7 @@ import { z } from "zod";
 import type { AppEnv } from "@/ctx";
 
 import { createDatabase } from "@/server/db";
+import { daysAgoIso } from "@/server/lib/dates";
 import { computeAggregateStatus } from "@/server/lib/monitoring";
 import { requireApiPermission } from "@/server/middleware/permissions";
 
@@ -17,6 +18,7 @@ const statusPageInputSchema = z.object({
   description: z.string().trim().nullable().optional(),
   published: z.boolean(),
   showHistory: z.boolean(),
+  showTarget: z.boolean().default(false),
   monitorIds: z.array(z.string()).default([]),
 });
 
@@ -50,6 +52,7 @@ export const statusPagesApi = new Hono<AppEnv>()
         description: body.description ?? null,
         published: body.published ? 1 : 0,
         showHistory: body.showHistory ? 1 : 0,
+        showTarget: body.showTarget ? 1 : 0,
         monitorIds: body.monitorIds,
       });
 
@@ -89,6 +92,7 @@ export const statusPagesApi = new Hono<AppEnv>()
         description: body.description ?? null,
         published: body.published ? 1 : 0,
         showHistory: body.showHistory ? 1 : 0,
+        showTarget: body.showTarget ? 1 : 0,
         monitorIds: body.monitorIds,
       });
       const saved = await db.statusPage.getById(pageId);
@@ -112,11 +116,17 @@ export const publicStatusApi = new Hono<AppEnv>().get("/:slug", async (ctx) => {
   }
 
   const monitorIds = await db.statusPage.getMonitorIds(page.id);
+  const settings = await db.settings.get();
+  const heartbeatCutoff = daysAgoIso(settings.heartbeatRetentionDays);
   const { monitors, incidents, heartbeats } = monitorIds.length
     ? await all({
         monitors: () => db.monitor.listByIdsByName(monitorIds),
         incidents: () => db.incident.listForMonitors(monitorIds, 10),
-        heartbeats: () => db.monitor.listHeartbeatsForMonitors(monitorIds, 45),
+        heartbeats: () =>
+          db.monitor.listHeartbeatsForMonitorsSince(
+            monitorIds,
+            heartbeatCutoff,
+          ),
       })
     : { monitors: [], incidents: [], heartbeats: [] };
 
@@ -125,6 +135,7 @@ export const publicStatusApi = new Hono<AppEnv>().get("/:slug", async (ctx) => {
     monitors,
     incidents,
     heartbeats,
+    historyDays: settings.heartbeatRetentionDays,
     status: computeAggregateStatus(
       monitors.map((monitor) => monitor.lastStatus),
     ),

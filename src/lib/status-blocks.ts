@@ -4,6 +4,7 @@ import type {
 } from "@/components/blocks/status.types";
 import type { HeartbeatRecord, IncidentRecord, MonitorStatus } from "@/types";
 
+import { formatUptimePercent } from "@/lib/formatters";
 import { m } from "@/paraglide/messages.js";
 
 export function monitorStatusToBlockStatus(
@@ -27,7 +28,7 @@ export function formatMonitorUptime(heartbeats: HeartbeatRecord[]) {
     (heartbeat) => heartbeat.status === "up",
   ).length;
   const percentage = (upChecks / heartbeats.length) * 100;
-  return m.monitor_uptime_percent({ percent: percentage.toFixed(0) });
+  return m.monitor_uptime_percent({ percent: formatUptimePercent(percentage) });
 }
 
 export function buildStatusBarData(

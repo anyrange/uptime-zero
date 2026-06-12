@@ -13,6 +13,7 @@ import {
 import {
   formatDateTime,
   formatDurationMs,
+  formatUptimePercent,
   notificationSummary,
 } from "@/lib/formatters";
 import { useMonitorQuery } from "@/lib/queries/monitors";
@@ -51,7 +52,7 @@ function MonitorOverviewContent({
             <CardTitle className="text-2xl sm:text-3xl">
               {data.metrics.windows[0]?.uptimePercentage == null
                 ? m.common_not_available()
-                : `${data.metrics.windows[0].uptimePercentage.toFixed(2)}%`}
+                : `${formatUptimePercent(data.metrics.windows[0].uptimePercentage)}%`}
             </CardTitle>
           </OverviewMetricCardBody>
           <OverviewMetricCardMeta>
@@ -151,7 +152,7 @@ function MonitorOverviewContent({
                   <p className="text-2xl font-semibold text-foreground">
                     {window.uptimePercentage == null
                       ? m.common_not_available()
-                      : `${window.uptimePercentage.toFixed(2)}%`}
+                      : `${formatUptimePercent(window.uptimePercentage)}%`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {m.monitor_check_window_summary({
