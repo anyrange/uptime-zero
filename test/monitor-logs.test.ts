@@ -7,10 +7,32 @@ import {
 } from "@/lib/monitor/logs";
 
 import {
+  testAuth,
   apiFetch,
   seedMonitorWithHeartbeats,
-  setupAdminSession,
 } from "./api-test-utils";
+
+async function setupAdminTestSession() {
+  const { test } = await testAuth.$context;
+
+  const user = test.createUser({
+    name: "Admin",
+    email: `admin-${crypto.randomUUID()}@example.com`,
+    role: "admin",
+  });
+  await test.saveUser(user);
+
+  const headers = await test.getAuthHeaders({
+    userId: user.id,
+  });
+
+  const cookie = headers.get("cookie");
+  if (!cookie) {
+    throw new Error("Failed to setup test auth session");
+  }
+
+  return cookie;
+}
 
 describe("monitor log pagination helpers", () => {
   it("clamps page numbers to the nearest available page", () => {
@@ -57,7 +79,7 @@ describe("monitor logs API", () => {
   });
 
   it("returns a real paginated heartbeat page from D1", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupAdminTestSession();
     const monitorId = await seedMonitorWithHeartbeats(33);
 
     const response = await apiFetch(
@@ -80,7 +102,7 @@ describe("monitor logs API", () => {
   });
 
   it("defaults invalid page values to the first page", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupAdminTestSession();
     const monitorId = await seedMonitorWithHeartbeats(1);
 
     const response = await apiFetch(
@@ -99,7 +121,7 @@ describe("monitor logs API", () => {
   });
 
   it("returns 404 for an unknown monitor", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupAdminTestSession();
 
     const response = await apiFetch(
       "/api/monitors/missing/logs?page=1",

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { HeartbeatRecord, IncidentRecord, NotificationDestinationRecord } from "@/types";
-import { m } from "@/paraglide/messages.js";
+import type { HeartbeatRecord, NotificationDestinationRecord } from "@/types";
+
 import {
   formatDateTime,
   formatDurationMs,
@@ -10,6 +10,7 @@ import {
   groupHeartbeats,
   notificationSummary,
 } from "@/lib/formatters";
+import { m } from "@/paraglide/messages.js";
 
 describe("formatting helpers", () => {
   it("returns translated placeholders for missing and invalid timestamps", () => {
@@ -53,7 +54,7 @@ describe("formatting helpers", () => {
         openedAt: "2026-06-13T00:00:00.000Z",
         closedAt: "2026-06-13T00:01:31.000Z",
         durationMs: 90_000,
-      } as IncidentRecord),
+      }),
     ).toBe(m.common_minutes_short({ value: 1 }));
   });
 
@@ -67,7 +68,7 @@ describe("formatting helpers", () => {
           status: "open",
           openedAt: "2026-06-13T00:00:00.000Z",
           closedAt: null,
-        } as IncidentRecord),
+        }),
       ).toBe(m.common_minutes_short({ value: 3 }));
     } finally {
       vi.useRealTimers();
@@ -132,7 +133,9 @@ describe("formatting helpers", () => {
     expect(notificationSummary(webhook)).toBe(
       `https://example.com/hook (${m.common_count_headers({ count: 1 })})`,
     );
-    expect(notificationSummary(webhookNoHeaders)).toBe("https://example.com/empty");
+    expect(notificationSummary(webhookNoHeaders)).toBe(
+      "https://example.com/empty",
+    );
     expect(notificationSummary(telegramWithThread)).toBe(
       m.notification_chat_thread({ chatId: "123", threadId: "9" }),
     );

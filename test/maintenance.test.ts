@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { eq } from "drizzle-orm";
-
 import { env } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createDatabase } from "@/server/db";
 import * as schema from "@/server/db/schema";
@@ -32,7 +31,7 @@ describe("maintenance retention", () => {
       timeoutMs: 10_000,
       retries: 0,
       assertions: [],
-      active: true,
+      active: 1,
       heartbeatCron: null,
       heartbeatGraceSec: null,
       heartbeatTimezone: null,
@@ -83,11 +82,9 @@ describe("maintenance retention", () => {
       source: "system" as const,
     };
 
-    await db.drizzle.insert(schema.heartbeats).values([
-      oldHeartbeat,
-      cutOffHeartbeat,
-      freshHeartbeat,
-    ]);
+    await db.drizzle
+      .insert(schema.heartbeats)
+      .values([oldHeartbeat, cutOffHeartbeat, freshHeartbeat]);
 
     const oldClosedIncident = {
       id: crypto.randomUUID(),
@@ -120,20 +117,22 @@ describe("maintenance retention", () => {
       closedAt: null,
     };
 
-    await db.drizzle.insert(schema.incidents).values([
-      oldClosedIncident,
-      cutoffClosedIncident,
-      openIncident,
-    ]);
+    await db.drizzle
+      .insert(schema.incidents)
+      .values([oldClosedIncident, cutoffClosedIncident, openIncident]);
 
     const userId = crypto.randomUUID();
+    const baseNow = new Date(Date.now());
+    const oldSessionExpiresAt = new Date(baseNow.getTime() - 1_000);
+    const cutoffSessionExpiresAt = baseNow;
+    const freshSessionExpiresAt = new Date(baseNow.getTime() + 1_000);
     await db.drizzle.insert(schema.user).values({
       id: userId,
       name: "Expired Keeper",
       email: `${userId}@example.com`,
-      emailVerified: 1,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      emailVerified: true,
+      createdAt: baseNow,
+      updatedAt: baseNow,
       role: "user",
       image: null,
     });
@@ -142,38 +141,36 @@ describe("maintenance retention", () => {
       id: crypto.randomUUID(),
       userId,
       token: "old-session",
-      expiresAt: Date.now() - 1000,
+      expiresAt: oldSessionExpiresAt,
       ipAddress: null,
       userAgent: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: baseNow,
+      updatedAt: baseNow,
     };
     const cutoffSession = {
       id: crypto.randomUUID(),
       userId,
       token: "cutoff-session",
-      expiresAt: Date.now(),
+      expiresAt: cutoffSessionExpiresAt,
       ipAddress: null,
       userAgent: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: baseNow,
+      updatedAt: baseNow,
     };
     const freshSession = {
       id: crypto.randomUUID(),
       userId,
       token: "fresh-session",
-      expiresAt: Date.now() + 1000,
+      expiresAt: freshSessionExpiresAt,
       ipAddress: null,
       userAgent: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: baseNow,
+      updatedAt: baseNow,
     };
 
-    await db.drizzle.insert(schema.session).values([
-      oldSession,
-      cutoffSession,
-      freshSession,
-    ]);
+    await db.drizzle.insert(schema.session).values(oldSession);
+    await db.drizzle.insert(schema.session).values(cutoffSession);
+    await db.drizzle.insert(schema.session).values(freshSession);
 
     const service = new MaintenanceService(db);
     await service.cleanupRetention();
@@ -186,10 +183,10 @@ describe("maintenance retention", () => {
     expect(heartbeatIds.has(cutOffHeartbeat.id)).toBe(true);
     expect(heartbeatIds.has(freshHeartbeat.id)).toBe(true);
 
-    const remainingIncidents = await db.drizzle
-      .select()
-      .from(schema.incidents);
-    const incidentStatuses = new Set(remainingIncidents.map((row) => row.status));
+    const remainingIncidents = await db.drizzle.select().from(schema.incidents);
+    const incidentStatuses = new Set(
+      remainingIncidents.map((row) => row.status),
+    );
     expect(incidentStatuses.has("open")).toBe(true);
     expect(incidentStatuses.has("closed")).toBe(true);
     const incidentIds = new Set(remainingIncidents.map((row) => row.id));

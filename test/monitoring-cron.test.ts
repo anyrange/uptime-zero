@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_HEARTBEAT_CRON, DEFAULT_HEARTBEAT_GRACE_SEC, DEFAULT_HEARTBEAT_TIMEZONE } from "@/lib/monitor/config";
+import {
+  DEFAULT_HEARTBEAT_CRON,
+  DEFAULT_HEARTBEAT_GRACE_SEC,
+  DEFAULT_HEARTBEAT_TIMEZONE,
+} from "@/lib/monitor/config";
 import {
   getCronHeartbeatSchedule,
   getNextCronHeartbeatExpectedAt,
@@ -61,4 +65,3 @@ describe("monitoring cron helpers", () => {
     ).toThrow(/CronPattern: invalid configuration format/);
   });
 });
-

@@ -1,15 +1,36 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-import { getDrizzle } from "@/server/db";
+import { createDatabase, getDrizzle } from "@/server/db";
 import * as schema from "@/server/db/schema";
 
 import {
+  testAuth,
   apiFetch,
-  downgradeAdminToUser,
   seedMonitorWithHeartbeats,
-  setupAdminSession,
 } from "./api-test-utils";
+
+async function setupTestSession(role: "admin" | "user") {
+  const { test } = await testAuth.$context;
+
+  const user = test.createUser({
+    name: role === "admin" ? "Admin" : "User",
+    email: `${role}-${crypto.randomUUID()}@example.com`,
+    role,
+  });
+  await test.saveUser(user);
+
+  const headers = await test.getAuthHeaders({
+    userId: user.id,
+  });
+
+  const cookie = headers.get("cookie");
+  if (!cookie) {
+    throw new Error("Failed to setup test auth session");
+  }
+
+  return cookie;
+}
 
 describe("private API auth", () => {
   it("rejects unauthenticated private API requests", async () => {
@@ -22,8 +43,7 @@ describe("private API auth", () => {
   });
 
   it("rejects non-admin users from admin API routes", async () => {
-    const cookie = await setupAdminSession();
-    await downgradeAdminToUser();
+    const cookie = await setupTestSession("user");
 
     const response = await apiFetch("/api/settings/monitors/export", cookie);
 
@@ -36,7 +56,7 @@ describe("private API auth", () => {
 
 describe("monitor import/export API", () => {
   it("exports only monitor configuration fields", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
     const monitorId = await seedMonitorWithHeartbeats(1);
 
     const response = await apiFetch("/api/settings/monitors/export", cookie);
@@ -73,7 +93,7 @@ describe("monitor import/export API", () => {
   });
 
   it("imports monitors as new rows and regenerates push tokens", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
     const db = getDrizzle(env.DB);
     const existingPushId = crypto.randomUUID();
 
@@ -161,7 +181,7 @@ describe("monitor import/export API", () => {
   });
 
   it("imports legacy monitor exports with shorter positive intervals", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
     const db = getDrizzle(env.DB);
 
     const importResponse = await apiFetch("/api/settings/monitors/import", {
@@ -205,7 +225,7 @@ describe("monitor import/export API", () => {
   });
 
   it("rejects invalid import envelopes and monitor payloads", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const invalidJson = await apiFetch("/api/settings/monitors/import", {
       method: "POST",
@@ -262,7 +282,7 @@ describe("monitor import/export API", () => {
 
 describe("monitor API", () => {
   it("creates and updates monitors through the real API and D1 models", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const createResponse = await apiFetch("/api/monitors", {
       method: "POST",
@@ -320,7 +340,7 @@ describe("monitor API", () => {
   });
 
   it("records an initial check when an active monitor is created", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const response = await apiFetch("/api/monitors", {
       method: "POST",
@@ -357,7 +377,7 @@ describe("monitor API", () => {
   });
 
   it("rejects invalid monitor payloads at the API boundary", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const response = await apiFetch("/api/monitors", {
       method: "POST",
@@ -376,7 +396,7 @@ describe("monitor API", () => {
   });
 
   it("pauses and resumes monitors through explicit actions", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const createResponse = await apiFetch("/api/monitors", {
       method: "POST",
@@ -418,8 +438,10 @@ describe("monitor API", () => {
 
 describe("status page API", () => {
   it("dedupes linked monitors and returns public heartbeat history per monitor", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
+
     const db = getDrizzle(env.DB);
+
     const busyMonitorId = crypto.randomUUID();
     const quietMonitorId = crypto.randomUUID();
 
@@ -486,6 +508,11 @@ describe("status page API", () => {
     ]) {
       await db.insert(schema.heartbeats).values(heartbeat);
     }
+    const settingsDb = createDatabase(env.DB);
+    await settingsDb.settings.update({
+      heartbeatRetentionDays: 365,
+      incidentRetentionDays: 90,
+    });
 
     const createResponse = await apiFetch("/api/status-pages", {
       method: "POST",
@@ -522,9 +549,9 @@ describe("status page API", () => {
       (heartbeat) => heartbeat.monitorId === quietMonitorId,
     );
 
-    expect(busyHeartbeats).toHaveLength(45);
+    expect(busyHeartbeats).toHaveLength(50);
     expect(busyHeartbeats.map((heartbeat) => heartbeat.createdAt)).toEqual(
-      Array.from({ length: 45 }, (_, index) =>
+      Array.from({ length: 50 }, (_, index) =>
         new Date(Date.UTC(2026, 4, 1, 12, 49 - index, 0)).toISOString(),
       ),
     );
@@ -534,7 +561,7 @@ describe("status page API", () => {
 
 describe("notification API", () => {
   it("persists provider config and monitor bindings through the real API", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
     const monitorId = await seedMonitorWithHeartbeats(0);
 
     const createResponse = await apiFetch("/api/notifications", {
@@ -565,7 +592,7 @@ describe("notification API", () => {
   });
 
   it("rejects invalid notification URLs at the API boundary", async () => {
-    const cookie = await setupAdminSession();
+    const cookie = await setupTestSession("admin");
 
     const response = await apiFetch("/api/notifications", {
       method: "POST",

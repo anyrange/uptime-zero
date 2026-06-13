@@ -1,3 +1,6 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { testUtils } from "better-auth/plugins";
 import {
   createExecutionContext,
   waitOnExecutionContext,
@@ -8,27 +11,30 @@ import { getDrizzle } from "@/server/db";
 import * as schema from "@/server/db/schema";
 import worker from "@/server/index";
 
-export async function setupAdminSession() {
-  const response = await apiFetch("/api/auth/setup", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      name: "Admin",
-      email: "admin@example.com",
-      password: "password-123456",
-    }),
-  });
-
-  if (response.status !== 200) {
-    throw new Error(`Failed to setup admin session: ${response.status}`);
-  }
-
-  return response.headers.get("set-cookie") ?? "";
-}
-
-export async function downgradeAdminToUser() {
-  await getDrizzle(env.DB).update(schema.user).set({ role: "user" });
-}
+export const testAuth = betterAuth({
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: "http://localhost",
+  database: drizzleAdapter(getDrizzle(env.DB), {
+    provider: "sqlite",
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: ["user", "admin"],
+        required: false,
+        defaultValue: "user",
+        input: true,
+      },
+    },
+  },
+  advanced: {
+    cookiePrefix: "uptime",
+  },
+  plugins: [testUtils()],
+});
 
 export async function seedMonitorWithHeartbeats(count: number) {
   const db = getDrizzle(env.DB);

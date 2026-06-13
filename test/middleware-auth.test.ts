@@ -1,140 +1,163 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { env } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadSession, requireAdmin, requireSession } from "@/server/middleware/auth";
+import {
+  loadSession,
+  requireAdmin,
+  requireSession,
+} from "@/server/middleware/auth";
 import { requireApiAdmin, requireApiSession } from "@/server/middleware/guards";
 import { requireApiPermission } from "@/server/middleware/permissions";
 
-const getSessionMock = vi.fn();
-const getUserRoleMock = vi.fn();
+import { testAuth } from "./api-test-utils";
 
-vi.mock("@/server/lib/auth", () => ({
-  authFor: vi.fn(() => ({
-    api: {
-      getSession: getSessionMock,
-    },
-  })),
-}));
+type SessionVars = {
+  sessionUserId: string | null;
+  sessionUserRole: "admin" | "user" | null;
+  sessionUserName: string | null;
+  sessionUserEmail: string | null;
+  sessionUserImage: string | null;
+};
 
-const createDatabaseMock = vi.fn(() => ({
-  user: {
-    getUserRole: getUserRoleMock,
-  },
-}));
+type Context = Parameters<typeof requireSession>[0] & {
+  req: {
+    raw: {
+      headers: Headers;
+    };
+    url: string;
+  };
+  env: { DB: Record<string, never> };
+  redirect: (location: string) => Response;
+  get: (key: keyof SessionVars | "log") => unknown;
+  set: (
+    key: keyof SessionVars,
+    value: SessionVars[keyof SessionVars] | null,
+  ) => void;
+};
 
-vi.mock("@/server/db", () => ({
-  createDatabase: createDatabaseMock,
-}));
+type TestContext = {
+  ctx: Context;
+  next: ReturnType<typeof vi.fn>;
+  values: Map<string, unknown>;
+  log: { set: ReturnType<typeof vi.fn> };
+};
 
-function createContext(base: Record<string, unknown> = {}) {
-  const values = new Map<string, unknown>(Object.entries(base));
-  const log = { set: vi.fn() };
+async function createAuthSession(role: "admin" | "user") {
+  const { test } = await testAuth.$context;
+  const user = test.createUser({
+    name: role === "admin" ? "Admin" : "User",
+    email: `${role}-${crypto.randomUUID()}@example.com`,
+    role,
+  });
+  await test.saveUser(user);
+  const headers = await test.getAuthHeaders({ userId: user.id });
+  const cookie = headers.get("cookie");
+
+  if (!cookie) {
+    throw new Error("Failed to create test auth session");
+  }
+
   return {
-    values,
-    log,
-    ctx: {
-      req: {
-        raw: {
-          headers: new Headers(),
-        },
-      },
-      env: {
-        DB: {} as Record<string, never>,
-      },
-      get: (key: string) => {
-        if (key === "log") return log;
-        return values.has(key) ? values.get(key) ?? null : null;
-      },
-      set: (key: string, value: unknown) => {
-        values.set(key, value);
-      },
-    },
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    cookie,
   };
 }
 
-describe("auth and permission middleware", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+function createContext(
+  seed: Partial<SessionVars> = {},
+  headers = new Headers(),
+): TestContext {
+  const values = new Map<string, unknown>([
+    ["sessionUserId", null],
+    ["sessionUserRole", null],
+    ["sessionUserName", null],
+    ["sessionUserEmail", null],
+    ["sessionUserImage", null],
+    ...Object.entries(seed),
+  ]);
+  const log = { set: vi.fn() };
 
-  it("redirects anonymous users in page middleware", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext();
+  const ctx = {
+    req: {
+      raw: {
+        headers,
+      },
+      url: "http://localhost/test",
+    },
+    env: {
+      DB: env.DB,
+    },
+    redirect: (location: string) =>
+      new Response(null, {
+        status: 302,
+        headers: { Location: location },
+      }),
+    get: (key: keyof SessionVars | "log") => {
+      if (key === "log") {
+        return log;
+      }
+      if (!values.has(key)) {
+        return null;
+      }
+      return values.get(key) ?? null;
+    },
+    set: (
+      key: keyof SessionVars,
+      value: SessionVars[keyof SessionVars] | null,
+    ) => {
+      values.set(key, value);
+    },
+  } as Context;
 
-    const response = (await requireSession(ctx as any, next)) as Response;
+  return {
+    ctx,
+    next: vi.fn(async () => {}),
+    values,
+    log,
+  };
+}
 
-    expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("/login");
-    expect(next).not.toHaveBeenCalled();
-  });
+function runMiddleware(
+  middleware: (ctx: Context, next: () => Promise<void>) => Promise<unknown>,
+  ctx: Context,
+  next: ReturnType<typeof vi.fn>,
+): Promise<unknown> {
+  return middleware(ctx, next as unknown as () => Promise<void>);
+}
 
-  it("lets authenticated users through in page middleware", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext({ sessionUserId: "user-1" });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
-    await requireSession(ctx as any, next);
+describe("loadSession", () => {
+  it("hydrates context from an authenticated session", async () => {
+    const { cookie, userId, name, email } = await createAuthSession("admin");
+    const { ctx, next, values, log } = createContext(
+      {},
+      new Headers({ cookie }),
+    );
 
-    expect(next).toHaveBeenCalled();
-  });
+    await runMiddleware(loadSession, ctx, next);
 
-  it("redirects unauthenticated users from admin page middleware", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext();
-
-    const response = (await requireAdmin(ctx as any, next)) as Response;
-
-    expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("/login");
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("rejects non-admin users in page middleware with 403", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext({ sessionUserId: "user-1", sessionUserRole: "user" });
-
-    await expect(requireAdmin(ctx as any, next)).rejects.toMatchObject({
-      status: 403,
-      message: "Admin access required",
-    });
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("loads session values and role from authenticated session", async () => {
-    const next = vi.fn();
-    const { ctx, values, log } = createContext();
-
-    getSessionMock.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Session User",
-        email: "session@example.com",
-        image: "https://example.com/avatar.png",
+    expect(values.get("sessionUserId")).toBe(userId);
+    expect(values.get("sessionUserName")).toBe(name);
+    expect(values.get("sessionUserRole")).toBe("admin");
+    expect(values.get("sessionUserEmail")).toBe(email);
+    expect(log.set).toHaveBeenCalledWith({
+      session: {
+        userId,
       },
     });
-    getUserRoleMock.mockResolvedValue("admin");
-
-    await loadSession(ctx as any, next);
-
-    expect(values.get("sessionUserId")).toBe("user-1");
-    expect(values.get("sessionUserName")).toBe("Session User");
-    expect(values.get("sessionUserEmail")).toBe("session@example.com");
-    expect(values.get("sessionUserImage")).toBe("https://example.com/avatar.png");
-    expect(values.get("sessionUserRole")).toBe("admin");
-    expect(getUserRoleMock).toHaveBeenCalledWith("user-1");
-    expect(log.set).toHaveBeenCalledWith({
-      session: { userId: "user-1" },
-    });
     expect(next).toHaveBeenCalled();
   });
 
-  it("loads null session context when no user is signed in", async () => {
-    const next = vi.fn();
-    const { ctx, values, log } = createContext();
+  it("clears context when no session exists", async () => {
+    const { ctx, next, values, log } = createContext();
 
-    getSessionMock.mockResolvedValue(null);
-
-    await loadSession(ctx as any, next);
+    await runMiddleware(loadSession, ctx, next);
 
     expect(values.get("sessionUserId")).toBeNull();
     expect(values.get("sessionUserName")).toBeNull();
@@ -143,85 +166,156 @@ describe("auth and permission middleware", () => {
     expect(values.get("sessionUserRole")).toBeNull();
     expect(log.set).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
-    expect(getUserRoleMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("page middleware", () => {
+  it("redirects anonymous users", async () => {
+    const { ctx, next } = createContext();
+
+    const response = (await runMiddleware(
+      requireSession,
+      ctx,
+      next,
+    )) as Response;
+
+    expect(response).toBeInstanceOf(Response);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/login");
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it("rejects anonymous API requests", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext();
+  it("allows users with an active session", async () => {
+    const { ctx, next } = createContext({
+      sessionUserId: "user-1",
+    });
 
-    await expect(requireApiSession(ctx as any, next)).rejects.toBeInstanceOf(
-      HTTPException,
-    );
-  });
-
-  it("allows API sessions with authenticated users", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext({ sessionUserId: "api-user" });
-
-    await requireApiSession(ctx as any, next);
+    await runMiddleware(requireSession, ctx, next);
 
     expect(next).toHaveBeenCalled();
   });
 
-  it("rejects anonymous users in permission middleware", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext();
+  it("requires admin for admin pages", async () => {
+    const anonymous = createContext();
+    const anonymousResponse = (await runMiddleware(
+      requireAdmin,
+      anonymous.ctx,
+      anonymous.next,
+    )) as Response;
+    expect(anonymousResponse).toBeInstanceOf(Response);
+    expect(anonymousResponse.headers.get("Location")).toBe("/login");
+    expect(anonymous.next).not.toHaveBeenCalled();
+
+    const regular = createContext({
+      sessionUserId: "user-1",
+      sessionUserRole: "user",
+    });
+    await expect(
+      runMiddleware(requireAdmin, regular.ctx, regular.next),
+    ).rejects.toMatchObject({
+      status: 403,
+      message: "Admin access required",
+    });
+    expect(regular.next).not.toHaveBeenCalled();
+
+    const admin = createContext({
+      sessionUserId: "user-2",
+      sessionUserRole: "admin",
+    });
+    await runMiddleware(requireAdmin, admin.ctx, admin.next);
+    expect(admin.next).toHaveBeenCalled();
+  });
+});
+
+describe("API middleware", () => {
+  it("requires authentication for API sessions", async () => {
+    const { ctx, next } = createContext();
 
     await expect(
-      requireApiPermission("monitor.read")(ctx as any, next),
+      runMiddleware(requireApiSession, ctx, next),
+    ).rejects.toBeInstanceOf(HTTPException);
+  });
+
+  it("passes API sessions with a session user id", async () => {
+    const { ctx, next } = createContext({
+      sessionUserId: "api-user",
+      sessionUserRole: "user",
+    });
+
+    await runMiddleware(requireApiSession, ctx, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("requires admin role for admin API routes", async () => {
+    const regular = createContext({
+      sessionUserId: "api-user",
+      sessionUserRole: "user",
+    });
+
+    await expect(
+      runMiddleware(requireApiAdmin, regular.ctx, regular.next),
+    ).rejects.toMatchObject({
+      status: 403,
+      message: "Admin access required",
+    });
+
+    const admin = createContext({
+      sessionUserId: "api-admin",
+      sessionUserRole: "admin",
+    });
+    await runMiddleware(requireApiAdmin, admin.ctx, admin.next);
+    expect(admin.next).toHaveBeenCalled();
+  });
+
+  it("enforces permission profiles for API routes", async () => {
+    const anonymous = createContext();
+    await expect(
+      runMiddleware(
+        requireApiPermission("monitor.delete"),
+        anonymous.ctx,
+        anonymous.next,
+      ),
     ).rejects.toMatchObject({
       status: 401,
       message: "Authentication required",
     });
-  });
 
-  it("rejects non-admin API calls with 403", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext({ sessionUserId: "api-user", sessionUserRole: "user" });
-
-    await expect(requireApiAdmin(ctx as any, next)).rejects.toMatchObject({
-      status: 403,
-      message: "Admin access required",
-    });
-  });
-
-  it("allows API admins", async () => {
-    const next = vi.fn();
-    const { ctx } = createContext({
-      sessionUserId: "api-admin",
-      sessionUserRole: "admin",
-    });
-
-    await requireApiAdmin(ctx as any, next);
-
-    expect(next).toHaveBeenCalled();
-  });
-
-  it("enforces monitor permissions for API callers", async () => {
-    const next = vi.fn();
-    const monitorUser = createContext({
+    const user = createContext({
       sessionUserId: "api-user",
       sessionUserRole: "user",
     });
-    const monitorAdmin = createContext({
-      sessionUserId: "api-admin",
-      sessionUserRole: "admin",
-    });
-    const accountRead = createContext({
-      sessionUserId: "api-user",
-      sessionUserRole: "user",
-    });
-
     await expect(
-      requireApiPermission("monitor.delete")(monitorUser.ctx as any, next),
-    ).rejects.toMatchObject({ status: 403, message: "Permission denied" });
-    expect(next).not.toHaveBeenCalled();
+      runMiddleware(
+        requireApiPermission("monitor.delete"),
+        user.ctx,
+        user.next,
+      ),
+    ).rejects.toMatchObject({
+      status: 403,
+      message: "Permission denied",
+    });
 
-    await requireApiPermission("monitor.read")(monitorAdmin.ctx as any, next);
-    expect(next).toHaveBeenCalled();
+    const readAllowed = createContext({
+      sessionUserId: "api-user",
+      sessionUserRole: "user",
+    });
+    await runMiddleware(
+      requireApiPermission("account.read"),
+      readAllowed.ctx,
+      readAllowed.next,
+    );
+    expect(readAllowed.next).toHaveBeenCalled();
 
-    await requireApiPermission("account.read")(accountRead.ctx as any, next);
-    expect(next).toHaveBeenCalled();
+    const admin = createContext({
+      sessionUserId: "api-admin",
+      sessionUserRole: "admin",
+    });
+    await runMiddleware(
+      requireApiPermission("monitor.delete"),
+      admin.ctx,
+      admin.next,
+    );
+    expect(admin.next).toHaveBeenCalled();
   });
 });
