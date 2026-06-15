@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.12.0...uptime-zero-v0.13.0) (2026-06-13)
+
+
+### Features
+
+* **status-pages:** add default slug and public uptime summary ([349b31e](https://github.com/anyrange/uptime-zero/commit/349b31ec878055a584059989acd04e3aa9b7ba80))
+
+
+### Tests
+
+* add focused unit coverage for retention, middleware, cron, and formatting ([75c52ef](https://github.com/anyrange/uptime-zero/commit/75c52ef2bf9fc875034d2a8bc1d6a3d0a0f31c14))
+* rewrite middleware-auth coverage with testAuth-backed loadSession flow ([95de927](https://github.com/anyrange/uptime-zero/commit/95de9279d68e9c43f24af10da1a978753e9f1849))
+
 ## [0.12.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.11.0...uptime-zero-v0.12.0) (2026-06-11)
 
 
