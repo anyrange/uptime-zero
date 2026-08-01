@@ -173,11 +173,9 @@ describe("monitor import/export API", () => {
     ).toBe(true);
 
     const httpImport = rows.find((row) => row.name === "HTTP copy");
-    expect(httpImport?.lastCheckedAt).toEqual(expect.any(String));
+    expect(httpImport?.lastCheckedAt).toBeNull();
     const heartbeats = await db.select().from(schema.heartbeats);
-    expect(heartbeats).toEqual([
-      expect.objectContaining({ monitorId: httpImport?.id }),
-    ]);
+    expect(heartbeats).toEqual([]);
   });
 
   it("imports legacy monitor exports with shorter positive intervals", async () => {

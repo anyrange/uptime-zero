@@ -1,5 +1,3 @@
-import { all } from "better-all";
-
 import type {
   DnsRecordType,
   JsonOperator,
@@ -36,6 +34,9 @@ const DNS_RECORD_TYPES: Record<DnsRecordType, number> = {
   TXT: 16,
   AAAA: 28,
 };
+
+const MAX_HTTP_REDIRECTS = 2;
+const MAX_RESPONSE_BODY_BYTES = 1024 * 1024;
 
 export function compareJsonValue(
   actual: unknown,
@@ -100,16 +101,23 @@ export async function runHttpCheck(
 
   const startedAt = Date.now();
   try {
-    const response = await fetchImpl(monitor.target, {
+    const response = await fetchWithRedirectLimit(fetchImpl, monitor.target, {
       method: "GET",
-      redirect: "follow",
       signal: AbortSignal.timeout(monitor.timeoutMs),
       headers: {
         "user-agent": "uptime-zero/0.1.0",
       },
     });
+    const needsBody = monitor.assertions.some(
+      (assertion) => assertion.type === "body",
+    );
+    const bodyText = needsBody
+      ? await readBoundedResponseText(response, MAX_RESPONSE_BODY_BYTES)
+      : "";
+    if (!needsBody) {
+      await response.body?.cancel();
+    }
     const durationMs = Date.now() - startedAt;
-    const bodyText = await response.text();
     const assertionFailure = runHttpAssertions(
       monitor.assertions,
       response,
@@ -124,7 +132,10 @@ export async function runHttpCheck(
         responseText: bodyText,
       };
     }
-    if (!response.ok) {
+    const hasStatusAssertion = monitor.assertions.some(
+      (assertion) => assertion.type === "status",
+    );
+    if (!response.ok && !hasStatusAssertion) {
       return {
         status: "down",
         statusCode: response.status,
@@ -215,24 +226,22 @@ async function runDnsCheck(
   );
 
   try {
-    const resultsByType = await all(
-      Object.fromEntries(
-        (requestedTypes.length
-          ? requestedTypes
-          : (["A"] as DnsRecordType[])
-        ).map((recordType) => [
+    const results: Array<{
+      recordType: DnsRecordType;
+      answers: Array<{ data: string; type: DnsRecordType }>;
+    }> = [];
+    for (const recordType of requestedTypes.length
+      ? requestedTypes
+      : (["A"] as DnsRecordType[])) {
+      results.push(
+        await queryDnsRecord(
+          fetchImpl,
+          monitor.target,
           recordType,
-          () =>
-            queryDnsRecord(
-              fetchImpl,
-              monitor.target,
-              recordType,
-              monitor.timeoutMs,
-            ),
-        ]),
-      ),
-    );
-    const results = Object.values(resultsByType);
+          monitor.timeoutMs,
+        ),
+      );
+    }
     const durationMs = Date.now() - startedAt;
     const flattenedAnswers = results.flatMap((result) => result.answers);
 
@@ -285,6 +294,7 @@ async function queryDnsRecord(
 
   const response = await fetchImpl(url, {
     method: "GET",
+    redirect: "error",
     signal: AbortSignal.timeout(timeoutMs),
     headers: {
       accept: "application/dns-json",
@@ -310,6 +320,66 @@ async function queryDnsRecord(
         type: recordTypeFromCode(answer.type) ?? recordType,
       })),
   };
+}
+
+async function fetchWithRedirectLimit(
+  fetchImpl: typeof fetch,
+  target: string,
+  init: RequestInit,
+) {
+  let url = target;
+
+  for (let redirectCount = 0; ; redirectCount += 1) {
+    const response = await fetchImpl(url, { ...init, redirect: "manual" });
+    if (![301, 302, 303, 307, 308].includes(response.status)) {
+      return response;
+    }
+
+    const location = response.headers.get("location");
+    await response.body?.cancel();
+    if (!location) {
+      throw new Error("Redirect response was missing a location header");
+    }
+    if (redirectCount >= MAX_HTTP_REDIRECTS) {
+      throw new Error(`Too many redirects (maximum ${MAX_HTTP_REDIRECTS})`);
+    }
+
+    url = new URL(location, url).toString();
+  }
+}
+
+async function readBoundedResponseText(response: Response, maxBytes: number) {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    await response.body?.cancel();
+    throw new Error(`Response body exceeded ${maxBytes} bytes`);
+  }
+  if (!response.body) {
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let bytesRead = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      bytesRead += value.byteLength;
+      if (bytesRead > maxBytes) {
+        await reader.cancel();
+        throw new Error(`Response body exceeded ${maxBytes} bytes`);
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 function compareTextValue(

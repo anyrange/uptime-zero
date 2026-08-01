@@ -1,3 +1,4 @@
+import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,7 +91,7 @@ describe("scheduler actor service", () => {
     expect(alarm.value).toBe(result.nextAlarmAt);
   });
 
-  it("keeps a monitor up during notification grace after a failed check", async () => {
+  it("records downtime immediately while notification grace is active", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime("2026-05-01T12:01:00.000Z");
     vi.stubGlobal(
@@ -115,7 +116,7 @@ describe("scheduler actor service", () => {
     const monitorService = new MonitorService(db);
     const detail = await monitorService.getDetailData(monitor.id);
 
-    expect(detail?.monitor.lastStatus).toBe("up");
+    expect(detail?.monitor.lastStatus).toBe("down");
     expect(detail?.monitor.lastCheckedAt).toBe("2026-05-01T12:01:00.000Z");
     expect(detail?.heartbeats[0]).toMatchObject({
       monitorId: monitor.id,
@@ -123,7 +124,13 @@ describe("scheduler actor service", () => {
       status: "down",
       statusCode: 502,
     });
-    expect(detail?.incidents).toHaveLength(0);
+    expect(detail?.incidents).toEqual([
+      expect.objectContaining({
+        monitorId: monitor.id,
+        status: "open",
+        openedAt: "2026-05-01T12:01:00.000Z",
+      }),
+    ]);
   });
 
   it("opens a down incident after consecutive failures exceed notification grace", async () => {
@@ -316,6 +323,90 @@ describe("scheduler actor service", () => {
     expect(result).toMatchObject({ active: 3, due: 3, checked: 2 });
     expect(heartbeats).toHaveLength(2);
     expect(result.nextAlarmAt).toBe(now + 1000);
+  });
+
+  it("reschedules after an individual monitor task fails", async () => {
+    const db = createDatabase(env.DB);
+    const alarm = new FakeAlarm();
+    const now = parseDateMs("2026-05-01T12:01:00.000Z");
+    await seedMonitor({ lastCheckedAt: "2026-05-01T12:00:00.000Z" });
+
+    const result = await runDueMonitorsAndReschedule(db, {
+      alarm,
+      now,
+      executeMonitor: async () => {
+        throw new Error("D1 unavailable");
+      },
+    });
+
+    expect(result).toMatchObject({ checked: 1, failed: 1 });
+    expect(result.nextAlarmAt).toBe(now + 30_000);
+    expect(alarm.value).toBe(now + 30_000);
+  });
+
+  it("aggregates availability beyond the displayed heartbeat sample", async () => {
+    const monitor = await seedMonitor();
+    const createdAt = new Date().toISOString();
+    await env.DB.prepare(
+      `WITH RECURSIVE checks(value) AS (
+        VALUES(1)
+        UNION ALL
+        SELECT value + 1 FROM checks WHERE value < 1001
+      )
+      INSERT INTO heartbeats (
+        id, monitorId, status, statusCode, durationMs, error, createdAt, source
+      )
+      SELECT
+        printf('metric-heartbeat-%04d', value),
+        ?,
+        CASE WHEN value = 1001 THEN 'down' ELSE 'up' END,
+        200,
+        10,
+        NULL,
+        ?,
+        'poll'
+      FROM checks`,
+    )
+      .bind(monitor.id, createdAt)
+      .run();
+
+    const detail = await new MonitorService(
+      createDatabase(env.DB),
+    ).getDetailData(monitor.id);
+
+    expect(detail?.heartbeats).toHaveLength(1000);
+    expect(detail?.metrics.requestCount).toBe(1001);
+    expect(detail?.metrics.windows[0]).toMatchObject({
+      totalChecks: 1001,
+      upChecks: 1000,
+    });
+  });
+
+  it("re-arms a scheduler alarm when the alarm handler fails", async () => {
+    const stub = env.SCHEDULER_ACTOR.getByName("invalid-scheduler-name");
+    await runInDurableObject(stub, async (_instance, state) => {
+      await state.storage.setAlarm(Date.now());
+    });
+
+    await runDurableObjectAlarm(stub);
+
+    await runInDurableObject(stub, async (_instance, state) => {
+      expect(await state.storage.getAlarm()).toBeGreaterThan(Date.now());
+      await state.storage.deleteAlarm();
+    });
+  });
+
+  it("retires the legacy scheduler alarm after initializing shards", async () => {
+    const legacyStub = env.SCHEDULER_ACTOR.getByName("installation");
+    await runInDurableObject(legacyStub, async (_instance, state) => {
+      await state.storage.setAlarm(Date.now());
+    });
+
+    await runDurableObjectAlarm(legacyStub);
+
+    await runInDurableObject(legacyStub, async (_instance, state) => {
+      expect(await state.storage.getAlarm()).toBeNull();
+    });
   });
 });
 

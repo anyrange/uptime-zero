@@ -12,10 +12,7 @@ import {
   parseMonitorConfigForStorage,
 } from "@/lib/monitor/config";
 import { createDatabase } from "@/server/db";
-import {
-  queueSchedulerSync,
-  runMonitorNow,
-} from "@/server/durable/scheduler-actor";
+import { queueSchedulerSync } from "@/server/durable/scheduler-actor";
 import { requireApiPermission } from "@/server/middleware/permissions";
 
 const retentionInputSchema = z.object({
@@ -131,23 +128,6 @@ export const settingsApi = new Hono<AppEnv>()
           throw new HTTPException(500, { message: "Failed to import monitor" });
         }
         savedMonitors.push(savedMonitor);
-      }
-
-      const activeMonitorIds = savedMonitors
-        .filter((monitor) => monitor.active === 1 && monitor.kind !== "push")
-        .map((monitor) => monitor.id);
-
-      if (activeMonitorIds.length > 0) {
-        ctx.executionCtx.waitUntil(
-          all(
-            Object.fromEntries(
-              activeMonitorIds.map((monitorId) => [
-                monitorId,
-                () => runMonitorNow(ctx.env, monitorId, "monitor-import"),
-              ]),
-            ),
-          ),
-        );
       }
 
       queueSchedulerSync(ctx, "monitor-import");

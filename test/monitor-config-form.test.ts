@@ -198,6 +198,28 @@ describe("monitor config form helpers", () => {
       },
     );
     expect(
+      validateMonitorConfigForm({ ...validState(), timeoutMs: 30_001 }),
+    ).toEqual({
+      ok: false,
+      error: "Use a timeout of 30 seconds or less.",
+    });
+    expect(validateMonitorConfigForm({ ...validState(), retries: 2 })).toEqual({
+      ok: false,
+      error: "Use no more than 1 retry.",
+    });
+    expect(
+      validateMonitorConfigForm({
+        ...validState(),
+        notificationDestinationIds: Array.from(
+          { length: 9 },
+          (_, index) => `destination-${index}`,
+        ),
+      }),
+    ).toEqual({
+      ok: false,
+      error: "Choose no more than 8 notification destinations.",
+    });
+    expect(
       validateMonitorConfigForm({
         ...validState(),
         kind: "dns",

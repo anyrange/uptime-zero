@@ -77,6 +77,74 @@ describe("monitor runtime assertions", () => {
     expect(result.status).toBe("down");
     expect(result.error).toBe("A record assertion failed");
   });
+
+  it("accepts an expected non-success HTTP status", async () => {
+    const monitor = buildMonitor({
+      assertions: [{ id: "status-404", type: "status", expected: 404 }],
+    });
+
+    const result = await runHttpCheck(
+      monitor,
+      vi.fn(async () => new Response(null, { status: 404 })) as typeof fetch,
+    );
+
+    expect(result).toMatchObject({
+      status: "up",
+      statusCode: 404,
+      error: null,
+    });
+  });
+
+  it("rejects assertion bodies larger than the monitor limit", async () => {
+    const monitor = buildMonitor({
+      assertions: [
+        {
+          id: "body",
+          type: "body",
+          source: "text",
+          operator: "contains",
+          value: "ok",
+        },
+      ],
+    });
+
+    const result = await runHttpCheck(
+      monitor,
+      vi.fn(
+        async () =>
+          new Response("ignored", {
+            status: 200,
+            headers: { "content-length": String(1024 * 1024 + 1) },
+          }),
+      ) as typeof fetch,
+    );
+
+    expect(result).toMatchObject({
+      status: "down",
+      error: "Response body exceeded 1048576 bytes",
+    });
+  });
+
+  it("limits redirect chains", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(null, {
+          status: 302,
+          headers: { location: "/next" },
+        }),
+    );
+
+    const result = await runHttpCheck(
+      buildMonitor(),
+      fetchMock as typeof fetch,
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result).toMatchObject({
+      status: "down",
+      error: "Too many redirects (maximum 2)",
+    });
+  });
 });
 
 function buildMonitor(overrides: Partial<MonitorRecord> = {}): MonitorRecord {

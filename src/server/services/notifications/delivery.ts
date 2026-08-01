@@ -1,5 +1,3 @@
-import { all } from "better-all";
-
 import type {
   DiscordNotificationConfig,
   MonitorRecord,
@@ -28,6 +26,16 @@ export type TestNotification = {
 export type NotificationEvent =
   | MonitorTransitionNotification
   | TestNotification;
+
+export type NotificationDispatchResult = {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  delivered: boolean;
+};
+
+const NOTIFICATION_TIMEOUT_MS = 10_000;
+const NOTIFICATION_CONCURRENCY = 2;
 
 export class NotificationDeliveryError extends Error {
   constructor(
@@ -116,6 +124,8 @@ export async function deliverNotificationDestination(
     const discordConfig = destination.config as DiscordNotificationConfig;
     const response = await fetchImpl(discordConfig.webhookUrl, {
       method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT_MS),
       headers: notificationRequestHeaders(),
       body: JSON.stringify(buildDiscordPayload(destination, event)),
     });
@@ -137,6 +147,8 @@ export async function deliverNotificationDestination(
 
     const response = await fetchImpl(webhookConfig.url, {
       method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT_MS),
       headers: {
         ...notificationRequestHeaders(),
         ...headersToObject(webhookConfig.headers),
@@ -168,6 +180,8 @@ export async function deliverNotificationDestination(
     `https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage`,
     {
       method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT_MS),
       headers: notificationRequestHeaders(),
       body: JSON.stringify(payload),
     },
@@ -180,28 +194,57 @@ export async function dispatchNotificationEvent(
   event: NotificationEvent,
   fetchImpl: typeof fetch = fetch,
   options: { throwOnFailure?: boolean } = {},
-) {
+): Promise<NotificationDispatchResult> {
   if (destinations.length === 0) {
-    return;
+    return { attempted: 0, succeeded: 0, failed: 0, delivered: false };
   }
 
-  await all(
-    Object.fromEntries(
-      destinations.map((destination) => [
-        destination.id,
-        async () => {
-          try {
-            await deliverNotificationDestination(destination, event, fetchImpl);
-          } catch (error) {
-            if (options.throwOnFailure) {
-              throw error;
-            }
-            // Ignore delivery failures during phase 1 polling.
-          }
-        },
-      ]),
-    ),
-  );
+  let succeeded = 0;
+  let failed = 0;
+
+  for (
+    let index = 0;
+    index < destinations.length;
+    index += NOTIFICATION_CONCURRENCY
+  ) {
+    const batch = destinations.slice(index, index + NOTIFICATION_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map((destination) =>
+        deliverNotificationDestination(destination, event, fetchImpl),
+      ),
+    );
+
+    for (const [resultIndex, result] of results.entries()) {
+      if (result.status === "fulfilled") {
+        succeeded += 1;
+        continue;
+      }
+
+      failed += 1;
+      const destination = batch[resultIndex];
+      console.error(
+        JSON.stringify({
+          message: "notification delivery failed",
+          destinationId: destination?.id,
+          provider: destination?.provider,
+          error:
+            result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason),
+        }),
+      );
+      if (options.throwOnFailure) {
+        throw result.reason;
+      }
+    }
+  }
+
+  return {
+    attempted: destinations.length,
+    succeeded,
+    failed,
+    delivered: failed === 0,
+  };
 }
 
 function notificationRequestHeaders() {

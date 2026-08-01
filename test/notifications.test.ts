@@ -341,6 +341,7 @@ describe("notification delivery", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
 
     await expect(
@@ -355,7 +356,12 @@ describe("notification delivery", () => {
         },
         fetchMock as typeof fetch,
       ),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({
+      attempted: 3,
+      succeeded: 2,
+      failed: 1,
+      delivered: false,
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });

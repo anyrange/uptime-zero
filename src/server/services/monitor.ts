@@ -12,7 +12,7 @@ import {
   clampMonitorLogsPage,
   MONITOR_LOGS_PAGE_SIZE,
 } from "@/lib/monitor/logs";
-import { daysAgoMs, parseDateMs } from "@/server/lib/dates";
+import { daysAgoIso, parseDateMs } from "@/server/lib/dates";
 
 export class MonitorService {
   constructor(private readonly db: Database) {}
@@ -40,9 +40,20 @@ export class MonitorService {
       return null;
     }
 
-    const { incidents, heartbeats, notificationDestinations } = await all({
+    const {
+      incidents,
+      heartbeats,
+      heartbeatMetricCounts,
+      notificationDestinations,
+    } = await all({
       incidents: () => this.db.incident.listForMonitor(monitorId, 50),
       heartbeats: () => this.db.monitor.listHeartbeats(monitorId, 1000),
+      heartbeatMetricCounts: () =>
+        this.db.monitor.getHeartbeatMetricCounts(monitorId, {
+          last7Days: daysAgoIso(7),
+          last30Days: daysAgoIso(30),
+          last365Days: daysAgoIso(365),
+        }),
       notificationDestinations: () =>
         this.db.notification.getForMonitor(monitorId),
     });
@@ -51,7 +62,11 @@ export class MonitorService {
       monitor,
       incidents,
       heartbeats,
-      metrics: computeMonitorDetailMetrics(heartbeats, incidents),
+      metrics: computeMonitorDetailMetrics(
+        heartbeats,
+        incidents,
+        heartbeatMetricCounts,
+      ),
       notificationDestinations,
       notificationDestinationIds: notificationDestinations.map(
         (destination) => destination.id,
@@ -123,10 +138,18 @@ function computeSlowestP95ResponseMs(
 function computeMonitorDetailMetrics(
   heartbeats: HeartbeatRecord[],
   incidents: IncidentRecord[],
+  counts: {
+    requestCount: number;
+    windows: Array<{ days: number; totalChecks: number; upChecks: number }>;
+  },
 ) {
-  const windows = [7, 30, 365].map((days) => ({
+  const windows = counts.windows.map(({ days, totalChecks, upChecks }) => ({
     label: `Last ${days} days`,
-    ...computeUptimeWindow(heartbeats, days),
+    uptimePercentage: totalChecks
+      ? roundTo((upChecks / totalChecks) * 100)
+      : null,
+    totalChecks,
+    upChecks,
   }));
   const successfulDurations = heartbeats
     .filter(isSuccessfulHeartbeat)
@@ -135,7 +158,7 @@ function computeMonitorDetailMetrics(
 
   return {
     windows,
-    requestCount: heartbeats.length,
+    requestCount: counts.requestCount,
     averageResponseMs: successfulDurations.length
       ? Math.round(
           successfulDurations.reduce((sum, duration) => sum + duration, 0) /
@@ -149,23 +172,6 @@ function computeMonitorDetailMetrics(
     p99ResponseMs: percentile(successfulDurations, 0.99),
     mttrMinutes: computeMttrMinutes(incidents),
     lastCheckedAt: heartbeats[0]?.createdAt ?? null,
-  };
-}
-
-function computeUptimeWindow(heartbeats: HeartbeatRecord[], days: number) {
-  const cutoff = daysAgoMs(days);
-  const relevant = heartbeats.filter(
-    (heartbeat) => parseDateMs(heartbeat.createdAt) >= cutoff,
-  );
-  const upChecks = relevant.filter(
-    (heartbeat) => heartbeat.status === "up",
-  ).length;
-  return {
-    uptimePercentage: relevant.length
-      ? roundTo((upChecks / relevant.length) * 100)
-      : null,
-    totalChecks: relevant.length,
-    upChecks,
   };
 }
 

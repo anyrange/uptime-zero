@@ -77,10 +77,10 @@ function formatMonitorConfigFormError(error: {
     return m.validation_interval_minimum();
   }
   if (field === "timeoutMs") {
-    return m.validation_timeout_positive();
+    return issue?.message ?? m.validation_timeout_positive();
   }
   if (field === "retries") {
-    return m.validation_retries_nonnegative();
+    return issue?.message ?? m.validation_retries_nonnegative();
   }
   if (
     field === "heartbeatCron" ||
@@ -91,6 +91,9 @@ function formatMonitorConfigFormError(error: {
   }
   if (field === "notificationGraceSec") {
     return issue?.message ?? m.validation_notification_grace();
+  }
+  if (field === "notificationDestinationIds") {
+    return issue?.message ?? m.validation_notification_destinations_maximum();
   }
 
   return issue?.message ?? m.validation_monitor_payload();

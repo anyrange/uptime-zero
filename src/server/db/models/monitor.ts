@@ -321,6 +321,46 @@ export class MonitorModel {
     return count ?? 0;
   }
 
+  async getHeartbeatMetricCounts(
+    monitorId: string,
+    cutoffs: { last7Days: string; last30Days: string; last365Days: string },
+  ) {
+    const row = await this.db
+      .select({
+        requestCount: sql<number>`count(*)`,
+        last7DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last7Days} then 1 else 0 end)`,
+        last7DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last7Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
+        last30DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last30Days} then 1 else 0 end)`,
+        last30DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last30Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
+        last365DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last365Days} then 1 else 0 end)`,
+        last365DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last365Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
+      })
+      .from(schema.heartbeats)
+      .where(eq(schema.heartbeats.monitorId, monitorId))
+      .get();
+
+    return {
+      requestCount: row?.requestCount ?? 0,
+      windows: [
+        {
+          days: 7,
+          totalChecks: row?.last7DaysTotal ?? 0,
+          upChecks: row?.last7DaysUp ?? 0,
+        },
+        {
+          days: 30,
+          totalChecks: row?.last30DaysTotal ?? 0,
+          upChecks: row?.last30DaysUp ?? 0,
+        },
+        {
+          days: 365,
+          totalChecks: row?.last365DaysTotal ?? 0,
+          upChecks: row?.last365DaysUp ?? 0,
+        },
+      ],
+    };
+  }
+
   async listHeartbeatPage(monitorId: string, limit: number, offset: number) {
     const rows = await this.db
       .select()

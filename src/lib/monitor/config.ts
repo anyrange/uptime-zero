@@ -33,6 +33,9 @@ export const DEFAULT_HEARTBEAT_GRACE_SEC = 300;
 export const DEFAULT_HEARTBEAT_TIMEZONE = "UTC";
 export const DEFAULT_NOTIFICATION_GRACE_SEC = 0;
 export const MIN_MONITOR_INTERVAL_SEC = 60;
+export const MAX_MONITOR_TIMEOUT_MS = 30_000;
+export const MAX_MONITOR_RETRIES = 1;
+export const MAX_MONITOR_NOTIFICATION_DESTINATIONS = 8;
 
 export const monitorConfigObjectSchema = z.object({
   name: z.string().trim().min(1),
@@ -45,8 +48,22 @@ export const monitorConfigObjectSchema = z.object({
       message: m.validation_interval_minimum(),
     })
     .default(MIN_MONITOR_INTERVAL_SEC),
-  timeoutMs: z.coerce.number().int().min(1).default(10000),
-  retries: z.coerce.number().int().min(0).default(0),
+  timeoutMs: z.coerce
+    .number()
+    .int()
+    .min(1, { message: m.validation_timeout_positive() })
+    .max(MAX_MONITOR_TIMEOUT_MS, {
+      message: m.validation_timeout_maximum(),
+    })
+    .default(10000),
+  retries: z.coerce
+    .number()
+    .int()
+    .min(0, { message: m.validation_retries_nonnegative() })
+    .max(MAX_MONITOR_RETRIES, {
+      message: m.validation_retries_maximum(),
+    })
+    .default(0),
   assertions: z.array(monitorAssertionSchema).default([]),
   heartbeatMode: z.enum(["interval", "cron"]).default("interval"),
   heartbeatCron: z.string().trim().nullable().default(null),
@@ -54,7 +71,12 @@ export const monitorConfigObjectSchema = z.object({
   heartbeatTimezone: z.string().trim().nullable().default(null),
   notificationGraceSec: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
-  notificationDestinationIds: z.array(z.string()).default([]),
+  notificationDestinationIds: z
+    .array(z.string())
+    .max(MAX_MONITOR_NOTIFICATION_DESTINATIONS, {
+      message: m.validation_notification_destinations_maximum(),
+    })
+    .default([]),
 });
 
 export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(

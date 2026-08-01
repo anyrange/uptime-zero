@@ -9,15 +9,15 @@ import { createDatabase } from "@/server/db";
 import {
   recordPushHeartbeatAndReschedule,
   runDueMonitorsAndReschedule,
+  runMonitorCheck,
   runMonitorNowAndReschedule,
   syncScheduler,
 } from "@/server/services/scheduler";
 
-const SCHEDULER_ACTOR_NAME = "installation";
-
-type SchedulerActorEnv = {
-  DB: D1Database;
-};
+const SCHEDULER_SHARD_COUNT = 4;
+const SCHEDULER_ACTOR_PREFIX = "scheduler";
+const LEGACY_SCHEDULER_ACTOR_NAME = "installation";
+const ALARM_RECOVERY_DELAY_MS = 30_000;
 
 type SchedulerReason =
   | "alarm"
@@ -33,12 +33,15 @@ type SchedulerReason =
   | "save"
   | string;
 
-export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
+export class SchedulerActor extends DurableObject<Env> {
+  private readonly monitorRuns = new Map<string, Promise<unknown>>();
+
   async sync(reason: SchedulerReason = "sync") {
     const log = this.createLog("/do/scheduler/sync");
     try {
       const result = await syncScheduler(createDatabase(this.env.DB), {
         alarm: this.alarmAdapter(),
+        monitorFilter: this.monitorFilter(),
       });
       log.set({
         action: "scheduler_sync",
@@ -58,9 +61,12 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
     const log = this.createLog("/do/scheduler/run-now");
     try {
       const db = createDatabase(this.env.DB);
-      const result = await runMonitorNowAndReschedule(db, monitorId, {
-        alarm: this.alarmAdapter(),
-      });
+      const result = await this.withMonitorLock(monitorId, () =>
+        runMonitorNowAndReschedule(db, monitorId, {
+          alarm: this.alarmAdapter(),
+          monitorFilter: this.monitorFilter(),
+        }),
+      );
       log.set({
         action: "scheduler_run_now",
         reason,
@@ -83,9 +89,12 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
     const log = this.createLog("/do/scheduler/push-heartbeat");
     try {
       const db = createDatabase(this.env.DB);
-      const result = await recordPushHeartbeatAndReschedule(db, monitorId, {
-        alarm: this.alarmAdapter(),
-      });
+      const result = await this.withMonitorLock(monitorId, () =>
+        recordPushHeartbeatAndReschedule(db, monitorId, {
+          alarm: this.alarmAdapter(),
+          monitorFilter: this.monitorFilter(),
+        }),
+      );
       log.set({
         action: "scheduler_push_heartbeat",
         reason,
@@ -104,12 +113,27 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
   override async alarm() {
     const log = this.createLog("/do/scheduler/alarm");
     try {
-      const result = await runDueMonitorsAndReschedule(
-        createDatabase(this.env.DB),
-        {
-          alarm: this.alarmAdapter(),
-        },
-      );
+      if (this.ctx.id.name === LEGACY_SCHEDULER_ACTOR_NAME) {
+        await syncSchedulerActors(this.env, "scheduler-migration");
+        await this.ctx.storage.deleteAlarm();
+        log.set({ action: "scheduler_migration" });
+        log.emit({ status: 200 });
+        return;
+      }
+
+      const db = createDatabase(this.env.DB);
+      const result = await runDueMonitorsAndReschedule(db, {
+        alarm: this.alarmAdapter(),
+        monitorFilter: this.monitorFilter(),
+        executeMonitor: (monitor) =>
+          this.withMonitorLock(monitor.id, async () => {
+            const currentMonitor = await db.monitor.getById(monitor.id);
+            if (!currentMonitor || currentMonitor.active !== 1) {
+              return;
+            }
+            await runMonitorCheck(db, currentMonitor);
+          }),
+      });
       log.set({
         action: "scheduler_alarm",
         scheduler: result,
@@ -118,7 +142,7 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));
       log.emit({ status: 500 });
-      throw error;
+      await this.ctx.storage.setAlarm(Date.now() + ALARM_RECOVERY_DELAY_MS);
     }
   }
 
@@ -130,6 +154,29 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
     };
   }
 
+  private monitorFilter() {
+    const shardIndex = readSchedulerShardIndex(this.ctx.id.name);
+    return (monitor: Pick<MonitorRecord, "id">) =>
+      getSchedulerShardIndex(monitor.id) === shardIndex;
+  }
+
+  private async withMonitorLock<T>(
+    monitorId: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const previous = this.monitorRuns.get(monitorId) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(operation);
+    this.monitorRuns.set(monitorId, current);
+
+    try {
+      return await current;
+    } finally {
+      if (this.monitorRuns.get(monitorId) === current) {
+        this.monitorRuns.delete(monitorId);
+      }
+    }
+  }
+
   private createLog(path: string) {
     return createRequestLogger({
       method: "RPC",
@@ -138,8 +185,13 @@ export class SchedulerActor extends DurableObject<SchedulerActorEnv> {
   }
 }
 
-export function getSchedulerActor(env: Pick<Bindings, "SCHEDULER_ACTOR">) {
-  return env.SCHEDULER_ACTOR.getByName(SCHEDULER_ACTOR_NAME);
+export function getSchedulerActor(
+  env: Pick<Bindings, "SCHEDULER_ACTOR">,
+  monitorId: string,
+) {
+  return env.SCHEDULER_ACTOR.getByName(
+    `${SCHEDULER_ACTOR_PREFIX}:${getSchedulerShardIndex(monitorId)}`,
+  );
 }
 
 export function queueSchedulerSync(
@@ -148,8 +200,12 @@ export function queueSchedulerSync(
     executionCtx: { waitUntil(promise: Promise<unknown>): void };
   },
   reason: SchedulerReason,
+  monitorId?: string,
 ) {
-  ctx.executionCtx.waitUntil(getSchedulerActor(ctx.env).sync(reason));
+  const promise = monitorId
+    ? getSchedulerActor(ctx.env, monitorId).sync(reason)
+    : syncSchedulerActors(ctx.env, reason);
+  ctx.executionCtx.waitUntil(promise);
 }
 
 export function queueSchedulerForSavedMonitor(
@@ -157,12 +213,13 @@ export function queueSchedulerForSavedMonitor(
     env: Bindings;
     executionCtx: { waitUntil(promise: Promise<unknown>): void };
   },
-  monitor: Pick<MonitorRecord, "active">,
+  monitor: Pick<MonitorRecord, "id" | "active">,
   activeReason: SchedulerReason,
 ) {
   queueSchedulerSync(
     ctx,
     monitor.active === 1 ? activeReason : "monitor-pause",
+    monitor.id,
   );
 }
 
@@ -171,7 +228,7 @@ export function runMonitorNow(
   monitorId: string,
   reason: SchedulerReason,
 ) {
-  return getSchedulerActor(env).runNow(monitorId, reason);
+  return getSchedulerActor(env, monitorId).runNow(monitorId, reason);
 }
 
 export function recordPushHeartbeat(
@@ -179,5 +236,42 @@ export function recordPushHeartbeat(
   monitorId: string,
   reason: SchedulerReason,
 ) {
-  return getSchedulerActor(env).recordPushHeartbeat(monitorId, reason);
+  return getSchedulerActor(env, monitorId).recordPushHeartbeat(
+    monitorId,
+    reason,
+  );
+}
+
+function getSchedulerShardIndex(monitorId: string) {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < monitorId.length; index += 1) {
+    hash ^= monitorId.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return (hash >>> 0) % SCHEDULER_SHARD_COUNT;
+}
+
+function syncSchedulerActors(
+  env: Pick<Bindings, "SCHEDULER_ACTOR">,
+  reason: SchedulerReason,
+) {
+  return Promise.all(
+    Array.from({ length: SCHEDULER_SHARD_COUNT }, (_, shardIndex) =>
+      env.SCHEDULER_ACTOR.getByName(
+        `${SCHEDULER_ACTOR_PREFIX}:${shardIndex}`,
+      ).sync(reason),
+    ),
+  );
+}
+
+function readSchedulerShardIndex(name: string | undefined) {
+  const shardIndex = Number(name?.split(":").at(-1));
+  if (
+    !Number.isInteger(shardIndex) ||
+    shardIndex < 0 ||
+    shardIndex >= SCHEDULER_SHARD_COUNT
+  ) {
+    throw new Error(`Invalid scheduler actor name: ${name ?? "unnamed"}`);
+  }
+  return shardIndex;
 }

@@ -1,5 +1,3 @@
-import { all } from "better-all";
-
 import type { Database } from "@/server/db";
 import type { MonitorRecord } from "@/types";
 
@@ -7,8 +5,9 @@ import { nowMs } from "@/server/lib/dates";
 import { getMonitorNextDueAt, isMonitorDue } from "@/server/lib/monitoring";
 import { MonitorLifecycle } from "@/server/services/monitor-lifecycle";
 
-const DEFAULT_BATCH_SIZE = 30;
+const DEFAULT_BATCH_SIZE = 1;
 const MIN_RESCHEDULE_DELAY_MS = 1000;
+const FAILED_CHECK_RETRY_DELAY_MS = 30_000;
 
 export interface SchedulerAlarmAdapter {
   getAlarm(): Promise<number | null>;
@@ -20,6 +19,7 @@ export type SchedulerRunResult = {
   active: number;
   due: number;
   checked: number;
+  failed: number;
   nextAlarmAt: number | null;
 };
 
@@ -35,34 +35,57 @@ export async function runDueMonitorsAndReschedule(
     alarm: SchedulerAlarmAdapter;
     now?: number;
     batchSize?: number;
+    monitorFilter?: (monitor: MonitorRecord) => boolean;
+    executeMonitor?: (monitor: MonitorRecord) => Promise<void>;
   },
 ): Promise<SchedulerRunResult> {
   const currentTime = options.now ?? nowMs();
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors = (await db.monitor.listActive()).filter(
+    options.monitorFilter ?? (() => true),
+  );
   const dueMonitors = activeMonitors.filter(
     (monitor) => isMonitorDue(monitor, currentTime).due,
   );
   const selectedMonitors = dueMonitors.slice(0, batchSize);
 
-  await all(
-    Object.fromEntries(
-      selectedMonitors.map((monitor) => [
-        monitor.id,
-        () => runMonitorCheck(db, monitor),
-      ]),
+  const checkResults = await Promise.allSettled(
+    selectedMonitors.map((monitor) =>
+      options.executeMonitor
+        ? options.executeMonitor(monitor)
+        : runMonitorCheck(db, monitor),
     ),
   );
+  for (const [index, result] of checkResults.entries()) {
+    if (result.status === "rejected") {
+      console.error(
+        JSON.stringify({
+          message: "monitor check failed before persistence completed",
+          monitorId: selectedMonitors[index]?.id,
+          error:
+            result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason),
+        }),
+      );
+    }
+  }
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: currentTime,
     forceSoon: dueMonitors.length > selectedMonitors.length,
+    minimumDelayMs: checkResults.some((result) => result.status === "rejected")
+      ? FAILED_CHECK_RETRY_DELAY_MS
+      : MIN_RESCHEDULE_DELAY_MS,
+    monitorFilter: options.monitorFilter,
   });
 
   return {
     active: activeMonitors.length,
     due: dueMonitors.length,
     checked: selectedMonitors.length,
+    failed: checkResults.filter((result) => result.status === "rejected")
+      .length,
     nextAlarmAt,
   };
 }
@@ -72,12 +95,16 @@ export async function syncScheduler(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
+    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ) {
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors = (await db.monitor.listActive()).filter(
+    options.monitorFilter ?? (() => true),
+  );
   return {
     active: activeMonitors.length,
     nextAlarmAt,
@@ -90,6 +117,7 @@ export async function runMonitorNowAndReschedule(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
+    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ): Promise<SchedulerSingleRunResult> {
   const monitor = await db.monitor.getById(monitorId);
@@ -101,8 +129,11 @@ export async function runMonitorNowAndReschedule(
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors = (await db.monitor.listActive()).filter(
+    options.monitorFilter ?? (() => true),
+  );
 
   return {
     ran,
@@ -117,6 +148,7 @@ export async function recordPushHeartbeatAndReschedule(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
+    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ): Promise<SchedulerSingleRunResult> {
   const monitor = await db.monitor.getById(monitorId);
@@ -131,8 +163,11 @@ export async function recordPushHeartbeatAndReschedule(
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors = (await db.monitor.listActive()).filter(
+    options.monitorFilter ?? (() => true),
+  );
   return {
     ran,
     active: activeMonitors.length,
@@ -140,7 +175,7 @@ export async function recordPushHeartbeatAndReschedule(
   };
 }
 
-async function runMonitorCheck(db: Database, monitor: MonitorRecord) {
+export async function runMonitorCheck(db: Database, monitor: MonitorRecord) {
   const lifecycle = new MonitorLifecycle(db);
   if (monitor.kind === "push") {
     await lifecycle.recordPushOverdue(monitor);
@@ -156,18 +191,24 @@ async function rescheduleFromActiveMonitors(
   options: {
     now: number;
     forceSoon?: boolean;
+    minimumDelayMs?: number;
+    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ) {
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors = (await db.monitor.listActive()).filter(
+    options.monitorFilter ?? (() => true),
+  );
   if (activeMonitors.length === 0) {
     await clearAlarm(alarm);
     return null;
   }
 
   const earliestDueAt = Math.min(...activeMonitors.map(getMonitorNextDueAt));
+  const minimumNextAlarmAt =
+    options.now + (options.minimumDelayMs ?? MIN_RESCHEDULE_DELAY_MS);
   const nextAlarmAt = options.forceSoon
-    ? options.now + MIN_RESCHEDULE_DELAY_MS
-    : Math.max(options.now + MIN_RESCHEDULE_DELAY_MS, earliestDueAt);
+    ? minimumNextAlarmAt
+    : Math.max(minimumNextAlarmAt, earliestDueAt);
   await setAlarmIfChanged(alarm, nextAlarmAt);
   return nextAlarmAt;
 }
