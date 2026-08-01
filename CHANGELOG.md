@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.14.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.13.0...uptime-zero-v0.14.0) (2026-08-01)
+
+
+### Features
+
+* **monitors:** add pre-save configuration test ([e38f15d](https://github.com/anyrange/uptime-zero/commit/e38f15d31fc972731ca0229d10cd21eb9f315bb3))
+* update dashboard ([74d10c4](https://github.com/anyrange/uptime-zero/commit/74d10c4e47da1cf8f82e766b7e739bd589eb4149))
+
+
+### Bug Fixes
+
+* **monitoring:** harden scheduler and checks for free plan limits ([5631ce2](https://github.com/anyrange/uptime-zero/commit/5631ce299749da7892d7b9c191eeec3fb3c03604))
+
+
+### Documentation
+
+* change image ([b3a0c7f](https://github.com/anyrange/uptime-zero/commit/b3a0c7fa67fbc739a7c2c8cad8b3c6345c3244d4))
+
+
+### Miscellaneous Chores
+
+* clean up agent setup ([041bc16](https://github.com/anyrange/uptime-zero/commit/041bc1646f9db3b832955fea08137e37765cea84))
+* remove .claude ([afa5f72](https://github.com/anyrange/uptime-zero/commit/afa5f72c0e7c74282667c505088a6df775321caa))
+* update skills ([599b003](https://github.com/anyrange/uptime-zero/commit/599b0032ec4fc6a0be4507275024a22ff0a8b6af))
+
 ## [0.13.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.12.0...uptime-zero-v0.13.0) (2026-06-13)
 
 
