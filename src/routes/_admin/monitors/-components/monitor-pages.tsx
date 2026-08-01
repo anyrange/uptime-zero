@@ -1,6 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Globe2Icon, PlusIcon, RadioTowerIcon, ServerIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  Globe2Icon,
+  PlusIcon,
+  RadioTowerIcon,
+  ServerIcon,
+} from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import type { MonitorPayload } from "@/lib/queries/monitors";
 import type {
@@ -96,6 +103,7 @@ import {
   useMonitorQuery,
   usePauseMonitorMutation,
   useResumeMonitorMutation,
+  useTestMonitorMutation,
   useUpdateMonitorMutation,
 } from "@/lib/queries/monitors";
 import { providerLabel } from "@/lib/queries/notifications";
@@ -119,6 +127,7 @@ const monitorIntervalOptions = [60, 300, 600, 1800, 3600] as const;
 export function NewMonitorPage() {
   const data = useMonitorListQuery();
   const create = useCreateMonitorMutation();
+  const test = useTestMonitorMutation();
   const navigate = useNavigate();
 
   return (
@@ -146,7 +155,33 @@ export function NewMonitorPage() {
               await create.mutateAsync(payload);
               await navigate({ to: "/monitors" });
             }}
+            onTest={async (payload) => {
+              try {
+                const result = await test.mutateAsync(payload);
+                if (result.status === "up") {
+                  toast.success(m.monitor_test_success(), {
+                    description: m.monitor_test_success_description({
+                      duration: result.durationMs,
+                    }),
+                  });
+                  return;
+                }
+
+                toast.error(m.monitor_test_failed(), {
+                  description:
+                    result.error ?? m.monitor_test_failed_description(),
+                });
+              } catch (error) {
+                toast.error(m.monitor_test_failed(), {
+                  description:
+                    error instanceof globalThis.Error
+                      ? error.message
+                      : m.monitor_test_failed_description(),
+                });
+              }
+            }}
             pending={create.isPending}
+            testPending={test.isPending}
           />
         </MonitorConfigLayout>
       ) : null}
@@ -298,14 +333,18 @@ function MonitorForm({
   monitor,
   selectedDestinationIds = [],
   pending,
+  testPending,
   onSubmit,
+  onTest,
   onDelete,
 }: {
   destinations: NotificationDestinationRecord[];
   monitor?: MonitorRecord;
   selectedDestinationIds?: string[];
   pending?: boolean;
+  testPending?: boolean;
   onSubmit: (payload: MonitorPayload) => Promise<void>;
+  onTest?: (payload: MonitorPayload) => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
   const defaults = getMonitorConfigFormDefaults(
@@ -338,13 +377,11 @@ function MonitorForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const pause = usePauseMonitorMutation(monitor?.id ?? "");
   const resume = useResumeMonitorMutation(monitor?.id ?? "");
-  const actionPending = pending || pause.isPending || resume.isPending;
+  const actionPending =
+    pending || testPending || pause.isPending || resume.isPending;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitError(null);
-
-    const result = validateMonitorConfigForm({
+  function validateCurrentConfig() {
+    return validateMonitorConfigForm({
       name,
       kind,
       target,
@@ -360,6 +397,13 @@ function MonitorForm({
       active: monitor ? monitor.active === 1 : true,
       notificationDestinationIds,
     });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitError(null);
+
+    const result = validateCurrentConfig();
 
     if (!result.ok) {
       setSubmitError(result.error);
@@ -367,6 +411,19 @@ function MonitorForm({
     }
 
     await onSubmit(result.payload);
+  }
+
+  async function handleTest() {
+    if (!onTest) return;
+    setSubmitError(null);
+
+    const result = validateCurrentConfig();
+    if (!result.ok) {
+      toast.error(m.monitor_test_failed(), { description: result.error });
+      return;
+    }
+
+    await onTest(result.payload);
   }
 
   function handleKindChange(nextKind: MonitorKind) {
@@ -845,6 +902,19 @@ function MonitorForm({
         </CardContent>
         <CardFooter className="flex-wrap justify-between gap-2 border-t">
           <div className="flex flex-wrap gap-2">
+            {onTest && kind !== "push" ? (
+              <Button
+                disabled={actionPending}
+                onClick={handleTest}
+                type="button"
+                variant="outline"
+              >
+                <ActivityIcon data-icon="inline-start" />
+                {testPending
+                  ? m.monitor_testing_configuration()
+                  : m.monitor_test_configuration()}
+              </Button>
+            ) : null}
             <Button disabled={actionPending} type="submit">
               {monitor ? m.monitor_save() : m.monitor_create()}
             </Button>

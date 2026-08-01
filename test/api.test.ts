@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createDatabase, getDrizzle } from "@/server/db";
 import * as schema from "@/server/db/schema";
@@ -50,6 +50,90 @@ describe("private API auth", () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({
       error: "Permission denied",
+    });
+  });
+});
+
+describe("pre-save monitor test API", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("runs the configured check without persisting monitor data", async () => {
+    const cookie = await setupTestSession("admin");
+    const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await apiFetch("/api/monitors/test", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify(testMonitorPayload()),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "up",
+      statusCode: 200,
+      error: null,
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    const db = getDrizzle(env.DB);
+    await expect(db.select().from(schema.monitors)).resolves.toEqual([]);
+    await expect(db.select().from(schema.heartbeats)).resolves.toEqual([]);
+    await expect(db.select().from(schema.incidents)).resolves.toEqual([]);
+  });
+
+  it("returns a failed outcome after the configured retry", async () => {
+    const cookie = await setupTestSession("admin");
+    const fetchMock = vi.fn(
+      async () => new Response("unavailable", { status: 503 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await apiFetch("/api/monitors/test", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        ...testMonitorPayload(),
+        retries: 1,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "down",
+      statusCode: 503,
+      error: "Expected HTTP 200, got 503",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects pre-save heartbeat tests", async () => {
+    const cookie = await setupTestSession("admin");
+    const response = await apiFetch("/api/monitors/test", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        ...testMonitorPayload(),
+        kind: "push",
+        target: "",
+        assertions: [],
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Heartbeat monitors can only be tested after they are saved.",
     });
   });
 });
@@ -277,6 +361,25 @@ describe("monitor import/export API", () => {
     expect(badMonitor.status).toBe(400);
   });
 });
+
+function testMonitorPayload() {
+  return {
+    name: "Unsaved API",
+    kind: "http",
+    target: "https://example.com/health",
+    intervalSec: 60,
+    timeoutMs: 1000,
+    retries: 0,
+    assertions: [{ id: "status", type: "status", expected: 200 }],
+    heartbeatMode: "interval",
+    heartbeatCron: null,
+    heartbeatGraceSec: null,
+    heartbeatTimezone: null,
+    notificationGraceSec: 0,
+    active: true,
+    notificationDestinationIds: [],
+  };
+}
 
 describe("monitor API", () => {
   it("creates and updates monitors through the real API and D1 models", async () => {

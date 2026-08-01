@@ -9,12 +9,14 @@ import {
   monitorConfigSchema,
   parseMonitorConfigForStorage,
 } from "@/lib/monitor/config";
+import { m } from "@/paraglide/messages.js";
 import { createDatabase } from "@/server/db";
 import {
   queueSchedulerForSavedMonitor,
   queueSchedulerSync,
   runMonitorNow,
 } from "@/server/durable/scheduler-actor";
+import { runConfiguredMonitorCheck } from "@/server/lib/monitoring";
 import { requireApiPermission } from "@/server/middleware/permissions";
 import { MonitorService } from "@/server/services/monitor";
 
@@ -60,6 +62,40 @@ export const monitorsApi = new Hono<AppEnv>()
       }
 
       return ctx.json(savedMonitor, 201);
+    },
+  )
+  .post(
+    "/test",
+    requireApiPermission("monitor.create"),
+    zValidator("json", monitorConfigSchema),
+    async (ctx) => {
+      const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
+      if (monitor.kind === "push") {
+        throw new HTTPException(400, {
+          message: m.monitor_test_push_unavailable(),
+        });
+      }
+
+      const result = await runConfiguredMonitorCheck(monitor);
+      ctx.get("log").set({
+        action: "monitor_test",
+        monitor: {
+          kind: monitor.kind,
+          name: monitor.name,
+        },
+        check: {
+          status: result.status,
+          statusCode: result.statusCode,
+          durationMs: result.durationMs,
+        },
+      });
+
+      return ctx.json({
+        status: result.status,
+        statusCode: result.statusCode,
+        durationMs: result.durationMs,
+        error: result.error,
+      });
     },
   )
   .get("/:id", async (ctx) => {

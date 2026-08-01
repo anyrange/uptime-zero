@@ -7,6 +7,11 @@ import type {
   TextAssertionOperator,
 } from "@/types";
 
+type MonitorCheckConfig = Pick<
+  MonitorRecord,
+  "kind" | "target" | "timeoutMs" | "assertions"
+>;
+
 type DnsJsonAnswer = {
   name?: string;
   type?: number;
@@ -92,7 +97,7 @@ export function readJsonPath(input: unknown, path: string): unknown {
 }
 
 export async function runHttpCheck(
-  monitor: MonitorRecord,
+  monitor: MonitorCheckConfig,
   fetchImpl: typeof fetch,
 ): Promise<MonitorCheckResult> {
   if (monitor.kind === "dns") {
@@ -213,7 +218,7 @@ function runHttpAssertions(
 }
 
 async function runDnsCheck(
-  monitor: MonitorRecord,
+  monitor: MonitorCheckConfig,
   fetchImpl: typeof fetch,
 ): Promise<MonitorCheckResult> {
   const startedAt = Date.now();

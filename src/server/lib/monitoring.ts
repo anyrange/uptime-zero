@@ -1,15 +1,45 @@
 import type { MonitorRecord, MonitorStatus } from "@/types";
 
+import {
+  MAX_MONITOR_RETRIES,
+  MAX_MONITOR_TIMEOUT_MS,
+} from "@/lib/monitor/config";
 import { parseDateMs } from "@/server/lib/dates";
 import {
   getCronHeartbeatSchedule,
   getNextCronHeartbeatExpectedAt,
 } from "@/server/lib/monitoring-cron";
+import { runHttpCheck } from "@/server/lib/monitoring-http";
 export {
   compareJsonValue,
   readJsonPath,
   runHttpCheck,
 } from "@/server/lib/monitoring-http";
+
+type PollMonitorConfig = Pick<
+  MonitorRecord,
+  "kind" | "target" | "timeoutMs" | "retries" | "assertions"
+>;
+
+export async function runConfiguredMonitorCheck(
+  monitor: PollMonitorConfig,
+  fetchImpl: typeof fetch = fetch,
+) {
+  const boundedMonitor = {
+    ...monitor,
+    timeoutMs: Math.min(monitor.timeoutMs, MAX_MONITOR_TIMEOUT_MS),
+  };
+  let result = await runHttpCheck(boundedMonitor, fetchImpl);
+  for (
+    let attempt = 0;
+    attempt < Math.min(monitor.retries, MAX_MONITOR_RETRIES) &&
+    result.status === "down";
+    attempt += 1
+  ) {
+    result = await runHttpCheck(boundedMonitor, fetchImpl);
+  }
+  return result;
+}
 
 export interface DueCheck {
   due: boolean;

@@ -6,6 +6,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { AppRouterContext } from "@/lib/router-auth";
 
 import { NotFoundPage } from "@/components/not-found-page";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
@@ -17,6 +18,7 @@ function Root() {
   return (
     <TooltipProvider>
       <Outlet />
+      <Toaster />
       <TanStackDevtools
         config={{
           position: "bottom-right",

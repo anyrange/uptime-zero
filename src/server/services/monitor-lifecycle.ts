@@ -6,13 +6,9 @@ import type {
   MonitorStatus,
 } from "@/types";
 
-import {
-  MAX_MONITOR_NOTIFICATION_DESTINATIONS,
-  MAX_MONITOR_RETRIES,
-  MAX_MONITOR_TIMEOUT_MS,
-} from "@/lib/monitor/config";
+import { MAX_MONITOR_NOTIFICATION_DESTINATIONS } from "@/lib/monitor/config";
 import { nowIso } from "@/server/lib/dates";
-import { runHttpCheck } from "@/server/lib/monitoring";
+import { runConfiguredMonitorCheck } from "@/server/lib/monitoring";
 import {
   getCronHeartbeatSchedule,
   getNextCronHeartbeatExpectedAt,
@@ -23,7 +19,7 @@ export class MonitorLifecycle {
   constructor(private readonly db: Database) {}
 
   async runPollCheck(monitor: MonitorRecord) {
-    const result = await this.performCheck(monitor);
+    const result = await runConfiguredMonitorCheck(monitor);
     const checkedAt = nowIso();
     await this.persistCheckResult(monitor, result, "poll", checkedAt);
   }
@@ -55,26 +51,6 @@ export class MonitorLifecycle {
       "push",
       checkedAt,
     );
-  }
-
-  private async performCheck(
-    monitor: MonitorRecord,
-    fetchImpl: typeof fetch = fetch,
-  ) {
-    const boundedMonitor = {
-      ...monitor,
-      timeoutMs: Math.min(monitor.timeoutMs, MAX_MONITOR_TIMEOUT_MS),
-    };
-    let result = await runHttpCheck(boundedMonitor, fetchImpl);
-    for (
-      let attempt = 0;
-      attempt < Math.min(monitor.retries, MAX_MONITOR_RETRIES) &&
-      result.status === "down";
-      attempt += 1
-    ) {
-      result = await runHttpCheck(boundedMonitor, fetchImpl);
-    }
-    return result;
   }
 
   private async persistCheckResult(

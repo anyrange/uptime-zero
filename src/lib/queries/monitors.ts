@@ -60,6 +60,13 @@ export function useCreateMonitorMutation() {
   });
 }
 
+export function useTestMonitorMutation() {
+  return useMutation({
+    mutationFn: (payload: MonitorPayload) =>
+      parseResponse(apiClient.monitors.test.$post({ json: payload })),
+  });
+}
+
 export function useUpdateMonitorMutation(id: string) {
   const queryClient = useQueryClient();
 
