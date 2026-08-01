@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Globe2Icon, PlusIcon, RadioTowerIcon, ServerIcon } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import type { MonitorPayload } from "@/lib/queries/monitors";
@@ -23,10 +24,25 @@ import {
   AppPageSubtitle,
 } from "@/components/page";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Empty } from "@/components/ui/empty";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Item,
@@ -45,11 +61,14 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { notificationSummary } from "@/lib/formatters";
 import {
   dnsRecordTypes,
@@ -80,6 +99,7 @@ import {
   useUpdateMonitorMutation,
 } from "@/lib/queries/monitors";
 import { providerLabel } from "@/lib/queries/notifications";
+import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
 import { MonitorIncidentsTable } from "../-components/monitor-incidents-table";
@@ -94,6 +114,7 @@ import {
 const textOperatorOptions = textAssertionOperators;
 const jsonOperatorOptions = jsonOperators;
 const dnsRecordTypeOptions = dnsRecordTypes;
+const monitorIntervalOptions = [60, 300, 600, 1800, 3600] as const;
 
 export function NewMonitorPage() {
   const data = useMonitorListQuery();
@@ -269,11 +290,7 @@ function MonitorConfigLayout({
   children: ReactNode;
   wide?: boolean;
 }) {
-  return (
-    <Card className={`${wide ? "w-full" : "max-w-4xl"} px-5 py-5`}>
-      {children}
-    </Card>
-  );
+  return <div className={cn("w-full", !wide && "max-w-5xl")}>{children}</div>;
 }
 
 function MonitorForm({
@@ -351,171 +368,347 @@ function MonitorForm({
 
     await onSubmit(result.payload);
   }
+
+  function handleKindChange(nextKind: MonitorKind) {
+    const nextState = applyMonitorKindChange({ assertions, target }, nextKind);
+    setKind(nextKind);
+    setAssertions(nextState.assertions);
+    setTarget(nextState.target);
+  }
+
+  const intervalIndex = getMonitorIntervalIndex(intervalSec);
+
   return (
-    <form className="grid gap-5" onSubmit={handleSubmit}>
-      <div
-        className={
-          monitor
-            ? "grid gap-4 border-b border-border/70 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
-            : "grid gap-4 border-b border-border/70 pb-5"
-        }
-      >
-        <Field>
-          <FieldLabel>Monitor name</FieldLabel>
-          <Input
-            onChange={(event) => setName(event.target.value)}
-            value={name}
-          />
-        </Field>
-        {monitor ? (
-          monitor.active === 1 ? (
-            <Button
-              disabled={actionPending}
-              onClick={() => pause.mutate()}
-              type="button"
-              variant="outline"
-            >
-              {m.monitor_pause()}
-            </Button>
-          ) : (
-            <Button
-              disabled={actionPending}
-              onClick={() => resume.mutate()}
-              type="button"
-              variant="outline"
-            >
-              {m.monitor_resume()}
-            </Button>
-          )
-        ) : null}
-      </div>
-
-      <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-2">
-        <Field>
-          <FieldLabel>{m.monitor_type()}</FieldLabel>
-          <Select
-            onValueChange={(value) => {
-              const nextKind = value as MonitorKind;
-              const nextState = applyMonitorKindChange(
-                { assertions, target },
-                nextKind,
-              );
-              setKind(nextKind);
-              setAssertions(nextState.assertions);
-              setTarget(nextState.target);
-            }}
-            value={kind}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="http">{m.monitor_http()}</SelectItem>
-              <SelectItem value="dns">{m.monitor_dns()}</SelectItem>
-              <SelectItem value="push">{m.monitor_heartbeat()}</SelectItem>
-            </SelectContent>
-          </Select>
-          <FieldDescription>{m.monitor_type_description()}</FieldDescription>
-        </Field>
-        <Field>
-          <FieldLabel>
-            {kind === "dns" ? m.monitor_hostname() : m.monitor_target()}
-          </FieldLabel>
-          <Input
-            disabled={kind === "push"}
-            onChange={(event) => setTarget(event.target.value)}
-            placeholder={
-              kind === "dns" ? "example.com" : "https://example.com/health"
-            }
-            value={target}
-          />
-          <FieldDescription>
-            {kind === "dns"
-              ? m.monitor_target_hostname_description()
-              : kind === "push"
-                ? m.monitor_target_push_description()
-                : m.monitor_target_url_description()}
-          </FieldDescription>
-        </Field>
-      </div>
-
-      <div className="grid gap-4 border-b border-border/70 pb-5 md:grid-cols-3">
-        <Field>
-          <FieldLabel>{m.monitor_interval_seconds()}</FieldLabel>
-          <NumberField
-            min={0}
-            onValueChange={(value) => setIntervalSec(value ?? 0)}
-            value={intervalSec}
-          >
-            <NumberFieldGroup>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldGroup>
-          </NumberField>
-        </Field>
-        <Field>
-          <FieldLabel>{m.monitor_timeout_ms()}</FieldLabel>
-          <NumberField
-            min={0}
-            onValueChange={(value) => setTimeoutMs(value ?? 0)}
-            value={timeoutMs}
-          >
-            <NumberFieldGroup>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldGroup>
-          </NumberField>
-        </Field>
-        <Field>
-          <FieldLabel>{m.monitor_retries()}</FieldLabel>
-          <NumberField
-            min={0}
-            onValueChange={(value) => setRetries(value ?? 0)}
-            value={retries}
-          >
-            <NumberFieldGroup>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldGroup>
-          </NumberField>
-        </Field>
-      </div>
-
-      {kind === "push" ? (
-        <div className="grid gap-4 border-b border-border/70 pb-5">
-          <div>
-            <h3 className="font-medium">{m.monitor_heartbeat_schedule()}</h3>
-            <p className="text-sm text-muted-foreground">
-              {m.monitor_heartbeat_schedule_description()}
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Field>
-              <FieldLabel>{m.monitor_heartbeat_mode()}</FieldLabel>
-              <Select
-                onValueChange={(value) =>
-                  setHeartbeatMode(value as HeartbeatMode)
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{m.monitor_details()}</CardTitle>
+          <CardDescription>{m.monitor_details_description()}</CardDescription>
+          {monitor ? (
+            <CardAction>
+              <Button
+                disabled={actionPending}
+                onClick={() =>
+                  monitor.active === 1 ? pause.mutate() : resume.mutate()
                 }
-                value={heartbeatMode}
+                type="button"
+                variant="outline"
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="interval">
-                    {m.monitor_heartbeat_interval()}
-                  </SelectItem>
-                  <SelectItem value="cron">
-                    {m.monitor_heartbeat_cron()}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                {monitor.active === 1 ? m.monitor_pause() : m.monitor_resume()}
+              </Button>
+            </CardAction>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          <FieldGroup className="gap-4">
+            <Field>
+              <FieldLabel htmlFor="monitor-name">{m.monitor_name()}</FieldLabel>
+              <Input
+                id="monitor-name"
+                onChange={(event) => setName(event.target.value)}
+                value={name}
+              />
             </Field>
-            {heartbeatMode === "cron" ? (
-              <>
+            <FieldSet className="gap-3">
+              <FieldLegend>{m.monitor_type()}</FieldLegend>
+              <ToggleGroup
+                aria-label={m.monitor_type()}
+                className="grid w-full grid-cols-1 md:grid-cols-3"
+                onValueChange={(value) => {
+                  if (value) handleKindChange(value as MonitorKind);
+                }}
+                type="single"
+                value={kind}
+                variant="outline"
+              >
+                <ToggleGroupItem
+                  className="h-auto min-w-0 justify-start px-4 py-3"
+                  value="http"
+                >
+                  <Globe2Icon />
+                  {m.monitor_http()}
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  className="h-auto min-w-0 justify-start px-4 py-3"
+                  value="dns"
+                >
+                  <ServerIcon />
+                  {m.monitor_dns()}
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  className="h-auto min-w-0 justify-start px-4 py-3"
+                  value="push"
+                >
+                  <RadioTowerIcon />
+                  {m.monitor_heartbeat()}
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </FieldSet>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      {kind !== "push" ? (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>
+              {kind === "http"
+                ? m.monitor_http_request()
+                : m.monitor_dns_query()}
+            </CardTitle>
+            <CardDescription>
+              {kind === "http"
+                ? m.monitor_http_request_description()
+                : m.monitor_dns_query_description()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup className="gap-5">
+              <Field>
+                <FieldLabel htmlFor="monitor-target">
+                  {kind === "dns" ? m.monitor_hostname() : m.monitor_url()}
+                </FieldLabel>
+                <Input
+                  id="monitor-target"
+                  onChange={(event) => setTarget(event.target.value)}
+                  placeholder={
+                    kind === "dns"
+                      ? m.monitor_hostname_placeholder()
+                      : m.monitor_url_placeholder()
+                  }
+                  value={target}
+                />
+                <FieldDescription>
+                  {kind === "dns"
+                    ? m.monitor_target_hostname_description()
+                    : m.monitor_target_url_description()}
+                </FieldDescription>
+              </Field>
+
+              <FieldSet className="gap-3">
+                <FieldLegend>{m.monitor_assertions()}</FieldLegend>
+                <FieldDescription>
+                  {kind === "dns"
+                    ? m.monitor_assertions_dns_description()
+                    : m.monitor_assertions_http_description()}
+                </FieldDescription>
+                <div className="flex flex-wrap gap-2">
+                  {kind === "http" ? (
+                    <>
+                      <Button
+                        onClick={() =>
+                          setAssertions(
+                            addMonitorAssertion(
+                              assertions,
+                              createStatusAssertion(),
+                            ),
+                          )
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        <PlusIcon data-icon="inline-start" />
+                        {m.monitor_add_status()}
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setAssertions(
+                            addMonitorAssertion(
+                              assertions,
+                              createHeaderAssertion(),
+                            ),
+                          )
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        <PlusIcon data-icon="inline-start" />
+                        {m.monitor_add_header()}
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setAssertions(
+                            addMonitorAssertion(
+                              assertions,
+                              createBodyTextAssertion(),
+                            ),
+                          )
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        <PlusIcon data-icon="inline-start" />
+                        {m.monitor_add_body()}
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setAssertions(
+                            addMonitorAssertion(
+                              assertions,
+                              createBodyJsonAssertion(),
+                            ),
+                          )
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        <PlusIcon data-icon="inline-start" />
+                        {m.monitor_add_json()}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={() =>
+                        setAssertions(
+                          addMonitorAssertion(assertions, createDnsAssertion()),
+                        )
+                      }
+                      type="button"
+                      variant="outline"
+                    >
+                      <PlusIcon data-icon="inline-start" />
+                      {m.monitor_add_record()}
+                    </Button>
+                  )}
+                </div>
+
+                {assertions.length === 0 ? (
+                  <Empty className="p-4">
+                    <EmptyHeader>
+                      <EmptyDescription>
+                        {m.monitor_no_assertions()}
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                ) : (
+                  <FieldGroup className="gap-3">
+                    {assertions.map((assertion) => (
+                      <AssertionEditor
+                        assertion={assertion}
+                        key={assertion.id}
+                        onChange={(nextAssertion) =>
+                          setAssertions(
+                            updateMonitorAssertion(assertions, nextAssertion),
+                          )
+                        }
+                        onRemove={() =>
+                          setAssertions(
+                            removeMonitorAssertion(assertions, assertion.id),
+                          )
+                        }
+                      />
+                    ))}
+                  </FieldGroup>
+                )}
+              </FieldSet>
+            </FieldGroup>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{m.monitor_request_limits()}</CardTitle>
+          <CardDescription>
+            {m.monitor_request_limits_description()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <Field>
+              <FieldLabel>{m.monitor_timeout_ms()}</FieldLabel>
+              <NumberField
+                min={1}
+                onValueChange={(value) => setTimeoutMs(value ?? 0)}
+                value={timeoutMs}
+              >
+                <NumberFieldGroup>
+                  <NumberFieldDecrement />
+                  <NumberFieldInput />
+                  <NumberFieldIncrement />
+                </NumberFieldGroup>
+              </NumberField>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_retries()}</FieldLabel>
+              <NumberField
+                min={0}
+                onValueChange={(value) => setRetries(value ?? 0)}
+                value={retries}
+              >
+                <NumberFieldGroup>
+                  <NumberFieldDecrement />
+                  <NumberFieldInput />
+                  <NumberFieldIncrement />
+                </NumberFieldGroup>
+              </NumberField>
+            </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{m.monitor_scheduling()}</CardTitle>
+          <CardDescription>
+            {m.monitor_scheduling_description()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup className="gap-5">
+            {kind === "push" ? (
+              <Field>
+                <FieldLabel>{m.monitor_heartbeat_mode()}</FieldLabel>
+                <Select
+                  onValueChange={(value) =>
+                    setHeartbeatMode(value as HeartbeatMode)
+                  }
+                  value={heartbeatMode}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="interval">
+                        {m.monitor_heartbeat_interval()}
+                      </SelectItem>
+                      <SelectItem value="cron">
+                        {m.monitor_heartbeat_cron()}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : null}
+
+            {kind !== "push" || heartbeatMode === "interval" ? (
+              <Field>
+                <FieldLabel>{m.monitor_periodicity()}</FieldLabel>
+                <FieldDescription>
+                  {m.monitor_periodicity_description({
+                    interval: monitorIntervalLabel(intervalSec),
+                  })}
+                </FieldDescription>
+                <Slider
+                  aria-label={m.monitor_periodicity()}
+                  max={monitorIntervalOptions.length - 1}
+                  min={0}
+                  onValueChange={([nextIndex]) => {
+                    const nextInterval = monitorIntervalOptions[nextIndex ?? 0];
+                    if (nextInterval) setIntervalSec(nextInterval);
+                  }}
+                  step={1}
+                  value={[intervalIndex]}
+                />
+                <div className="flex justify-between gap-2 text-xs text-muted-foreground">
+                  {monitorIntervalOptions.map((option) => (
+                    <span key={option}>{monitorIntervalLabel(option)}</span>
+                  ))}
+                </div>
+              </Field>
+            ) : (
+              <FieldGroup className="grid gap-4 md:grid-cols-3">
                 <Field>
                   <FieldLabel>
                     {m.monitor_heartbeat_cron_expression()}
@@ -537,7 +730,7 @@ function MonitorForm({
                 <Field>
                   <FieldLabel>{m.monitor_heartbeat_grace_seconds()}</FieldLabel>
                   <NumberField
-                    min={0}
+                    min={1}
                     onValueChange={(value) => setHeartbeatGraceSec(value ?? 0)}
                     value={heartbeatGraceSec ?? 0}
                   >
@@ -548,224 +741,146 @@ function MonitorForm({
                     </NumberFieldGroup>
                   </NumberField>
                 </Field>
-              </>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {kind !== "push" ? (
-        <div className="grid gap-4 border-b border-border/70 pb-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="font-medium">{m.monitor_assertions()}</h3>
-              <p className="text-sm text-muted-foreground">
-                {kind === "dns"
-                  ? m.monitor_assertions_dns_description()
-                  : m.monitor_assertions_http_description()}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {kind === "http" ? (
-                <>
-                  <Button
-                    onClick={() =>
-                      setAssertions(
-                        addMonitorAssertion(
-                          assertions,
-                          createStatusAssertion(),
-                        ),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    {m.monitor_add_status()}
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      setAssertions(
-                        addMonitorAssertion(
-                          assertions,
-                          createHeaderAssertion(),
-                        ),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    {m.monitor_add_header()}
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      setAssertions(
-                        addMonitorAssertion(
-                          assertions,
-                          createBodyTextAssertion(),
-                        ),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    {m.monitor_add_body()}
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      setAssertions(
-                        addMonitorAssertion(
-                          assertions,
-                          createBodyJsonAssertion(),
-                        ),
-                      )
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    {m.monitor_add_json()}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={() =>
-                    setAssertions(
-                      addMonitorAssertion(assertions, createDnsAssertion()),
-                    )
-                  }
-                  type="button"
-                  variant="outline"
-                >
-                  {m.monitor_add_record()}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {assertions.length === 0 ? (
-            <Empty>{m.monitor_no_assertions()}</Empty>
-          ) : (
-            <div className="grid gap-3">
-              {assertions.map((assertion) => (
-                <AssertionEditor
-                  assertion={assertion}
-                  key={assertion.id}
-                  onChange={(nextAssertion) =>
-                    setAssertions(
-                      updateMonitorAssertion(assertions, nextAssertion),
-                    )
-                  }
-                  onRemove={() =>
-                    setAssertions(
-                      removeMonitorAssertion(assertions, assertion.id),
-                    )
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      <div className="grid gap-4 border-b border-border/70 pb-5">
-        <div>
-          <h3 className="font-medium">{m.monitor_notifications()}</h3>
-          <p className="text-sm text-muted-foreground">
-            {m.monitor_notifications_description()}
-          </p>
-        </div>
-        <Field>
-          <FieldLabel>{m.monitor_notification_grace_seconds()}</FieldLabel>
-          <NumberField
-            min={0}
-            onValueChange={(value) => setNotificationGraceSec(value ?? 0)}
-            value={notificationGraceSec}
-          >
-            <NumberFieldGroup>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldGroup>
-          </NumberField>
-          <FieldDescription>
-            {m.monitor_notification_grace_seconds_description()}
-          </FieldDescription>
-        </Field>
-        {destinations.length === 0 ? (
-          <Empty>{m.monitor_no_destinations()}</Empty>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {destinations.map((destination) => {
-              const checked = notificationDestinationIds.includes(
-                destination.id,
-              );
-              return (
-                <Item asChild key={destination.id} size="sm" variant="outline">
-                  <label>
-                    <ItemMedia>
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(nextChecked) => {
-                          if (nextChecked) {
-                            setNotificationDestinationIds([
-                              ...notificationDestinationIds,
-                              destination.id,
-                            ]);
-                            return;
-                          }
-                          setNotificationDestinationIds(
-                            notificationDestinationIds.filter(
-                              (id) => id !== destination.id,
-                            ),
-                          );
-                        }}
-                      />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>{destination.name}</ItemTitle>
-                      <ItemDescription>
-                        {providerLabel(destination.provider)} ·{" "}
-                        {notificationSummary(destination)}
-                      </ItemDescription>
-                    </ItemContent>
-                  </label>
-                </Item>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </FieldGroup>
+            )}
+          </FieldGroup>
+        </CardContent>
+      </Card>
 
       {monitor?.kind === "push" && monitor.pushToken ? (
-        <Field>
-          <FieldLabel>{m.monitor_push_endpoint()}</FieldLabel>
-          <Textarea readOnly value={`/api/push/${monitor.pushToken}`} />
-          <FieldDescription>
-            {m.monitor_push_endpoint_description()}
-          </FieldDescription>
-        </Field>
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>{m.monitor_push_endpoint()}</CardTitle>
+            <CardDescription>
+              {m.monitor_push_endpoint_description()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Textarea readOnly value={`/api/push/${monitor.pushToken}`} />
+          </CardContent>
+        </Card>
       ) : null}
 
-      {submitError ? (
-        <p className="text-sm text-destructive">{submitError}</p>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <Button disabled={actionPending} type="submit">
-          {monitor ? m.monitor_save() : m.monitor_create()}
-        </Button>
-        {onDelete ? (
-          <Button
-            disabled={actionPending}
-            onClick={onDelete}
-            type="button"
-            variant="destructive"
-          >
-            {m.common_delete()}
-          </Button>
-        ) : null}
-      </div>
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{m.monitor_notifications()}</CardTitle>
+          <CardDescription>
+            {m.monitor_notifications_description()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup className="gap-4">
+            <Field>
+              <FieldLabel>{m.monitor_notification_grace_seconds()}</FieldLabel>
+              <NumberField
+                min={0}
+                onValueChange={(value) => setNotificationGraceSec(value ?? 0)}
+                value={notificationGraceSec}
+              >
+                <NumberFieldGroup>
+                  <NumberFieldDecrement />
+                  <NumberFieldInput />
+                  <NumberFieldIncrement />
+                </NumberFieldGroup>
+              </NumberField>
+              <FieldDescription>
+                {m.monitor_notification_grace_seconds_description()}
+              </FieldDescription>
+            </Field>
+            {destinations.length === 0 ? (
+              <Empty className="p-4">
+                <EmptyHeader>
+                  <EmptyDescription>
+                    {m.monitor_no_destinations()}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <FieldGroup className="grid gap-3 md:grid-cols-2">
+                {destinations.map((destination) => {
+                  const checked = notificationDestinationIds.includes(
+                    destination.id,
+                  );
+                  return (
+                    <Item
+                      asChild
+                      key={destination.id}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <label>
+                        <ItemMedia>
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(nextChecked) => {
+                              if (nextChecked) {
+                                setNotificationDestinationIds([
+                                  ...notificationDestinationIds,
+                                  destination.id,
+                                ]);
+                                return;
+                              }
+                              setNotificationDestinationIds(
+                                notificationDestinationIds.filter(
+                                  (id) => id !== destination.id,
+                                ),
+                              );
+                            }}
+                          />
+                        </ItemMedia>
+                        <ItemContent>
+                          <ItemTitle>{destination.name}</ItemTitle>
+                          <ItemDescription>
+                            {providerLabel(destination.provider)} ·{" "}
+                            {notificationSummary(destination)}
+                          </ItemDescription>
+                        </ItemContent>
+                      </label>
+                    </Item>
+                  );
+                })}
+              </FieldGroup>
+            )}
+          </FieldGroup>
+        </CardContent>
+        <CardFooter className="flex-wrap justify-between gap-2 border-t">
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={actionPending} type="submit">
+              {monitor ? m.monitor_save() : m.monitor_create()}
+            </Button>
+            {onDelete ? (
+              <Button
+                disabled={actionPending}
+                onClick={onDelete}
+                type="button"
+                variant="destructive"
+              >
+                {m.common_delete()}
+              </Button>
+            ) : null}
+          </div>
+          {submitError ? (
+            <p className="text-sm text-destructive">{submitError}</p>
+          ) : null}
+        </CardFooter>
+      </Card>
     </form>
   );
+}
+
+function getMonitorIntervalIndex(intervalSec: number) {
+  return monitorIntervalOptions.reduce((closestIndex, option, index) => {
+    const closest = monitorIntervalOptions[closestIndex];
+    return Math.abs(option - intervalSec) < Math.abs(closest - intervalSec)
+      ? index
+      : closestIndex;
+  }, 0);
+}
+
+function monitorIntervalLabel(intervalSec: number) {
+  return intervalSec < 3600
+    ? m.common_minutes_short({ value: intervalSec / 60 })
+    : m.common_hours_short({ value: intervalSec / 3600 });
 }
 
 function AssertionEditor({
@@ -778,225 +893,238 @@ function AssertionEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid gap-4 rounded-lg border border-border/70 px-4 py-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-medium">{assertionSummary(assertion)}</p>
-        <Button onClick={onRemove} type="button" variant="outline">
-          Remove
-        </Button>
-      </div>
-
-      {assertion.type === "status" ? (
-        <Field>
-          <FieldLabel>Expected status</FieldLabel>
-          <NumberField
-            min={100}
-            onValueChange={(value) =>
-              onChange({
-                ...assertion,
-                expected: value ?? 0,
-              })
-            }
-            value={assertion.expected}
-          >
-            <NumberFieldGroup>
-              <NumberFieldDecrement />
-              <NumberFieldInput />
-              <NumberFieldIncrement />
-            </NumberFieldGroup>
-          </NumberField>
-        </Field>
-      ) : null}
-
-      {assertion.type === "header" ? (
-        <div className="grid gap-4 md:grid-cols-3">
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>{assertionSummary(assertion)}</CardTitle>
+        <CardAction>
+          <Button onClick={onRemove} type="button" variant="outline">
+            {m.monitor_remove_assertion()}
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        {assertion.type === "status" ? (
           <Field>
-            <FieldLabel>Header</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, header: event.target.value })
-              }
-              value={assertion.header}
-            />
-          </Field>
-          <Field>
-            <FieldLabel>Operator</FieldLabel>
-            <Select
+            <FieldLabel>{m.monitor_expected_status()}</FieldLabel>
+            <NumberField
+              min={100}
               onValueChange={(value) =>
                 onChange({
                   ...assertion,
-                  operator: value as TextAssertionOperator,
+                  expected: value ?? 0,
                 })
               }
-              value={assertion.operator}
+              value={assertion.expected}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {textOperatorOptions.map((operator) => (
-                  <SelectItem key={operator} value={operator}>
-                    {operator}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <NumberFieldGroup>
+                <NumberFieldDecrement />
+                <NumberFieldInput />
+                <NumberFieldIncrement />
+              </NumberFieldGroup>
+            </NumberField>
           </Field>
-          <Field>
-            <FieldLabel>Value</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, value: event.target.value })
-              }
-              value={assertion.value}
-            />
-          </Field>
-        </div>
-      ) : null}
+        ) : null}
 
-      {assertion.type === "body" && assertion.source === "text" ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field>
-            <FieldLabel>Operator</FieldLabel>
-            <Select
-              onValueChange={(value) =>
-                onChange({
-                  ...assertion,
-                  operator: value as TextAssertionOperator,
-                })
-              }
-              value={assertion.operator}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {textOperatorOptions.map((operator) => (
-                  <SelectItem key={operator} value={operator}>
-                    {operator}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Value</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, value: event.target.value })
-              }
-              value={assertion.value}
-            />
-          </Field>
-        </div>
-      ) : null}
+        {assertion.type === "header" ? (
+          <FieldGroup className="grid gap-4 md:grid-cols-3">
+            <Field>
+              <FieldLabel>{m.monitor_header()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, header: event.target.value })
+                }
+                value={assertion.header}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_operator()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  onChange({
+                    ...assertion,
+                    operator: value as TextAssertionOperator,
+                  })
+                }
+                value={assertion.operator}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {textOperatorOptions.map((operator) => (
+                      <SelectItem key={operator} value={operator}>
+                        {operator}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_value()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, value: event.target.value })
+                }
+                value={assertion.value}
+              />
+            </Field>
+          </FieldGroup>
+        ) : null}
 
-      {assertion.type === "body" && assertion.source === "json" ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field>
-            <FieldLabel>JSON path</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, path: event.target.value })
-              }
-              value={assertion.path}
-            />
-          </Field>
-          <Field>
-            <FieldLabel>Operator</FieldLabel>
-            <Select
-              onValueChange={(value) =>
-                onChange({
-                  ...assertion,
-                  operator: value as JsonOperator,
-                })
-              }
-              value={assertion.operator}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {jsonOperatorOptions.map((operator) => (
-                  <SelectItem key={operator} value={operator}>
-                    {operator}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Expected value</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, value: event.target.value })
-              }
-              value={assertion.value}
-            />
-          </Field>
-        </div>
-      ) : null}
+        {assertion.type === "body" && assertion.source === "text" ? (
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <Field>
+              <FieldLabel>{m.monitor_operator()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  onChange({
+                    ...assertion,
+                    operator: value as TextAssertionOperator,
+                  })
+                }
+                value={assertion.operator}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {textOperatorOptions.map((operator) => (
+                      <SelectItem key={operator} value={operator}>
+                        {operator}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_value()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, value: event.target.value })
+                }
+                value={assertion.value}
+              />
+            </Field>
+          </FieldGroup>
+        ) : null}
 
-      {assertion.type === "record" ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field>
-            <FieldLabel>Record type</FieldLabel>
-            <Select
-              onValueChange={(value) =>
-                onChange({
-                  ...assertion,
-                  recordType: value as DnsRecordType,
-                })
-              }
-              value={assertion.recordType}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {dnsRecordTypeOptions.map((recordType) => (
-                  <SelectItem key={recordType} value={recordType}>
-                    {recordType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Operator</FieldLabel>
-            <Select
-              onValueChange={(value) =>
-                onChange({
-                  ...assertion,
-                  operator: value as TextAssertionOperator,
-                })
-              }
-              value={assertion.operator}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {textOperatorOptions.map((operator) => (
-                  <SelectItem key={operator} value={operator}>
-                    {operator}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Expected value</FieldLabel>
-            <Input
-              onChange={(event) =>
-                onChange({ ...assertion, value: event.target.value })
-              }
-              value={assertion.value}
-            />
-          </Field>
-        </div>
-      ) : null}
-    </div>
+        {assertion.type === "body" && assertion.source === "json" ? (
+          <FieldGroup className="grid gap-4 md:grid-cols-3">
+            <Field>
+              <FieldLabel>{m.monitor_json_path()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, path: event.target.value })
+                }
+                value={assertion.path}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_operator()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  onChange({
+                    ...assertion,
+                    operator: value as JsonOperator,
+                  })
+                }
+                value={assertion.operator}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {jsonOperatorOptions.map((operator) => (
+                      <SelectItem key={operator} value={operator}>
+                        {operator}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_expected_value()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, value: event.target.value })
+                }
+                value={assertion.value}
+              />
+            </Field>
+          </FieldGroup>
+        ) : null}
+
+        {assertion.type === "record" ? (
+          <FieldGroup className="grid gap-4 md:grid-cols-3">
+            <Field>
+              <FieldLabel>{m.monitor_record_type()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  onChange({
+                    ...assertion,
+                    recordType: value as DnsRecordType,
+                  })
+                }
+                value={assertion.recordType}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {dnsRecordTypeOptions.map((recordType) => (
+                      <SelectItem key={recordType} value={recordType}>
+                        {recordType}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_operator()}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  onChange({
+                    ...assertion,
+                    operator: value as TextAssertionOperator,
+                  })
+                }
+                value={assertion.operator}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {textOperatorOptions.map((operator) => (
+                      <SelectItem key={operator} value={operator}>
+                        {operator}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel>{m.monitor_expected_value()}</FieldLabel>
+              <Input
+                onChange={(event) =>
+                  onChange({ ...assertion, value: event.target.value })
+                }
+                value={assertion.value}
+              />
+            </Field>
+          </FieldGroup>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

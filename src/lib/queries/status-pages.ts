@@ -46,6 +46,9 @@ export function useCreateStatusPageMutation() {
       await queryClient.invalidateQueries({
         queryKey: privateKey("status-pages"),
       });
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("dashboard"),
+      });
       await queryClient.invalidateQueries({ queryKey: privateKey("settings") });
     },
   });
@@ -66,6 +69,9 @@ export function useUpdateStatusPageMutation(id: string) {
       await queryClient.invalidateQueries({
         queryKey: privateKey("status-pages", id),
       });
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("dashboard"),
+      });
       await queryClient.invalidateQueries({ queryKey: privateKey("settings") });
     },
   });
@@ -82,6 +88,9 @@ export function useDeleteStatusPageMutation(id: string) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: privateKey("status-pages"),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: privateKey("dashboard"),
       });
       await queryClient.invalidateQueries({ queryKey: privateKey("settings") });
     },

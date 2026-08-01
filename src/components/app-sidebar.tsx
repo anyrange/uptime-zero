@@ -10,14 +10,16 @@ import {
   LogIn,
   LogOut,
   MoreVertical,
+  Plus,
   RadioTower,
   Settings,
   User,
 } from "lucide-react";
 
-import type { SessionData } from "@/types";
+import type { MonitorStatus, SessionData } from "@/types";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +38,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
@@ -42,17 +46,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { appVersion } from "@/lib/build-info";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useLogoutMutation, useSessionQuery } from "@/lib/queries/auth";
+import { useDashboardQuery } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 export function AppSidebar() {
   const router = useRouter();
   const session = useSessionQuery();
   const logout = useLogoutMutation();
+  const dashboard = useDashboardQuery();
+  const { check, isReady } = usePermissions();
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="pb-0">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -84,7 +92,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{m.nav_monitoring()}</SidebarGroupLabel>
+          <SidebarGroupLabel>{m.nav_workspace()}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <NavItem tooltip={m.nav_overview()}>
@@ -136,13 +144,6 @@ export function AppSidebar() {
                   <span>{m.nav_status_pages()}</span>
                 </Link>
               </NavItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>{m.nav_operations()}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
               <NavItem tooltip={m.nav_notifications()}>
                 <Link
                   activeProps={{
@@ -170,6 +171,72 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarResourceGroup
+          addLabel={m.nav_add_status_page()}
+          addTo="/status-pages/new"
+          canAdd={isReady && check("statusPage.create")}
+          emptyLabel={m.nav_no_status_pages()}
+          label={m.nav_status_pages_count({
+            count: dashboard.data?.statusPages.length ?? 0,
+          })}
+          loading={dashboard.status === "pending"}
+        >
+          {dashboard.data?.statusPages.map((page) => (
+            <SidebarMenuItem key={page.id}>
+              <SidebarMenuButton asChild tooltip={page.title}>
+                <Link
+                  activeProps={{
+                    className:
+                      "bg-sidebar-accent text-sidebar-accent-foreground",
+                  }}
+                  params={{ pageId: page.id }}
+                  to="/status-pages/$pageId/edit"
+                >
+                  <span>{page.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarResourceGroup>
+        <SidebarResourceGroup
+          addLabel={m.nav_add_monitor()}
+          addTo="/monitors/new"
+          canAdd={isReady && check("monitor.create")}
+          emptyLabel={m.nav_no_monitors()}
+          label={m.nav_monitors_count({
+            count: dashboard.data?.monitors.length ?? 0,
+          })}
+          loading={dashboard.status === "pending"}
+        >
+          {dashboard.data?.monitors.map((monitor) => {
+            const status =
+              monitor.active === 1 ? monitor.lastStatus : "unknown";
+
+            return (
+              <SidebarMenuItem key={monitor.id}>
+                <SidebarMenuButton asChild tooltip={monitor.name}>
+                  <Link
+                    activeProps={{
+                      className:
+                        "bg-sidebar-accent text-sidebar-accent-foreground",
+                    }}
+                    params={{ monitorId: monitor.id }}
+                    to="/monitors/$monitorId"
+                  >
+                    <span>{monitor.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>
+                  <span
+                    aria-label={getMonitorStatusLabel(status)}
+                    className={`size-2 rounded-full ${getMonitorStatusClass(status)}`}
+                    role="img"
+                  />
+                </SidebarMenuBadge>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarResourceGroup>
       </SidebarContent>
       <SidebarFooter>
         <SessionFooter
@@ -187,6 +254,77 @@ export function AppSidebar() {
       <SidebarRail />
     </Sidebar>
   );
+}
+
+function SidebarResourceGroup({
+  label,
+  addLabel,
+  addTo,
+  canAdd,
+  emptyLabel,
+  loading,
+  children,
+}: {
+  label: string;
+  addLabel: string;
+  addTo: "/monitors/new" | "/status-pages/new";
+  canAdd: boolean;
+  emptyLabel: string;
+  loading: boolean;
+  children: ReactNode;
+}) {
+  const hasItems = Array.isArray(children)
+    ? children.length > 0
+    : Boolean(children);
+
+  return (
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <div className="relative">
+        <SidebarGroupLabel>{label}</SidebarGroupLabel>
+        {canAdd ? (
+          <Button
+            aria-label={addLabel}
+            asChild
+            className="absolute top-0 right-1"
+            size="icon-xs"
+            variant="outline"
+          >
+            <Link to={addTo}>
+              <Plus />
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+      <SidebarGroupContent>
+        {loading ? (
+          <div className="flex flex-col gap-2 px-2 py-1">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+        ) : hasItems ? (
+          <ScrollArea className="max-h-56">
+            <SidebarMenu>{children}</SidebarMenu>
+          </ScrollArea>
+        ) : (
+          <p className="px-2 py-1 text-sm text-muted-foreground">
+            {emptyLabel}
+          </p>
+        )}
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+function getMonitorStatusLabel(status: MonitorStatus) {
+  if (status === "up") return m.common_up();
+  if (status === "down") return m.common_down();
+  return m.common_unknown();
+}
+
+function getMonitorStatusClass(status: MonitorStatus) {
+  if (status === "up") return "bg-success";
+  if (status === "down") return "bg-destructive";
+  return "bg-muted-foreground";
 }
 
 function SessionFooter({

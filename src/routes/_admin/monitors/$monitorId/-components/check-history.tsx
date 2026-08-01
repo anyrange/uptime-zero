@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -15,19 +15,14 @@ import type { HeartbeatRecord, IncidentRecord, MonitorKind } from "@/types";
 
 import { StatusBar } from "@/components/blocks/status-bar";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Empty } from "@/components/ui/empty";
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import { buildHourlyStatusBarData } from "@/lib/status-blocks";
 import { m } from "@/paraglide/messages.js";
 
@@ -62,20 +57,13 @@ type MonitorChartData = {
   bucketLabel: string;
 };
 
-const latencyChartConfig = {
-  latencyMs: {
-    label: m.monitor_latency(),
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
-
 const percentileChartConfig = {
   p50: {
-    label: "P50",
+    label: m.monitor_latency_p50(),
     color: "var(--chart-1)",
   },
   p95: {
-    label: "P95",
+    label: m.monitor_latency_p95(),
     color: "var(--chart-5)",
   },
   avg: {
@@ -123,274 +111,195 @@ export function CheckHistory({
   );
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="gap-3 border-b border-border/70 pb-5">
-        <div className="grid gap-1">
-          <p className="text-sm font-medium text-muted-foreground">
-            {m.monitor_checks()}
-          </p>
-          <CardTitle className="text-xl">{m.monitor_health_trends()}</CardTitle>
-          <CardDescription>
-            {m.monitor_health_trends_description()}
-          </CardDescription>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {m.monitor_recorded_check_count({ count: requestCount })}
-        </p>
-      </CardHeader>
-      <CardContent className="grid gap-5 py-5">
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-foreground">
-              {m.common_uptime()}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {m.monitor_latest_48_hours()}
-            </p>
-          </div>
-          <StatusBar data={statusBarData} />
-        </div>
-
-        {heartbeats.length === 0 ? (
-          <Empty>{m.monitor_no_heartbeat_history()}</Empty>
-        ) : (
-          <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
-            <LatencyTrendChart charts={charts} />
-            <LatencySummaryChart charts={charts} />
-            <OutcomeBreakdownChart charts={charts} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function LatencyTrendChart({ charts }: { charts: MonitorChartData }) {
-  if (charts.latencyPoints.length === 0) {
-    return (
-      <ChartCard>
-        <ChartCardHeader>
-          <ChartCardTitle>{m.monitor_latency_over_time()}</ChartCardTitle>
-          <ChartCardDescription>
-            {m.monitor_latency_empty_description()}
-          </ChartCardDescription>
-        </ChartCardHeader>
-        <Empty>{m.monitor_no_latency_samples()}</Empty>
-      </ChartCard>
-    );
-  }
-
-  return (
-    <ChartCard>
-      <ChartCardHeader>
-        <ChartCardTitle>{m.monitor_latency_over_time()}</ChartCardTitle>
-        <ChartCardDescription>
-          {m.monitor_latency_description()}
-        </ChartCardDescription>
-      </ChartCardHeader>
-      <ChartContainer
-        className="h-60 min-h-60 w-full max-w-full"
-        config={latencyChartConfig}
+    <div className="flex flex-col gap-8">
+      <section
+        aria-labelledby="monitor-uptime-heading"
+        className="flex flex-col gap-4"
       >
-        <LineChart
-          accessibilityLayer
-          data={charts.latencyPoints}
-          margin={{ bottom: 4, left: 4, right: 20, top: 8 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            axisLine={false}
-            dataKey="timestamp"
-            domain={["dataMin", "dataMax"]}
-            minTickGap={28}
-            tickFormatter={formatChartTick}
-            tickLine={false}
-            type="number"
-          />
-          <YAxis
-            axisLine={false}
-            tickFormatter={(value) => `${value}ms`}
-            tickLine={false}
-            width={46}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                labelFormatter={(value) => formatChartTooltipTime(value)}
-              />
-            }
-          />
-          {charts.incidentMarkers.map((incident) => (
-            <ReferenceArea
-              ifOverflow="visible"
-              key={incident.id}
-              x1={incident.start}
-              x2={incident.end}
-            />
-          ))}
-          <Line
-            dataKey="latencyMs"
-            dot={false}
-            isAnimationActive={false}
-            stroke="var(--color-latencyMs)"
-            strokeWidth={2}
-            type="monotone"
-          />
-        </LineChart>
-      </ChartContainer>
-    </ChartCard>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-medium" id="monitor-uptime-heading">
+              {m.common_uptime()}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {m.monitor_uptime_description()}
+            </p>
+          </div>
+          <div className="text-right text-sm text-muted-foreground">
+            <p>{m.monitor_latest_48_hours()}</p>
+            <p>{m.monitor_recorded_check_count({ count: requestCount })}</p>
+          </div>
+        </div>
+        <StatusBar data={statusBarData} />
+      </section>
+
+      {heartbeats.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyDescription>
+              {m.monitor_no_heartbeat_history()}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <>
+          <section
+            aria-labelledby="monitor-latency-heading"
+            className="flex min-w-0 flex-col gap-4"
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-medium" id="monitor-latency-heading">
+                {m.monitor_latency()}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {m.monitor_latency_summary_description({
+                  bucket: charts.bucketLabel,
+                })}
+              </p>
+            </div>
+            <LatencySummaryChart charts={charts} />
+          </section>
+
+          <section
+            aria-labelledby="monitor-outcomes-heading"
+            className="flex min-w-0 flex-col gap-4"
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-medium" id="monitor-outcomes-heading">
+                {m.monitor_outcome_breakdown()}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {charts.statusCodeSummary ??
+                  m.monitor_outcome_breakdown_description()}
+              </p>
+            </div>
+            <OutcomeBreakdownChart charts={charts} />
+          </section>
+        </>
+      )}
+    </div>
   );
 }
 
 function LatencySummaryChart({ charts }: { charts: MonitorChartData }) {
   if (charts.percentilePoints.length === 0) {
     return (
-      <ChartCard>
-        <ChartCardHeader>
-          <ChartCardTitle>{m.monitor_latency_summary()}</ChartCardTitle>
-          <ChartCardDescription>
+      <Empty>
+        <EmptyHeader>
+          <EmptyDescription>
             {m.monitor_latency_summary_empty_description()}
-          </ChartCardDescription>
-        </ChartCardHeader>
-        <Empty>{m.monitor_no_latency_summary()}</Empty>
-      </ChartCard>
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
-    <ChartCard>
-      <ChartCardHeader>
-        <ChartCardTitle>{m.monitor_latency_summary()}</ChartCardTitle>
-        <ChartCardDescription>
-          {m.monitor_latency_summary_description({
-            bucket: charts.bucketLabel,
-          })}
-        </ChartCardDescription>
-      </ChartCardHeader>
-      <ChartContainer
-        className="h-56 min-h-56 w-full max-w-full"
-        config={percentileChartConfig}
+    <ChartContainer
+      className="h-80 min-h-80 w-full max-w-full"
+      config={percentileChartConfig}
+    >
+      <LineChart
+        accessibilityLayer
+        data={charts.percentilePoints}
+        margin={{ bottom: 8, left: 8, right: 24, top: 12 }}
       >
-        <LineChart
-          accessibilityLayer
-          data={charts.percentilePoints}
-          margin={{ bottom: 4, left: 4, right: 20, top: 8 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            axisLine={false}
-            dataKey="timestamp"
-            domain={["dataMin", "dataMax"]}
-            minTickGap={28}
-            tickFormatter={formatChartTick}
-            tickLine={false}
-            type="number"
+        <CartesianGrid vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="timestamp"
+          domain={["dataMin", "dataMax"]}
+          minTickGap={36}
+          tickFormatter={formatChartTick}
+          tickLine={false}
+          type="number"
+        />
+        <YAxis
+          axisLine={false}
+          orientation="right"
+          tickFormatter={(value) => m.common_ms({ value })}
+          tickLine={false}
+          width={56}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              labelFormatter={(value) => formatChartTooltipTime(value)}
+            />
+          }
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+        {charts.incidentMarkers.map((incident) => (
+          <ReferenceArea
+            ifOverflow="visible"
+            key={incident.id}
+            x1={incident.start}
+            x2={incident.end}
           />
-          <YAxis
-            axisLine={false}
-            tickFormatter={(value) => `${value}ms`}
-            tickLine={false}
-            width={46}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                labelFormatter={(value) => formatChartTooltipTime(value)}
-              />
-            }
-          />
-          <Line
-            dataKey="p50"
-            dot={false}
-            isAnimationActive={false}
-            stroke="var(--color-p50)"
-            strokeWidth={2}
-            type="monotone"
-          />
-          <Line
-            dataKey="p95"
-            dot={false}
-            isAnimationActive={false}
-            stroke="var(--color-p95)"
-            strokeWidth={2}
-            type="monotone"
-          />
-          <Line
-            dataKey="avg"
-            dot={false}
-            isAnimationActive={false}
-            stroke="var(--color-avg)"
-            strokeWidth={1.5}
-            type="monotone"
-          />
-        </LineChart>
-      </ChartContainer>
-    </ChartCard>
+        ))}
+        <Line
+          dataKey="p50"
+          dot={false}
+          isAnimationActive={false}
+          stroke="var(--color-p50)"
+          strokeWidth={2}
+          type="monotone"
+        />
+        <Line
+          dataKey="p95"
+          dot={false}
+          isAnimationActive={false}
+          stroke="var(--color-p95)"
+          strokeWidth={2}
+          type="monotone"
+        />
+        <Line
+          dataKey="avg"
+          dot={false}
+          isAnimationActive={false}
+          stroke="var(--color-avg)"
+          strokeWidth={1.5}
+          type="monotone"
+        />
+      </LineChart>
+    </ChartContainer>
   );
 }
 
 function OutcomeBreakdownChart({ charts }: { charts: MonitorChartData }) {
   return (
-    <ChartCard>
-      <ChartCardHeader>
-        <ChartCardTitle>{m.monitor_outcome_breakdown()}</ChartCardTitle>
-        <ChartCardDescription>
-          {charts.statusCodeSummary ??
-            m.monitor_outcome_breakdown_description()}
-        </ChartCardDescription>
-      </ChartCardHeader>
-      <ChartContainer
-        className="h-60 min-h-60 w-full max-w-full"
-        config={outcomeChartConfig}
+    <ChartContainer
+      className="h-64 min-h-64 w-full max-w-full"
+      config={outcomeChartConfig}
+    >
+      <BarChart
+        accessibilityLayer
+        data={charts.outcomePoints}
+        margin={{ bottom: 8, left: 4, right: 28, top: 8 }}
       >
-        <BarChart
-          accessibilityLayer
-          data={charts.outcomePoints}
-          margin={{ bottom: 8, left: 4, right: 28, top: 8 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            axisLine={false}
-            dataKey="status"
-            interval={0}
-            tickLine={false}
-          />
-          <YAxis
-            allowDecimals={false}
-            axisLine={false}
-            tickLine={false}
-            width={42}
-          />
-          <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-          <Bar dataKey="count" isAnimationActive={false} radius={[4, 4, 0, 0]}>
-            {charts.outcomePoints.map((point) => (
-              <Cell fill={point.fill} key={point.status} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ChartContainer>
-    </ChartCard>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          axisLine={false}
+          dataKey="status"
+          interval={0}
+          tickLine={false}
+        />
+        <YAxis
+          allowDecimals={false}
+          axisLine={false}
+          orientation="right"
+          tickLine={false}
+          width={42}
+        />
+        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="count" isAnimationActive={false} radius={[4, 4, 0, 0]}>
+          {charts.outcomePoints.map((point) => (
+            <Cell fill={point.fill} key={point.status} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ChartContainer>
   );
-}
-
-function ChartCard({ children }: { children: ReactNode }) {
-  return (
-    <div className="grid min-w-0 gap-3 rounded-lg border border-border/70 bg-muted/10 p-4">
-      {children}
-    </div>
-  );
-}
-
-function ChartCardHeader({ children }: { children: ReactNode }) {
-  return <div className="grid gap-1">{children}</div>;
-}
-
-function ChartCardTitle({ children }: { children: ReactNode }) {
-  return <p className="text-sm font-medium text-foreground">{children}</p>;
-}
-
-function ChartCardDescription({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>;
 }
 
 function deriveMonitorCharts({
@@ -442,12 +351,12 @@ function hasUsableDuration(
 
 function selectLatencyBucket(pointCount: number) {
   if (pointCount <= 96) {
-    return { label: "sample", ms: 0 };
+    return { label: m.monitor_latency_sample_bucket(), ms: 0 };
   }
   if (pointCount <= 288) {
-    return { label: "15-minute bucket", ms: 15 * 60 * 1000 };
+    return { label: m.monitor_latency_15_minute_bucket(), ms: 15 * 60 * 1000 };
   }
-  return { label: "1-hour bucket", ms: 60 * 60 * 1000 };
+  return { label: m.monitor_latency_1_hour_bucket(), ms: 60 * 60 * 1000 };
 }
 
 function buildPercentileSeries(points: LatencyPoint[], bucketMs: number) {

@@ -62,52 +62,43 @@ function OverviewContent({ data }: { data: DashboardData }) {
     () => getRecentIncidents(data.incidents),
     [data.incidents],
   );
-  const recentIncident = incidents[0];
 
   return (
     <div className="flex min-w-0 flex-col gap-8">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card size="sm">
-          <CardContent className="grid gap-1.5">
-            <CardDescription>{m.common_status()}</CardDescription>
-            <CardTitle>{getOverallStatusLabel(data.overallStatus)}</CardTitle>
+          <CardContent>
+            <Link className="grid gap-1.5" to="/monitors">
+              <CardDescription>{m.common_up()}</CardDescription>
+              <CardTitle>{data.counts.up}</CardTitle>
+            </Link>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent>
             <Link className="grid gap-1.5" to="/monitors">
-              <CardDescription>{m.monitor_monitors()}</CardDescription>
-              <CardTitle>{data.monitors.length}</CardTitle>
+              <CardDescription>{m.common_down()}</CardDescription>
+              <CardTitle>{data.counts.down}</CardTitle>
             </Link>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent>
-            <Link className="grid gap-1.5" to="/status-pages">
-              <CardDescription>{m.overview_status_pages()}</CardDescription>
-              <CardTitle>{data.statusPages.length}</CardTitle>
+            <Link className="grid gap-1.5" to="/monitors">
+              <CardDescription>{m.common_unknown()}</CardDescription>
+              <CardTitle>{data.counts.unknown}</CardTitle>
             </Link>
           </CardContent>
         </Card>
         <Card size="sm">
           <CardContent>
-            <Link className="grid gap-1.5" to="/incidents">
+            <Link
+              className="grid gap-1.5"
+              search={{ status: "open" }}
+              to="/incidents"
+            >
               <CardDescription>{m.monitor_open_incidents()}</CardDescription>
               <CardTitle>{data.openIncidentCount}</CardTitle>
-            </Link>
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardContent>
-            <Link className="grid gap-1.5" to="/incidents">
-              <CardDescription>{m.overview_recent_incident()}</CardDescription>
-              <CardTitle>
-                {recentIncident ? (
-                  <LiveTime value={recentIncident.openedAt} />
-                ) : (
-                  m.common_none()
-                )}
-              </CardTitle>
             </Link>
           </CardContent>
         </Card>
@@ -401,18 +392,6 @@ function getRecentIncidents(incidents: IncidentRecord[]) {
     const openedAt = new Date(incident.openedAt).getTime();
     return !Number.isNaN(openedAt) && openedAt >= cutoff;
   });
-}
-
-function getOverallStatusLabel(status: DashboardData["overallStatus"]) {
-  if (status === "up") {
-    return m.common_operational();
-  }
-
-  if (status === "down") {
-    return m.common_down();
-  }
-
-  return m.common_unknown();
 }
 
 function formatCount(value: number) {

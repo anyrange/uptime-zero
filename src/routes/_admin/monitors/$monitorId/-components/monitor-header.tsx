@@ -5,7 +5,6 @@ import type { MonitorAssertion, MonitorDetailData } from "@/types";
 import { LiveTime } from "@/components/live-time";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -49,7 +48,7 @@ function MonitorOverviewContent({
             <CardDescription className="text-sm font-medium">
               {data.metrics.windows[0]?.label ?? m.monitor_availability()}
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
+            <CardTitle className="text-2xl">
               {data.metrics.windows[0]?.uptimePercentage == null
                 ? m.common_not_available()
                 : `${formatUptimePercent(data.metrics.windows[0].uptimePercentage)}%`}
@@ -69,7 +68,7 @@ function MonitorOverviewContent({
             <CardDescription className="text-sm font-medium">
               {m.monitor_requests()}
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
+            <CardTitle className="text-2xl">
               {data.metrics.requestCount}
             </CardTitle>
           </OverviewMetricCardBody>
@@ -82,7 +81,7 @@ function MonitorOverviewContent({
             <CardDescription className="text-sm font-medium">
               {m.monitor_p50_latency()}
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
+            <CardTitle className="text-2xl">
               {formatDurationMs(data.metrics.p50ResponseMs)}
             </CardTitle>
           </OverviewMetricCardBody>
@@ -97,7 +96,7 @@ function MonitorOverviewContent({
             <CardDescription className="text-sm font-medium">
               {m.monitor_p99_latency()}
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
+            <CardTitle className="text-2xl">
               {formatDurationMs(data.metrics.p99ResponseMs)}
             </CardTitle>
           </OverviewMetricCardBody>
@@ -112,7 +111,7 @@ function MonitorOverviewContent({
             <CardDescription className="text-sm font-medium">
               {m.monitor_last_checked()}
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">
+            <CardTitle className="text-2xl">
               <LiveTime value={data.metrics.lastCheckedAt} />
             </CardTitle>
           </OverviewMetricCardBody>
@@ -129,42 +128,37 @@ function MonitorOverviewContent({
         requestCount={data.metrics.requestCount}
       />
 
-      <div className="grid gap-4">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(16rem,3fr)]">
-          <Card>
-            <CardHeader className="gap-1">
-              <CardTitle className="text-base">
-                {m.monitor_availability_windows()}
-              </CardTitle>
-              <CardDescription>
-                {m.monitor_availability_windows_description()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto grid gap-3 md:grid-cols-3">
-              {data.metrics.windows.map((window) => (
-                <div
-                  className="grid gap-2 rounded-lg border border-border/70 bg-muted/20 px-4 py-4"
-                  key={window.label}
-                >
-                  <p className="text-sm font-medium text-muted-foreground">
+      <div className="flex flex-col gap-8">
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-medium">
+              {m.monitor_availability_windows()}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {m.monitor_availability_windows_description()}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {data.metrics.windows.map((window) => (
+              <Card key={window.label} size="sm">
+                <CardHeader className="gap-1">
+                  <CardDescription className="font-medium">
                     {window.label}
-                  </p>
-                  <p className="text-2xl font-semibold text-foreground">
+                  </CardDescription>
+                  <CardTitle className="text-2xl">
                     {window.uptimePercentage == null
                       ? m.common_not_available()
                       : `${formatUptimePercent(window.uptimePercentage)}%`}
-                  </p>
+                  </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {m.monitor_check_window_summary({
                       total: window.totalChecks,
                       up: window.upChecks,
                     })}
                   </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                </CardHeader>
+              </Card>
+            ))}
             <OverviewStat>
               <OverviewStatLabel>
                 {m.monitor_mean_time_to_recovery()}
@@ -194,17 +188,16 @@ function MonitorOverviewContent({
               <OverviewStatValue>{data.incidents.length}</OverviewStatValue>
             </OverviewStat>
           </div>
-        </div>
-        <OverviewList>
-          <OverviewListHeader>
-            <CardTitle className="text-base">
-              {m.monitor_assertions()}
-            </CardTitle>
-            <CardDescription>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-medium">{m.monitor_assertions()}</h2>
+            <p className="text-sm text-muted-foreground">
               {m.monitor_assertions_overview_description()}
-            </CardDescription>
-          </OverviewListHeader>
-          <OverviewListContent>
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
             {data.monitor.assertions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {m.monitor_no_assertions()}
@@ -221,26 +214,27 @@ function MonitorOverviewContent({
                 </OverviewListRow>
               ))
             )}
-          </OverviewListContent>
-        </OverviewList>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OverviewList>
-            <OverviewListHeader>
-              <CardTitle className="text-base">
+          </div>
+        </section>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          <section className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl font-medium">
                 {m.monitor_notifications()}
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p className="text-sm text-muted-foreground">
                 {m.monitor_notifications_overview_description()}
-              </CardDescription>
-            </OverviewListHeader>
-            <OverviewListContent>
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
               {data.notificationDestinations.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {m.monitor_no_destinations()}
                 </p>
               ) : (
                 data.notificationDestinations.map((destination) => (
-                  <OverviewListRow key={destination.id}>
+                  <OverviewCardRow key={destination.id}>
                     <OverviewListRowLabel>
                       {destination.name}
                     </OverviewListRowLabel>
@@ -248,11 +242,11 @@ function MonitorOverviewContent({
                       {providerLabel(destination.provider)} ·{" "}
                       {notificationSummary(destination)}
                     </OverviewListRowValue>
-                  </OverviewListRow>
+                  </OverviewCardRow>
                 ))
               )}
-            </OverviewListContent>
-          </OverviewList>
+            </div>
+          </section>
           <IncidentList incidents={data.incidents} monitorId={monitorId} />
         </div>
       </div>
@@ -274,7 +268,7 @@ function OverviewMetricCard({
       }
       size="sm"
     >
-      <CardHeader className="gap-3">{children}</CardHeader>
+      <CardHeader className="gap-2">{children}</CardHeader>
     </Card>
   );
 }
@@ -289,9 +283,9 @@ function OverviewMetricCardMeta({ children }: { children: ReactNode }) {
 
 function OverviewStat({ children }: { children: ReactNode }) {
   return (
-    <div className="grid gap-1 rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
-      {children}
-    </div>
+    <Card size="sm">
+      <CardHeader className="gap-1">{children}</CardHeader>
+    </Card>
   );
 }
 
@@ -305,23 +299,15 @@ function OverviewStatValue({ children }: { children: ReactNode }) {
   return <p className="text-base font-semibold text-foreground">{children}</p>;
 }
 
-function OverviewList({ children }: { children: ReactNode }) {
-  return <Card>{children}</Card>;
-}
-
-function OverviewListHeader({ children }: { children: ReactNode }) {
-  return <CardHeader className="gap-1">{children}</CardHeader>;
-}
-
-function OverviewListContent({ children }: { children: ReactNode }) {
-  return <CardContent className="grid gap-2">{children}</CardContent>;
-}
-
 function OverviewListRow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-col gap-1">{children}</div>;
+}
+
+function OverviewCardRow({ children }: { children: ReactNode }) {
   return (
-    <div className="grid gap-1 rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
-      {children}
-    </div>
+    <Card size="sm">
+      <CardHeader className="gap-1">{children}</CardHeader>
+    </Card>
   );
 }
 

@@ -10,8 +10,8 @@ export function OverviewSkeleton() {
       role="status"
     >
       <span className="sr-only">{m.common_loading()}</span>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }, (_, index) => (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
           <Card key={index} size="sm">
             <CardContent className="grid gap-1.5">
               <Skeleton className="h-5 w-28" />
