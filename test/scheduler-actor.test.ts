@@ -303,7 +303,7 @@ describe("scheduler actor service", () => {
     expect(alarm.value).toBe(result.nextAlarmAt);
   });
 
-  it("honors batch limits and schedules another near-term alarm", async () => {
+  it("uses a bounded default batch and schedules another near-term alarm", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
     const now = parseDateMs("2026-05-01T12:01:00.000Z");
@@ -314,7 +314,6 @@ describe("scheduler actor service", () => {
     const result = await runDueMonitorsAndReschedule(db, {
       alarm,
       now,
-      batchSize: 2,
     });
     const heartbeats = await getDrizzle(env.DB)
       .select()
@@ -383,7 +382,11 @@ describe("scheduler actor service", () => {
   });
 
   it("re-arms a scheduler alarm when the alarm handler fails", async () => {
-    const stub = env.SCHEDULER_ACTOR.getByName("invalid-scheduler-name");
+    const monitor = await seedMonitor();
+    await env.DB.prepare("UPDATE monitors SET assertionsJson = ? WHERE id = ?")
+      .bind("{", monitor.id)
+      .run();
+    const stub = env.SCHEDULER_ACTOR.getByName("installation");
     await runInDurableObject(stub, async (_instance, state) => {
       await state.storage.setAlarm(Date.now());
     });
@@ -396,16 +399,21 @@ describe("scheduler actor service", () => {
     });
   });
 
-  it("retires the legacy scheduler alarm after initializing shards", async () => {
-    const legacyStub = env.SCHEDULER_ACTOR.getByName("installation");
-    await runInDurableObject(legacyStub, async (_instance, state) => {
+  it("retires a shard alarm after initializing the singleton", async () => {
+    await seedMonitor();
+    const shardStub = env.SCHEDULER_ACTOR.getByName("scheduler:0");
+    await runInDurableObject(shardStub, async (_instance, state) => {
       await state.storage.setAlarm(Date.now());
     });
 
-    await runDurableObjectAlarm(legacyStub);
+    await runDurableObjectAlarm(shardStub);
 
-    await runInDurableObject(legacyStub, async (_instance, state) => {
+    await runInDurableObject(shardStub, async (_instance, state) => {
       expect(await state.storage.getAlarm()).toBeNull();
+    });
+    const singletonStub = env.SCHEDULER_ACTOR.getByName("installation");
+    await runInDurableObject(singletonStub, async (_instance, state) => {
+      expect(await state.storage.getAlarm()).not.toBeNull();
     });
   });
 });

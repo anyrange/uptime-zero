@@ -58,7 +58,7 @@ export const monitorsApi = new Hono<AppEnv>()
       if (savedMonitor.active === 1) {
         await runMonitorNow(ctx.env, savedMonitor.id, "save");
       } else {
-        queueSchedulerSync(ctx, "monitor-pause", savedMonitor.id);
+        queueSchedulerSync(ctx, "monitor-pause");
       }
 
       return ctx.json(savedMonitor, 201);
@@ -173,7 +173,7 @@ export const monitorsApi = new Hono<AppEnv>()
 
     await db.monitor.delete(monitorId);
 
-    queueSchedulerSync(ctx, "monitor-delete", monitorId);
+    queueSchedulerSync(ctx, "monitor-delete");
 
     return ctx.json({ ok: true });
   })
@@ -190,7 +190,7 @@ export const monitorsApi = new Hono<AppEnv>()
       throw new HTTPException(404, { message: "Monitor not found" });
     }
 
-    queueSchedulerSync(ctx, "monitor-pause", monitorId);
+    queueSchedulerSync(ctx, "monitor-pause");
 
     return ctx.json(savedMonitor);
   })

@@ -5,7 +5,7 @@ import { nowMs } from "@/server/lib/dates";
 import { getMonitorNextDueAt, isMonitorDue } from "@/server/lib/monitoring";
 import { MonitorLifecycle } from "@/server/services/monitor-lifecycle";
 
-const DEFAULT_BATCH_SIZE = 1;
+const DEFAULT_BATCH_SIZE = 2;
 const MIN_RESCHEDULE_DELAY_MS = 1000;
 const FAILED_CHECK_RETRY_DELAY_MS = 30_000;
 
@@ -35,15 +35,12 @@ export async function runDueMonitorsAndReschedule(
     alarm: SchedulerAlarmAdapter;
     now?: number;
     batchSize?: number;
-    monitorFilter?: (monitor: MonitorRecord) => boolean;
     executeMonitor?: (monitor: MonitorRecord) => Promise<void>;
   },
 ): Promise<SchedulerRunResult> {
   const currentTime = options.now ?? nowMs();
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
-  const activeMonitors = (await db.monitor.listActive()).filter(
-    options.monitorFilter ?? (() => true),
-  );
+  const activeMonitors = await db.monitor.listActive();
   const dueMonitors = activeMonitors.filter(
     (monitor) => isMonitorDue(monitor, currentTime).due,
   );
@@ -72,12 +69,11 @@ export async function runDueMonitorsAndReschedule(
   }
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
-    now: currentTime,
+    now: options.now ?? nowMs(),
     forceSoon: dueMonitors.length > selectedMonitors.length,
     minimumDelayMs: checkResults.some((result) => result.status === "rejected")
       ? FAILED_CHECK_RETRY_DELAY_MS
       : MIN_RESCHEDULE_DELAY_MS,
-    monitorFilter: options.monitorFilter,
   });
 
   return {
@@ -95,16 +91,12 @@ export async function syncScheduler(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
-    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ) {
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
-    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = (await db.monitor.listActive()).filter(
-    options.monitorFilter ?? (() => true),
-  );
+  const activeMonitors = await db.monitor.listActive();
   return {
     active: activeMonitors.length,
     nextAlarmAt,
@@ -117,7 +109,6 @@ export async function runMonitorNowAndReschedule(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
-    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ): Promise<SchedulerSingleRunResult> {
   const monitor = await db.monitor.getById(monitorId);
@@ -129,11 +120,8 @@ export async function runMonitorNowAndReschedule(
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
-    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = (await db.monitor.listActive()).filter(
-    options.monitorFilter ?? (() => true),
-  );
+  const activeMonitors = await db.monitor.listActive();
 
   return {
     ran,
@@ -148,7 +136,6 @@ export async function recordPushHeartbeatAndReschedule(
   options: {
     alarm: SchedulerAlarmAdapter;
     now?: number;
-    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ): Promise<SchedulerSingleRunResult> {
   const monitor = await db.monitor.getById(monitorId);
@@ -163,11 +150,8 @@ export async function recordPushHeartbeatAndReschedule(
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
-    monitorFilter: options.monitorFilter,
   });
-  const activeMonitors = (await db.monitor.listActive()).filter(
-    options.monitorFilter ?? (() => true),
-  );
+  const activeMonitors = await db.monitor.listActive();
   return {
     ran,
     active: activeMonitors.length,
@@ -192,12 +176,9 @@ async function rescheduleFromActiveMonitors(
     now: number;
     forceSoon?: boolean;
     minimumDelayMs?: number;
-    monitorFilter?: (monitor: MonitorRecord) => boolean;
   },
 ) {
-  const activeMonitors = (await db.monitor.listActive()).filter(
-    options.monitorFilter ?? (() => true),
-  );
+  const activeMonitors = await db.monitor.listActive();
   if (activeMonitors.length === 0) {
     await clearAlarm(alarm);
     return null;
