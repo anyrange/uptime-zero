@@ -12,6 +12,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider
       style={
+        // SAFETY: React's CSSProperties omits application-defined custom properties.
         {
           "--sidebar-width": "18rem",
           "--header-height": "3.25rem",

@@ -21,6 +21,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
+import { z } from "zod";
 
 import type { MonitorRecord } from "@/types";
 
@@ -62,7 +63,7 @@ import {
   useDeleteMonitorsMutation,
 } from "@/lib/queries/monitors";
 import {
-  type MonitorImportPayload,
+  monitorImportSchema,
   useImportMonitorsMutation,
 } from "@/lib/queries/settings";
 import { m } from "@/paraglide/messages.js";
@@ -159,16 +160,25 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
     .getFilteredSelectedRowModel()
     .rows.map((row) => row.original);
   const selectedMonitorIds = selectedMonitors.map((monitor) => monitor.id);
+  const nameFilter = z
+    .string()
+    .catch("")
+    .parse(table.getColumn("name")?.getFilterValue());
 
   async function handleImport(file: File | undefined) {
     if (!file) return;
     setImportError(null);
     try {
-      const payload = JSON.parse(await file.text()) as MonitorImportPayload;
+      const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
       await importMonitors.mutateAsync(payload);
       setRowSelection({});
     } catch (error) {
-      setImportError(errorMessage(error));
+      const parsedError = z.object({ message: z.string() }).safeParse(error);
+      setImportError(
+        parsedError.success
+          ? parsedError.data.message
+          : m.monitor_import_failed(),
+      );
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -186,7 +196,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
               table.getColumn("name")?.setFilterValue(event.target.value)
             }
             placeholder={m.monitor_filter_placeholder()}
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            value={nameFilter}
           />
           <div className="flex flex-wrap items-center gap-2 md:ml-auto">
             {selectedMonitors.length > 0 ? (
@@ -600,13 +610,8 @@ function exportMonitors(monitors: MonitorRecord[]) {
   URL.revokeObjectURL(url);
 }
 
-function errorMessage(error: unknown) {
-  return typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-    ? error.message
-    : m.monitor_import_failed();
+function errorMessage(error: Error | null) {
+  return error?.message || m.monitor_import_failed();
 }
 
 function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {

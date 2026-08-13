@@ -67,7 +67,8 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
     const handleOutsideClick = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        event.target instanceof Node &&
+        !containerRef.current.contains(event.target)
       ) {
         setActiveIndex(null);
         setInteractionType(null);
@@ -130,7 +131,8 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
   }, []);
 
   const handleBlur = useCallback((event: React.FocusEvent) => {
-    const relatedTarget = event.relatedTarget as HTMLElement;
+    const relatedTarget =
+      event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
     const isMovingToAnotherBar =
       relatedTarget &&
       relatedTarget.closest('[role="toolbar"]') === containerRef.current &&
@@ -170,10 +172,9 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
             '[data-slot="status-component"]',
           )?.previousElementSibling;
           const prevBar = prevMonitor?.querySelector('[role="toolbar"]');
-          const prevButtons = prevBar?.querySelectorAll('[role="button"]');
-          const targetButton = prevButtons?.[currentIndex] as
-            | HTMLElement
-            | undefined;
+          const prevButtons =
+            prevBar?.querySelectorAll<HTMLElement>('[role="button"]');
+          const targetButton = prevButtons?.[currentIndex];
           targetButton?.focus();
           break;
         }
@@ -183,10 +184,9 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
             '[data-slot="status-component"]',
           )?.nextElementSibling;
           const nextBar = nextMonitor?.querySelector('[role="toolbar"]');
-          const nextButtons = nextBar?.querySelectorAll('[role="button"]');
-          const targetButton = nextButtons?.[currentIndex] as
-            | HTMLElement
-            | undefined;
+          const nextButtons =
+            nextBar?.querySelectorAll<HTMLElement>('[role="button"]');
+          const targetButton = nextButtons?.[currentIndex];
           targetButton?.focus();
           break;
         }

@@ -147,7 +147,7 @@ export const authApi = new Hono<AppEnv>()
     },
   );
 
-function jsonWithAuthCookies(source: Response, body: unknown) {
+function jsonWithAuthCookies(source: Response, body: { ok: boolean }) {
   const headers = new Headers(source.headers);
   headers.set("content-type", "application/json; charset=utf-8");
 

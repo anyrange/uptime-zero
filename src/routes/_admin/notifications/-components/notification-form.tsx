@@ -1,15 +1,13 @@
 import type { FormEvent } from "react";
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
 import type {
-  DiscordNotificationConfig,
   NotificationDestinationDetail,
   NotificationDestinationMonitorSummary,
   NotificationHeader,
   NotificationProvider,
-  TelegramNotificationConfig,
-  WebhookNotificationConfig,
 } from "@/types";
 
 import { SensitiveInput } from "@/components/sensitive-input";
@@ -39,6 +37,8 @@ import {
 import { m } from "@/paraglide/messages.js";
 
 import { NotificationProviderIcon } from "./notification-provider-icon";
+
+const notificationProviderSchema = z.enum(["discord", "webhook", "telegram"]);
 
 export type NotificationFormState = {
   name: string;
@@ -97,11 +97,12 @@ export function NotificationForm({
           <FieldLabel>{m.notification_provider()}</FieldLabel>
           <Select
             disabled={lockedProvider}
-            onValueChange={(value) =>
-              setFormState(
-                emptyNotificationFormState(value as NotificationProvider),
-              )
-            }
+            onValueChange={(value) => {
+              const provider = notificationProviderSchema.safeParse(value);
+              if (provider.success) {
+                setFormState(emptyNotificationFormState(provider.data));
+              }
+            }}
             value={formState.provider}
           >
             <SelectTrigger className="w-full">
@@ -378,7 +379,7 @@ export function notificationFormStateFromDestination(
   destination: NotificationDestinationDetail,
 ): NotificationFormState {
   if (destination.provider === "discord") {
-    const config = destination.config as DiscordNotificationConfig;
+    const config = destination.config;
     return {
       ...emptyNotificationFormState("discord"),
       name: destination.name,
@@ -388,7 +389,7 @@ export function notificationFormStateFromDestination(
   }
 
   if (destination.provider === "webhook") {
-    const config = destination.config as WebhookNotificationConfig;
+    const config = destination.config;
     return {
       ...emptyNotificationFormState("webhook"),
       name: destination.name,
@@ -398,7 +399,7 @@ export function notificationFormStateFromDestination(
     };
   }
 
-  const config = destination.config as TelegramNotificationConfig;
+  const config = destination.config;
   return {
     ...emptyNotificationFormState("telegram"),
     name: destination.name,

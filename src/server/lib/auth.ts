@@ -40,7 +40,7 @@ export function createAuth(env: AuthEnv, options: AuthOptions = {}) {
   });
 }
 
-export const auth = createAuth(runtimeEnv as AuthEnv);
+export const auth = createAuth(runtimeEnv);
 
 export function authFor(ctx: { env: AuthEnv; req: { url: string } }) {
   return createAuth(ctx.env, {

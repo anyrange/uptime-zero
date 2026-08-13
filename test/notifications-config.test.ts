@@ -47,17 +47,13 @@ describe("notification config parsing/serialization", () => {
   });
 
   it("normalizes and filters headers independent of source type", () => {
-    expect(
-      parseNotificationHeaders(
-        "not-an-array" as unknown as Record<string, unknown>,
-      ),
-    ).toEqual([]);
+    expect(parseNotificationHeaders("not-an-array")).toEqual([]);
 
     expect(
       parseNotificationHeaders([
         { key: "  X-Auth ", value: "abc" },
         { key: "", value: "ignored" },
-        { key: null as unknown as string, value: 42 },
+        { key: null, value: 42 },
       ]),
     ).toEqual([{ key: "X-Auth", value: "abc" }]);
   });

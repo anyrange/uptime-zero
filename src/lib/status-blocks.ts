@@ -126,10 +126,11 @@ function buildBucketedStatusBarData({
   );
   const buckets = Array.from({ length: count }, (_, index) => {
     const start = new Date(firstBucketStart.getTime() + index * intervalMs);
+    const bucketHeartbeats: HeartbeatRecord[] = [];
     return {
       start,
       end: new Date(start.getTime() + intervalMs),
-      heartbeats: [] as HeartbeatRecord[],
+      heartbeats: bucketHeartbeats,
     };
   });
   const bucketByTime = new Map(

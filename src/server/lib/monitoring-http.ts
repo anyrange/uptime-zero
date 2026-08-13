@@ -1,3 +1,5 @@
+import { z, type JSONType } from "zod";
+
 import type {
   DnsRecordType,
   JsonOperator,
@@ -12,39 +14,24 @@ type MonitorCheckConfig = Pick<
   "kind" | "target" | "timeoutMs" | "assertions"
 >;
 
-type DnsJsonAnswer = {
-  name?: string;
-  type?: number;
-  TTL?: number;
-  data?: string;
-};
-
-type DnsJsonResponse = {
-  Status?: number;
-  TC?: boolean;
-  RD?: boolean;
-  RA?: boolean;
-  AD?: boolean;
-  CD?: boolean;
-  Question?: Array<{ name?: string; type?: number }>;
-  Answer?: DnsJsonAnswer[];
-  Comment?: string;
-};
-
-const DNS_RECORD_TYPES: Record<DnsRecordType, number> = {
-  A: 1,
-  NS: 2,
-  CNAME: 5,
-  MX: 15,
-  TXT: 16,
-  AAAA: 28,
-};
-
 const MAX_HTTP_REDIRECTS = 2;
 const MAX_RESPONSE_BODY_BYTES = 1024 * 1024;
+const DEFAULT_DNS_RECORD_TYPES = ["A"] as const;
+const dnsJsonResponseSchema = z.object({
+  Status: z.number().optional(),
+  Answer: z
+    .array(
+      z.object({
+        type: z.number().optional(),
+        data: z.string().optional(),
+      }),
+    )
+    .optional(),
+  Comment: z.string().optional(),
+});
 
 export function compareJsonValue(
-  actual: unknown,
+  actual: JSONType | undefined,
   operator: JsonOperator,
   expectedRaw: string,
 ): boolean {
@@ -55,8 +42,9 @@ export function compareJsonValue(
     case "ne":
       return actual !== expectedParsed;
     case "includes":
-      if (typeof actual === "string") {
-        return actual.includes(expectedRaw);
+      const stringValue = z.string().safeParse(actual);
+      if (stringValue.success) {
+        return stringValue.data.includes(expectedRaw);
       }
       if (Array.isArray(actual)) {
         return actual.includes(expectedParsed);
@@ -73,7 +61,10 @@ export function compareJsonValue(
   }
 }
 
-export function readJsonPath(input: unknown, path: string): unknown {
+export function readJsonPath(
+  input: JSONType,
+  path: string,
+): JSONType | undefined {
   if (!path) {
     return input;
   }
@@ -81,7 +72,7 @@ export function readJsonPath(input: unknown, path: string): unknown {
   return normalized
     .split(".")
     .filter(Boolean)
-    .reduce<unknown>((current, segment) => {
+    .reduce<JSONType | undefined>((current, segment) => {
       if (current == null) {
         return undefined;
       }
@@ -89,8 +80,9 @@ export function readJsonPath(input: unknown, path: string): unknown {
         const index = Number.parseInt(segment, 10);
         return Number.isFinite(index) ? current[index] : undefined;
       }
-      if (typeof current === "object") {
-        return (current as Record<string, unknown>)[segment];
+      const record = z.record(z.string(), z.json()).safeParse(current);
+      if (record.success) {
+        return record.data[segment];
       }
       return undefined;
     }, input);
@@ -196,9 +188,9 @@ function runHttpAssertions(
     }
 
     if (assertion.type === "body" && assertion.source === "json") {
-      let payload: unknown;
+      let payload: JSONType;
       try {
-        payload = bodyText ? JSON.parse(bodyText) : null;
+        payload = bodyText ? z.json().parse(JSON.parse(bodyText)) : null;
       } catch {
         return "Response was not valid JSON";
       }
@@ -237,7 +229,7 @@ async function runDnsCheck(
     }> = [];
     for (const recordType of requestedTypes.length
       ? requestedTypes
-      : (["A"] as DnsRecordType[])) {
+      : DEFAULT_DNS_RECORD_TYPES) {
       results.push(
         await queryDnsRecord(
           fetchImpl,
@@ -311,7 +303,7 @@ async function queryDnsRecord(
     throw new Error(`DNS lookup failed with HTTP ${response.status}`);
   }
 
-  const payload = (await response.json()) as DnsJsonResponse;
+  const payload = dnsJsonResponseSchema.parse(await response.json());
   if ((payload.Status ?? 0) !== 0) {
     throw new Error(payload.Comment || `DNS lookup failed (${payload.Status})`);
   }
@@ -407,9 +399,22 @@ function readDnsAnswerData(value: string) {
 }
 
 function recordTypeFromCode(code: number | undefined) {
-  return (Object.entries(DNS_RECORD_TYPES).find(
-    ([, value]) => value === code,
-  )?.[0] ?? null) as DnsRecordType | null;
+  switch (code) {
+    case 1:
+      return "A";
+    case 2:
+      return "NS";
+    case 5:
+      return "CNAME";
+    case 15:
+      return "MX";
+    case 16:
+      return "TXT";
+    case 28:
+      return "AAAA";
+    default:
+      return null;
+  }
 }
 
 function tryParseScalar(value: string): string | number | boolean | null {

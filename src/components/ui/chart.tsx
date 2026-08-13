@@ -4,14 +4,26 @@ import type { TooltipValueType } from "recharts";
 
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
+import { z } from "zod";
 
 import { cn } from "@/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
+const THEME_NAMES = ["light", "dark"] as const;
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
 type TooltipNameType = number | string;
+type ChartTooltipPayload = NonNullable<
+  RechartsPrimitive.DefaultTooltipContentProps<
+    TooltipValueType,
+    TooltipNameType
+  >["payload"]
+>[number];
+type ChartLegendPayload = NonNullable<
+  RechartsPrimitive.DefaultLegendContentProps["payload"]
+>[number];
+type ChartPayload = ChartTooltipPayload | ChartLegendPayload;
 
 export type ChartConfig = Record<
   string,
@@ -94,22 +106,18 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+        __html: THEME_NAMES.map(
+          (theme) => `
+${THEMES[theme]} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
-      itemConfig.color;
+    const color = itemConfig.theme?.[theme] ?? itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join("\n")}
 }
 `,
-          )
-          .join("\n"),
+        ).join("\n"),
       }}
     />
   );
@@ -155,9 +163,10 @@ function ChartTooltipContent({
     const [item] = payload;
     const key = `${labelKey ?? item?.dataKey ?? item?.name ?? "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
+    const stringLabel = z.string().safeParse(label);
     const value =
-      !labelKey && typeof label === "string"
-        ? (config[label]?.label ?? label)
+      !labelKey && stringLabel.success
+        ? (config[stringLabel.data]?.label ?? stringLabel.data)
         : itemConfig?.label;
 
     if (labelFormatter) {
@@ -233,6 +242,7 @@ function ChartTooltipContent({
                             },
                           )}
                           style={
+                            // SAFETY: React's CSSProperties omits chart color custom properties.
                             {
                               "--color-bg": indicatorColor,
                               "--color-border": indicatorColor,
@@ -255,8 +265,8 @@ function ChartTooltipContent({
                       </div>
                       {item.value != null && (
                         <span className="font-mono font-medium text-foreground tabular-nums">
-                          {typeof item.value === "number"
-                            ? item.value.toLocaleString()
+                          {z.number().safeParse(item.value).success
+                            ? Number(item.value).toLocaleString()
                             : String(item.value)}
                         </span>
                       )}
@@ -330,35 +340,28 @@ function ChartLegendContent({
 
 function getPayloadConfigFromPayload(
   config: ChartConfig,
-  payload: unknown,
+  payload: ChartPayload | null | undefined,
   key: string,
 ) {
-  if (typeof payload !== "object" || payload === null) {
+  const recordResult = z.record(z.string(), z.unknown()).safeParse(payload);
+  if (!recordResult.success) {
     return undefined;
   }
 
-  const payloadPayload =
-    "payload" in payload &&
-    typeof payload.payload === "object" &&
-    payload.payload !== null
-      ? payload.payload
-      : undefined;
+  const payloadRecord = recordResult.data;
+  const nestedResult = z
+    .record(z.string(), z.unknown())
+    .safeParse(payloadRecord.payload);
+  const payloadPayload = nestedResult.success ? nestedResult.data : undefined;
 
   let configLabelKey: string = key;
+  const directLabel = z.string().safeParse(payloadRecord[key]);
+  const nestedLabel = z.string().safeParse(payloadPayload?.[key]);
 
-  if (
-    key in payload &&
-    typeof payload[key as keyof typeof payload] === "string"
-  ) {
-    configLabelKey = payload[key as keyof typeof payload] as string;
-  } else if (
-    payloadPayload &&
-    key in payloadPayload &&
-    typeof payloadPayload[key as keyof typeof payloadPayload] === "string"
-  ) {
-    configLabelKey = payloadPayload[
-      key as keyof typeof payloadPayload
-    ] as string;
+  if (directLabel.success) {
+    configLabelKey = directLabel.data;
+  } else if (nestedLabel.success) {
+    configLabelKey = nestedLabel.data;
   }
 
   return configLabelKey in config ? config[configLabelKey] : config[key];

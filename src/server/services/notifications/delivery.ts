@@ -1,10 +1,7 @@
 import type {
-  DiscordNotificationConfig,
   MonitorRecord,
   NotificationDestinationRecord,
   NotificationHeader,
-  TelegramNotificationConfig,
-  WebhookNotificationConfig,
 } from "@/types";
 
 import { parseNotificationHeaders } from "@/server/services/notifications/config";
@@ -35,6 +32,12 @@ export type NotificationDispatchResult = {
 };
 
 const NOTIFICATION_TIMEOUT_MS = 10_000;
+
+interface TelegramPayload {
+  chat_id: string;
+  text: string;
+  message_thread_id?: string;
+}
 const NOTIFICATION_CONCURRENCY = 2;
 
 export class NotificationDeliveryError extends Error {
@@ -121,7 +124,7 @@ export async function deliverNotificationDestination(
   fetchImpl: typeof fetch = fetch,
 ) {
   if (destination.provider === "discord") {
-    const discordConfig = destination.config as DiscordNotificationConfig;
+    const discordConfig = destination.config;
     const response = await fetchImpl(discordConfig.webhookUrl, {
       method: "POST",
       redirect: "error",
@@ -134,7 +137,7 @@ export async function deliverNotificationDestination(
   }
 
   if (destination.provider === "webhook") {
-    const webhookConfig = destination.config as WebhookNotificationConfig;
+    const webhookConfig = destination.config;
     const body =
       event.kind === "transition"
         ? buildTransitionNotificationPayload(
@@ -159,8 +162,8 @@ export async function deliverNotificationDestination(
     return;
   }
 
-  const telegramConfig = destination.config as TelegramNotificationConfig;
-  const payload: Record<string, string> = {
+  const telegramConfig = destination.config;
+  const payload: TelegramPayload = {
     chat_id: telegramConfig.chatId,
     text:
       event.kind === "transition"

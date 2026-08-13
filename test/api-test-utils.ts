@@ -6,6 +6,7 @@ import {
   waitOnExecutionContext,
 } from "cloudflare:test";
 import { env } from "cloudflare:workers";
+import { z } from "zod";
 
 import { getDrizzle } from "@/server/db";
 import * as schema from "@/server/db/schema";
@@ -78,10 +79,15 @@ export async function seedMonitorWithHeartbeats(count: number) {
 }
 
 export async function apiFetch(path: string, init?: RequestInit | string) {
-  const requestInit =
-    typeof init === "string" ? { headers: { cookie: init } } : init;
+  const stringInit = z.string().safeParse(init);
+  const requestInit = stringInit.success
+    ? { headers: { cookie: stringInit.data } }
+    : init instanceof Object
+      ? init
+      : undefined;
   const ctx = createExecutionContext();
 
+  // SAFETY: The worker test pool supplies a runtime Request compatible with the Workerd request type.
   const response = await worker.fetch!(
     new Request(`http://localhost${path}`, requestInit) as Parameters<
       NonNullable<typeof worker.fetch>

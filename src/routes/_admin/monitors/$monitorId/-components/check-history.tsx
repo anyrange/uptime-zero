@@ -343,7 +343,7 @@ function hasUsableDuration(
 ): heartbeat is HeartbeatRecord & { durationMs: number } {
   return (
     heartbeat.status === "up" &&
-    typeof heartbeat.durationMs === "number" &&
+    heartbeat.durationMs !== null &&
     Number.isFinite(heartbeat.durationMs) &&
     heartbeat.durationMs >= 0
   );
@@ -463,7 +463,7 @@ function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {
 }
 
 function formatChartTick(value: number | string) {
-  const timestamp = typeof value === "number" ? value : Number(value);
+  const timestamp = Number(value);
   if (!Number.isFinite(timestamp)) {
     return "";
   }
@@ -473,8 +473,10 @@ function formatChartTick(value: number | string) {
   }).format(new Date(timestamp));
 }
 
-function formatChartTooltipTime(value: unknown) {
-  const timestamp = typeof value === "number" ? value : Number(value);
+function formatChartTooltipTime(
+  value: number | string | readonly (number | string)[] | null | undefined,
+) {
+  const timestamp = Number(value);
   if (!Number.isFinite(timestamp)) {
     return "";
   }

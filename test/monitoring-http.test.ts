@@ -29,13 +29,13 @@ describe("monitor runtime assertions", () => {
 
     const result = await runHttpCheck(
       monitor,
-      vi.fn(
+      vi.fn<typeof fetch>(
         async () =>
           new Response(JSON.stringify({ status: "ok" }), {
             status: 200,
             headers: { "content-type": "application/json; charset=utf-8" },
           }),
-      ) as typeof fetch,
+      ),
     );
 
     expect(result.status).toBe("up");
@@ -59,7 +59,7 @@ describe("monitor runtime assertions", () => {
 
     const result = await runHttpCheck(
       monitor,
-      vi.fn(
+      vi.fn<typeof fetch>(
         async () =>
           new Response(
             JSON.stringify({
@@ -71,7 +71,7 @@ describe("monitor runtime assertions", () => {
               headers: { "content-type": "application/dns-json" },
             },
           ),
-      ) as typeof fetch,
+      ),
     );
 
     expect(result.status).toBe("down");
@@ -85,7 +85,7 @@ describe("monitor runtime assertions", () => {
 
     const result = await runHttpCheck(
       monitor,
-      vi.fn(async () => new Response(null, { status: 404 })) as typeof fetch,
+      vi.fn<typeof fetch>(async () => new Response(null, { status: 404 })),
     );
 
     expect(result).toMatchObject({
@@ -110,13 +110,13 @@ describe("monitor runtime assertions", () => {
 
     const result = await runHttpCheck(
       monitor,
-      vi.fn(
+      vi.fn<typeof fetch>(
         async () =>
           new Response("ignored", {
             status: 200,
             headers: { "content-length": String(1024 * 1024 + 1) },
           }),
-      ) as typeof fetch,
+      ),
     );
 
     expect(result).toMatchObject({
@@ -126,7 +126,7 @@ describe("monitor runtime assertions", () => {
   });
 
   it("limits redirect chains", async () => {
-    const fetchMock = vi.fn(
+    const fetchMock = vi.fn<typeof fetch>(
       async () =>
         new Response(null, {
           status: 302,
@@ -134,10 +134,7 @@ describe("monitor runtime assertions", () => {
         }),
     );
 
-    const result = await runHttpCheck(
-      buildMonitor(),
-      fetchMock as typeof fetch,
-    );
+    const result = await runHttpCheck(buildMonitor(), fetchMock);
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(result).toMatchObject({

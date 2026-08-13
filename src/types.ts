@@ -168,15 +168,20 @@ export type NotificationDestinationConfig =
   | WebhookNotificationConfig
   | TelegramNotificationConfig;
 
-export interface NotificationDestinationRecord {
+interface NotificationDestinationRecordBase {
   id: string;
   name: string;
-  provider: NotificationProvider;
   configJson: string;
-  config: NotificationDestinationConfig;
   createdAt: string;
   updatedAt: string;
 }
+
+export type NotificationDestinationRecord = NotificationDestinationRecordBase &
+  (
+    | { provider: "discord"; config: DiscordNotificationConfig }
+    | { provider: "webhook"; config: WebhookNotificationConfig }
+    | { provider: "telegram"; config: TelegramNotificationConfig }
+  );
 
 export interface NotificationDestinationMonitorSummary {
   id: string;
@@ -184,14 +189,14 @@ export interface NotificationDestinationMonitorSummary {
   kind: MonitorKind;
 }
 
-export interface NotificationDestinationListItem extends NotificationDestinationRecord {
+export type NotificationDestinationListItem = NotificationDestinationRecord & {
   monitorCount: number;
   assignedMonitors: NotificationDestinationMonitorSummary[];
-}
+};
 
-export interface NotificationDestinationDetail extends NotificationDestinationRecord {
+export type NotificationDestinationDetail = NotificationDestinationRecord & {
   monitorIds: string[];
-}
+};
 
 export interface AppSettingsRecord {
   id: string;

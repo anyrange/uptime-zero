@@ -1,30 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import type { MonitorAssertion } from "@/types";
+import { z } from "zod";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
+import { monitorAssertionSchema } from "@/lib/monitor/assertions";
 import { privateKey } from "@/lib/queries/keys";
 
-export type MonitorImportPayload = {
-  kind: "uptime-monitor-export";
-  version: 1;
-  exportedAt: string;
-  monitors: Array<{
-    name: string;
-    kind: "http" | "dns" | "push";
-    target?: string;
-    intervalSec?: number;
-    timeoutMs?: number;
-    retries?: number;
-    assertions?: MonitorAssertion[];
-    heartbeatMode?: "interval" | "cron";
-    heartbeatCron?: string | null;
-    heartbeatGraceSec?: number | null;
-    heartbeatTimezone?: string | null;
-    notificationGraceSec?: number;
-    active?: boolean;
-  }>;
-};
+export const monitorImportSchema = z.object({
+  kind: z.literal("uptime-monitor-export"),
+  version: z.literal(1),
+  exportedAt: z.string(),
+  monitors: z.array(
+    z.object({
+      name: z.string(),
+      kind: z.enum(["http", "dns", "push"]),
+      target: z.string().optional(),
+      intervalSec: z.number().optional(),
+      timeoutMs: z.number().optional(),
+      retries: z.number().optional(),
+      assertions: z.array(monitorAssertionSchema).optional(),
+      heartbeatMode: z.enum(["interval", "cron"]).optional(),
+      heartbeatCron: z.string().nullable().optional(),
+      heartbeatGraceSec: z.number().nullable().optional(),
+      heartbeatTimezone: z.string().nullable().optional(),
+      notificationGraceSec: z.number().optional(),
+      active: z.boolean().optional(),
+    }),
+  ),
+});
+
+export type MonitorImportPayload = z.infer<typeof monitorImportSchema>;
 
 export function useSettingsQuery() {
   return useQuery({

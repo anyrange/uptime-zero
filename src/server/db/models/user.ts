@@ -145,6 +145,8 @@ export class UserModel {
   }
 }
 
-function readUserRole(value: string | null | undefined) {
+function readUserRole(
+  value: string | null | undefined,
+): "admin" | "user" | null {
   return value === "admin" || value === "user" ? value : null;
 }

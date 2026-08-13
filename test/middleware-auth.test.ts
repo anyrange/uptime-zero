@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import {
   loadSession,
@@ -20,6 +20,9 @@ type SessionVars = {
   sessionUserImage: string | null;
 };
 
+type TestLog = { set: ReturnType<typeof vi.fn> };
+type ContextValue = SessionVars[keyof SessionVars] | TestLog | null;
+
 type Context = Parameters<typeof requireSession>[0] & {
   req: {
     raw: {
@@ -29,7 +32,7 @@ type Context = Parameters<typeof requireSession>[0] & {
   };
   env: { DB: Record<string, never> };
   redirect: (location: string) => Response;
-  get: (key: keyof SessionVars | "log") => unknown;
+  get: (key: keyof SessionVars | "log") => ContextValue;
   set: (
     key: keyof SessionVars,
     value: SessionVars[keyof SessionVars] | null,
@@ -38,9 +41,9 @@ type Context = Parameters<typeof requireSession>[0] & {
 
 type TestContext = {
   ctx: Context;
-  next: ReturnType<typeof vi.fn>;
+  next: Mock<() => Promise<void>>;
   values: Map<string, unknown>;
-  log: { set: ReturnType<typeof vi.fn> };
+  log: TestLog;
 };
 
 async function createAuthSession(role: "admin" | "user") {
@@ -80,6 +83,7 @@ function createContext(
   ]);
   const log = { set: vi.fn() };
 
+  // SAFETY: The test double implements the middleware-visible subset of Hono's context.
   const ctx = {
     req: {
       raw: {
@@ -114,18 +118,21 @@ function createContext(
 
   return {
     ctx,
-    next: vi.fn(async () => {}),
+    next: vi.fn<() => Promise<void>>(async () => {}),
     values,
     log,
   };
 }
 
 function runMiddleware(
-  middleware: (ctx: Context, next: () => Promise<void>) => Promise<unknown>,
+  middleware: (
+    ctx: Context,
+    next: () => Promise<void>,
+  ) => Promise<Response | void>,
   ctx: Context,
-  next: ReturnType<typeof vi.fn>,
-): Promise<unknown> {
-  return middleware(ctx, next as unknown as () => Promise<void>);
+  next: () => Promise<void>,
+): Promise<Response | void> {
+  return middleware(ctx, next);
 }
 
 beforeEach(() => {
@@ -173,6 +180,7 @@ describe("page middleware", () => {
   it("redirects anonymous users", async () => {
     const { ctx, next } = createContext();
 
+    // SAFETY: Anonymous page middleware returns its redirect response on this branch.
     const response = (await runMiddleware(
       requireSession,
       ctx,
@@ -197,6 +205,7 @@ describe("page middleware", () => {
 
   it("requires admin for admin pages", async () => {
     const anonymous = createContext();
+    // SAFETY: Anonymous admin middleware returns its redirect response on this branch.
     const anonymousResponse = (await runMiddleware(
       requireAdmin,
       anonymous.ctx,

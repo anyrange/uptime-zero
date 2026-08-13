@@ -83,7 +83,9 @@ const telegramDestination: NotificationDestinationRecord = {
 
 describe("notification delivery", () => {
   it("posts the transition payload shape to webhook destinations", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await deliverNotificationDestination(
       webhookDestination,
@@ -94,7 +96,7 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:00:00.000Z",
         error: "HTTP 500",
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -108,10 +110,7 @@ describe("notification delivery", () => {
         }),
       }),
     );
-    const [, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [, init] = fetchMock.mock.calls[0];
     expect(JSON.parse(String(init?.body))).toEqual({
       kind: "monitor.down",
       monitor: {
@@ -127,7 +126,9 @@ describe("notification delivery", () => {
   });
 
   it("posts Discord-native embeds for transition events", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await deliverNotificationDestination(
       discordDestination,
@@ -138,14 +139,11 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:00:00.000Z",
         error: "timeout",
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("https://discord.com/api/webhooks/1/abc");
     const body = JSON.parse(String(init?.body));
     expect(body.embeds[0].title).toContain("Monitor down");
@@ -158,7 +156,9 @@ describe("notification delivery", () => {
   });
 
   it("sends Telegram messages with bot token, chat id, and thread id", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await deliverNotificationDestination(
       telegramDestination,
@@ -169,14 +169,11 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:05:00.000Z",
         error: null,
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("https://api.telegram.org/bot123456:abcdef/sendMessage");
     expect(JSON.parse(String(init?.body))).toMatchObject({
       chat_id: "-100100200300",
@@ -192,7 +189,9 @@ describe("notification delivery", () => {
   });
 
   it("sends compact Telegram down alerts with the failure reason", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await deliverNotificationDestination(
       telegramDestination,
@@ -203,13 +202,10 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:05:00.000Z",
         error: "Expected HTTP 200, got 502",
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
-    const [, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [, init] = fetchMock.mock.calls[0];
     expect(JSON.parse(String(init?.body)).text).toBe(
       [
         "API Gateway",
@@ -220,7 +216,9 @@ describe("notification delivery", () => {
   });
 
   it("posts test payloads for all provider types", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await deliverNotificationDestination(
       discordDestination,
@@ -233,7 +231,7 @@ describe("notification delivery", () => {
           provider: discordDestination.provider,
         },
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
     await deliverNotificationDestination(
       webhookDestination,
@@ -246,7 +244,7 @@ describe("notification delivery", () => {
           provider: webhookDestination.provider,
         },
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
     await deliverNotificationDestination(
       telegramDestination,
@@ -259,32 +257,28 @@ describe("notification delivery", () => {
           provider: telegramDestination.provider,
         },
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    const discordCall = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
-    const webhookCall = fetchMock.mock.calls[1] as unknown as [
-      string,
-      RequestInit,
-    ];
-    const telegramCall = fetchMock.mock.calls[2] as unknown as [
-      string,
-      RequestInit,
-    ];
-    const discordBody = JSON.parse(String(discordCall[1].body));
-    const webhookBody = JSON.parse(String(webhookCall[1].body));
-    const telegramBody = JSON.parse(String(telegramCall[1].body));
+    const discordCall = fetchMock.mock.calls[0];
+    const webhookCall = fetchMock.mock.calls[1];
+    const telegramCall = fetchMock.mock.calls[2];
+    if (!discordCall || !webhookCall || !telegramCall) {
+      throw new Error("Expected one delivery call per notification provider");
+    }
+    const discordBody = JSON.parse(String(discordCall[1]?.body));
+    const webhookBody = JSON.parse(String(webhookCall[1]?.body));
+    const telegramBody = JSON.parse(String(telegramCall[1]?.body));
     expect(discordBody.embeds[0].title).toContain("Test notification");
     expect(webhookBody.kind).toBe("notification.test");
     expect(telegramBody.text).toContain("Test notification");
   });
 
   it("dispatches mixed bound destinations for one transition", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await dispatchNotificationEvent(
       [discordDestination, webhookDestination, telegramDestination],
@@ -295,14 +289,16 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:00:00.000Z",
         error: "timeout",
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("throws when a destination returns a non-success response", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 401 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 401 }),
+    );
 
     await expect(
       deliverNotificationDestination(
@@ -314,13 +310,15 @@ describe("notification delivery", () => {
           checkedAt: "2026-05-04T10:00:00.000Z",
           error: "timeout",
         },
-        fetchMock as typeof fetch,
+        fetchMock,
       ),
     ).rejects.toThrow("webhook notification failed");
   });
 
   it("does nothing when no destinations are bound", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 200 }),
+    );
 
     await dispatchNotificationEvent(
       [],
@@ -331,7 +329,7 @@ describe("notification delivery", () => {
         checkedAt: "2026-05-04T10:00:00.000Z",
         error: "timeout",
       },
-      fetchMock as typeof fetch,
+      fetchMock,
     );
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -339,7 +337,7 @@ describe("notification delivery", () => {
 
   it("swallows provider failures so one broken destination does not abort delivery", async () => {
     const fetchMock = vi
-      .fn()
+      .fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
@@ -354,7 +352,7 @@ describe("notification delivery", () => {
           checkedAt: "2026-05-04T10:00:00.000Z",
           error: "timeout",
         },
-        fetchMock as typeof fetch,
+        fetchMock,
       ),
     ).resolves.toEqual({
       attempted: 3,
@@ -367,7 +365,10 @@ describe("notification delivery", () => {
   });
 
   it("surfaces provider failures for explicit test sends", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 500 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 500 }),
+    );
+    // SAFETY: This focused service test supplies only the database method exercised here.
     const notificationService = new NotificationService({
       notification: {
         getById: vi.fn(async () => webhookDestination),
@@ -377,7 +378,7 @@ describe("notification delivery", () => {
     await expect(
       notificationService.sendTestNotification(
         webhookDestination.id,
-        fetchMock as typeof fetch,
+        fetchMock,
       ),
     ).rejects.toThrow("webhook notification failed for Ops Webhook: HTTP 500");
 

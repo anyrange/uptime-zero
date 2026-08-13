@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import { createDatabase, getDrizzle } from "@/server/db";
 import * as schema from "@/server/db/schema";
@@ -9,6 +10,8 @@ import {
   apiFetch,
   seedMonitorWithHeartbeats,
 } from "./api-test-utils";
+
+const idResponseSchema = z.object({ id: z.string() }).passthrough();
 
 async function setupTestSession(role: "admin" | "user") {
   const { test } = await testAuth.$context;
@@ -146,11 +149,13 @@ describe("monitor import/export API", () => {
     const response = await apiFetch("/api/settings/monitors/export", cookie);
 
     expect(response.status).toBe(200);
-    const exported = (await response.json()) as {
-      kind: string;
-      version: number;
-      monitors: Array<Record<string, unknown>>;
-    };
+    const exported = z
+      .object({
+        kind: z.string(),
+        version: z.number(),
+        monitors: z.array(z.record(z.string(), z.json())),
+      })
+      .parse(await response.json());
     expect(exported).toMatchObject({
       kind: "uptime-monitor-export",
       version: 1,
@@ -404,7 +409,7 @@ describe("monitor API", () => {
     });
 
     expect(createResponse.status).toBe(201);
-    const created = (await createResponse.json()) as { id: string };
+    const created = idResponseSchema.parse(await createResponse.json());
     expect(created).toMatchObject({
       name: "API",
       kind: "http",
@@ -462,7 +467,7 @@ describe("monitor API", () => {
     });
 
     expect(response.status).toBe(201);
-    const created = (await response.json()) as { id: string };
+    const created = idResponseSchema.parse(await response.json());
     const detailResponse = await apiFetch(
       `/api/monitors/${created.id}`,
       cookie,
@@ -516,7 +521,7 @@ describe("monitor API", () => {
         assertions: [],
       }),
     });
-    const created = (await createResponse.json()) as { id: string };
+    const created = idResponseSchema.parse(await createResponse.json());
 
     const pauseResponse = await apiFetch(`/api/monitors/${created.id}/pause`, {
       method: "POST",
@@ -632,17 +637,23 @@ describe("status page API", () => {
     });
 
     expect(createResponse.status).toBe(201);
-    const created = (await createResponse.json()) as {
-      page: { id: string };
-      monitorIds: string[];
-    };
+    const created = z
+      .object({
+        page: z.object({ id: z.string() }),
+        monitorIds: z.array(z.string()),
+      })
+      .parse(await createResponse.json());
     expect(created.monitorIds).toEqual([busyMonitorId, quietMonitorId]);
 
     const publicResponse = await apiFetch("/api/status/public");
     expect(publicResponse.status).toBe(200);
-    const publicData = (await publicResponse.json()) as {
-      heartbeats: Array<{ monitorId: string; createdAt: string }>;
-    };
+    const publicData = z
+      .object({
+        heartbeats: z.array(
+          z.object({ monitorId: z.string(), createdAt: z.string() }),
+        ),
+      })
+      .parse(await publicResponse.json());
     const busyHeartbeats = publicData.heartbeats.filter(
       (heartbeat) => heartbeat.monitorId === busyMonitorId,
     );

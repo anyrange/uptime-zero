@@ -132,10 +132,7 @@ import type {
  * System status display messages
  * Used for displaying status banner and component statuses
  */
-export const systemStatusLabels: Record<
-  StatusType,
-  { long: string; short: string }
-> = {
+export const systemStatusLabels = {
   success: {
     long: m.status_block_system_success_long(),
     short: m.status_block_system_success_short(),
@@ -156,7 +153,7 @@ export const systemStatusLabels: Record<
     long: m.status_block_system_empty_long(),
     short: m.status_block_system_empty_short(),
   },
-} as const;
+} as const satisfies Record<StatusType, { long: string; short: string }>;
 
 /**
  * Legacy messages object for backwards compatibility
@@ -183,13 +180,13 @@ export const messages = {
  * Request status labels
  * Used for displaying individual request statuses
  */
-export const requestStatusLabels: Record<StatusType, string> = {
+export const requestStatusLabels = {
   success: m.status_block_request_normal(),
   degraded: m.status_block_request_degraded(),
   error: m.status_block_request_error(),
   info: m.status_block_request_maintenance(),
   empty: m.status_block_request_no_data(),
-} as const;
+} as const satisfies Record<StatusType, string>;
 
 /**
  * Legacy requests object for backwards compatibility
@@ -201,12 +198,12 @@ export const requests = requestStatusLabels;
  * Incident status labels
  * Used for displaying incident report update statuses
  */
-export const incidentStatusLabels: Record<StatusReportUpdateType, string> = {
+export const incidentStatusLabels = {
   resolved: m.status_block_incident_resolved(),
   monitoring: m.status_block_incident_monitoring(),
   identified: m.status_block_incident_identified(),
   investigating: m.status_block_incident_investigating(),
-} as const;
+} as const satisfies Record<StatusReportUpdateType, string>;
 
 /**
  * Legacy status object for backwards compatibility
@@ -218,13 +215,13 @@ export const status = incidentStatusLabels;
  * CSS variable mappings for status colors
  * Maps StatusType to corresponding CSS custom properties
  */
-export const statusColors: Record<StatusType, string> = {
+export const statusColors = {
   success: "var(--success)",
   degraded: "var(--warning)",
   error: "var(--destructive)",
   info: "var(--info)",
   empty: "var(--muted)",
-} as const;
+} as const satisfies Record<StatusType, string>;
 
 /**
  * Legacy colors object for backwards compatibility

@@ -28,6 +28,7 @@ export const dnsRecordTypes = [
 export const textOperatorSchema = z.enum(textAssertionOperators);
 export const jsonOperatorSchema = z.enum(jsonOperators);
 export const dnsRecordTypeSchema = z.enum(dnsRecordTypes);
+const jsonObjectSchema = z.record(z.string(), z.json());
 
 export const monitorAssertionSchema = z.union([
   z.object({
@@ -69,12 +70,12 @@ export const monitorAssertionSchema = z.union([
 export function parseMonitorAssertions(
   source: MonitorAssertion[] | string | null | undefined,
 ) {
-  const parsed =
-    typeof source === "string"
-      ? safeParseAssertionsJson(source)
-      : Array.isArray(source)
-        ? source
-        : [];
+  const stringSource = z.string().safeParse(source);
+  const parsed = stringSource.success
+    ? safeParseAssertionsJson(stringSource.data)
+    : Array.isArray(source)
+      ? source
+      : [];
   return parsed.flatMap((value) => {
     const result = monitorAssertionSchema.safeParse(withAssertionId(value));
     return result.success ? [result.data] : [];
@@ -90,13 +91,15 @@ function safeParseAssertionsJson(source: string) {
   }
 }
 
-function withAssertionId(value: unknown) {
-  if (!value || typeof value !== "object") {
+function withAssertionId(value: z.input<typeof jsonObjectSchema>) {
+  const parsed = jsonObjectSchema.safeParse(value);
+  if (!parsed.success) {
     return value;
   }
 
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.id === "string" && candidate.id.trim()) {
+  const candidate = parsed.data;
+  const id = z.string().safeParse(candidate.id);
+  if (id.success && id.data.trim()) {
     return candidate;
   }
 

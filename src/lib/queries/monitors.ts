@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { all } from "better-all";
 
 import type { MonitorPayload } from "@/lib/monitor/config";
-import type { HeartbeatPage } from "@/types";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
@@ -39,7 +38,7 @@ export function useMonitorLogsQuery(id: string, page: number) {
           param: { id },
           query: { page: String(page) },
         }),
-      ) as Promise<HeartbeatPage>,
+      ),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
     refetchOnWindowFocus: "always",
   });

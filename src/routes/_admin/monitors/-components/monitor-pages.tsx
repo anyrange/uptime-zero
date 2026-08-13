@@ -8,17 +8,14 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import type { MonitorPayload } from "@/lib/queries/monitors";
 import type {
-  DnsRecordType,
-  HeartbeatMode,
-  JsonOperator,
   MonitorAssertion,
   MonitorKind,
   MonitorRecord,
   NotificationDestinationRecord,
-  TextAssertionOperator,
 } from "@/types";
 
 import { Error } from "@/components/error";
@@ -78,8 +75,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { notificationSummary } from "@/lib/formatters";
 import {
+  dnsRecordTypeSchema,
   dnsRecordTypes,
+  jsonOperatorSchema,
   jsonOperators,
+  textOperatorSchema,
   textAssertionOperators,
 } from "@/lib/monitor/assertions";
 import {
@@ -119,6 +119,8 @@ import {
   MonitorsSkeleton,
 } from "../-components/monitors-skeleton";
 
+const monitorKindSchema = z.enum(["http", "dns", "push"]);
+const heartbeatModeSchema = z.enum(["interval", "cron"]);
 const textOperatorOptions = textAssertionOperators;
 const jsonOperatorOptions = jsonOperators;
 const dnsRecordTypeOptions = dnsRecordTypes;
@@ -472,7 +474,8 @@ function MonitorForm({
                 aria-label={m.monitor_type()}
                 className="grid w-full grid-cols-1 md:grid-cols-3"
                 onValueChange={(value) => {
-                  if (value) handleKindChange(value as MonitorKind);
+                  const kind = monitorKindSchema.safeParse(value);
+                  if (kind.success) handleKindChange(kind.data);
                 }}
                 type="single"
                 value={kind}
@@ -717,9 +720,10 @@ function MonitorForm({
               <Field>
                 <FieldLabel>{m.monitor_heartbeat_mode()}</FieldLabel>
                 <Select
-                  onValueChange={(value) =>
-                    setHeartbeatMode(value as HeartbeatMode)
-                  }
+                  onValueChange={(value) => {
+                    const mode = heartbeatModeSchema.safeParse(value);
+                    if (mode.success) setHeartbeatMode(mode.data);
+                  }}
                   value={heartbeatMode}
                 >
                   <SelectTrigger className="w-full">
@@ -1009,12 +1013,12 @@ function AssertionEditor({
             <Field>
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
-                onValueChange={(value) =>
-                  onChange({
-                    ...assertion,
-                    operator: value as TextAssertionOperator,
-                  })
-                }
+                onValueChange={(value) => {
+                  const operator = textOperatorSchema.safeParse(value);
+                  if (operator.success) {
+                    onChange({ ...assertion, operator: operator.data });
+                  }
+                }}
                 value={assertion.operator}
               >
                 <SelectTrigger className="w-full">
@@ -1048,12 +1052,12 @@ function AssertionEditor({
             <Field>
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
-                onValueChange={(value) =>
-                  onChange({
-                    ...assertion,
-                    operator: value as TextAssertionOperator,
-                  })
-                }
+                onValueChange={(value) => {
+                  const operator = textOperatorSchema.safeParse(value);
+                  if (operator.success) {
+                    onChange({ ...assertion, operator: operator.data });
+                  }
+                }}
                 value={assertion.operator}
               >
                 <SelectTrigger className="w-full">
@@ -1096,12 +1100,12 @@ function AssertionEditor({
             <Field>
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
-                onValueChange={(value) =>
-                  onChange({
-                    ...assertion,
-                    operator: value as JsonOperator,
-                  })
-                }
+                onValueChange={(value) => {
+                  const operator = jsonOperatorSchema.safeParse(value);
+                  if (operator.success) {
+                    onChange({ ...assertion, operator: operator.data });
+                  }
+                }}
                 value={assertion.operator}
               >
                 <SelectTrigger className="w-full">
@@ -1135,12 +1139,12 @@ function AssertionEditor({
             <Field>
               <FieldLabel>{m.monitor_record_type()}</FieldLabel>
               <Select
-                onValueChange={(value) =>
-                  onChange({
-                    ...assertion,
-                    recordType: value as DnsRecordType,
-                  })
-                }
+                onValueChange={(value) => {
+                  const recordType = dnsRecordTypeSchema.safeParse(value);
+                  if (recordType.success) {
+                    onChange({ ...assertion, recordType: recordType.data });
+                  }
+                }}
                 value={assertion.recordType}
               >
                 <SelectTrigger className="w-full">
@@ -1160,12 +1164,12 @@ function AssertionEditor({
             <Field>
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
-                onValueChange={(value) =>
-                  onChange({
-                    ...assertion,
-                    operator: value as TextAssertionOperator,
-                  })
-                }
+                onValueChange={(value) => {
+                  const operator = textOperatorSchema.safeParse(value);
+                  if (operator.success) {
+                    onChange({ ...assertion, operator: operator.data });
+                  }
+                }}
                 value={assertion.operator}
               >
                 <SelectTrigger className="w-full">

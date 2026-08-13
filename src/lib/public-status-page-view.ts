@@ -163,13 +163,16 @@ function buildPublicUptimeWindows(
 function groupPublicMonitors(
   monitors: PublicStatusPageMonitorView[],
 ): PublicStatusPageMonitorGroup[] {
-  const labels: Record<string, string> = {
+  const labels = {
     http: m.status_block_http_monitors(),
     dns: m.status_block_dns_monitors(),
     push: m.status_block_push_monitors(),
-  };
+  } satisfies Record<MonitorRecord["kind"], string>;
 
-  const grouped = new Map<string, PublicStatusPageMonitorView[]>();
+  const grouped = new Map<
+    MonitorRecord["kind"],
+    PublicStatusPageMonitorView[]
+  >();
   for (const monitor of monitors) {
     const bucket = monitor.kind;
     grouped.set(bucket, [...(grouped.get(bucket) ?? []), monitor]);

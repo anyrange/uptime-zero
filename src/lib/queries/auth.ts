@@ -6,8 +6,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import type { AccountData } from "@/types";
-
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
 
@@ -36,8 +34,7 @@ export function useSessionQuery() {
 export function accountQueryOptions() {
   return queryOptions({
     queryKey: ["auth", "account"],
-    queryFn: () =>
-      parseResponse(apiClient.auth.account.$get()) as Promise<AccountData>,
+    queryFn: () => parseResponse(apiClient.auth.account.$get()),
   });
 }
 

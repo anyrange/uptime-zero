@@ -121,13 +121,10 @@ export function notificationSummary(
   destination: NotificationDestinationRecord,
 ) {
   if (destination.provider === "discord") {
-    return (destination.config as { webhookUrl: string }).webhookUrl;
+    return destination.config.webhookUrl;
   }
   if (destination.provider === "telegram") {
-    const config = destination.config as {
-      chatId: string;
-      messageThreadId?: string | null;
-    };
+    const config = destination.config;
     return config.messageThreadId
       ? m.notification_chat_thread({
           chatId: config.chatId,
@@ -135,10 +132,7 @@ export function notificationSummary(
         })
       : m.notification_chat({ chatId: config.chatId });
   }
-  const config = destination.config as {
-    url: string;
-    headers?: { key: string; value: string }[];
-  };
+  const config = destination.config;
   return config.headers && config.headers.length > 0
     ? `${config.url} (${m.common_count_headers({ count: config.headers.length })})`
     : config.url;

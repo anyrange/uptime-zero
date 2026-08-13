@@ -51,7 +51,7 @@ import {
   useNotificationsQuery,
 } from "@/lib/queries/notifications";
 import {
-  type MonitorImportPayload,
+  monitorImportSchema,
   useExportMonitorsMutation,
   useImportMonitorsMutation,
   useSettingsQuery,
@@ -82,9 +82,14 @@ const accountSchema = z.object({
 });
 
 export function SettingsPage() {
-  const params = useParams({ strict: false }) as { section?: string };
-  const section = sections.includes(params.section as SettingsSection)
-    ? (params.section as SettingsSection)
+  const params = z
+    .object({ section: z.string().optional() })
+    .safeParse(useParams({ strict: false }));
+  const parsedSection = z
+    .enum(sections)
+    .safeParse(params.success ? params.data.section : undefined);
+  const section: SettingsSection = parsedSection.success
+    ? parsedSection.data
     : "general";
   const settings = useSettingsQuery();
 
@@ -456,10 +461,15 @@ function DataSettings({ data }: { data: SettingsData }) {
     if (!file) return;
     setImportError(null);
     try {
-      const payload = JSON.parse(await file.text()) as MonitorImportPayload;
+      const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
       await importMonitors.mutateAsync(payload);
     } catch (error) {
-      setImportError(errorMessage(error));
+      const parsedError = z.object({ message: z.string() }).safeParse(error);
+      setImportError(
+        parsedError.success
+          ? parsedError.data.message
+          : m.settings_import_failed(),
+      );
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -536,16 +546,11 @@ function DataSettings({ data }: { data: SettingsData }) {
   );
 }
 
-function errorMessage(error: unknown) {
-  return typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-    ? error.message
-    : m.settings_import_failed();
-}
-
 type AccountSettingsData = AccountData;
+
+function errorMessage(error: Error | null) {
+  return error?.message || m.settings_import_failed();
+}
 
 function providerName(providerId: string) {
   return providerId === "credential"

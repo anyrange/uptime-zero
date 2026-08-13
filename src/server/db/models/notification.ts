@@ -314,23 +314,42 @@ function dedupeIds(ids: string[]) {
 
 export function mapNotificationDestinationRecord(
   row: NotificationDestinationRecordRow,
-) {
+): NotificationDestinationRecord {
   const provider = readNotificationProvider(row.provider);
-  return {
+  const base = {
     id: row.id,
     name: row.name,
-    provider,
     configJson: row.configJson,
-    config: parseNotificationConfig(provider, row.configJson),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-  } satisfies NotificationDestinationRecord;
+  };
+
+  switch (provider) {
+    case "discord":
+      return {
+        ...base,
+        provider,
+        config: parseNotificationConfig(provider, row.configJson),
+      };
+    case "webhook":
+      return {
+        ...base,
+        provider,
+        config: parseNotificationConfig(provider, row.configJson),
+      };
+    case "telegram":
+      return {
+        ...base,
+        provider,
+        config: parseNotificationConfig(provider, row.configJson),
+      };
+  }
 }
 
 function mapNotificationDestinationListItem(
   row: NotificationDestinationRecordRow,
   assignments: Map<string, NotificationDestinationMonitorSummary[]>,
-) {
+): NotificationDestinationListItem {
   const record = mapNotificationDestinationRecord(row);
   const assignedMonitors = assignments.get(row.id) ?? [];
   return {
@@ -343,7 +362,7 @@ function mapNotificationDestinationListItem(
 function mapNotificationDestinationDetail(
   row: NotificationDestinationRecordRow,
   assignments: Map<string, NotificationDestinationMonitorSummary[]>,
-) {
+): NotificationDestinationDetail {
   const record = mapNotificationDestinationRecord(row);
   const assignedMonitors = assignments.get(row.id) ?? [];
   return {

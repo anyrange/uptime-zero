@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { redirect } from "@tanstack/react-router";
+import { z } from "zod";
 
 import { sessionQueryOptions } from "@/lib/queries/auth";
 
@@ -18,20 +19,13 @@ export async function requireSession({ queryClient }: AppRouterContext) {
 
     return session;
   } catch (error) {
-    if (isUnauthorizedError(error)) {
+    const parsedError = z
+      .object({ response: z.instanceof(Response) })
+      .safeParse(error);
+    if (parsedError.success && parsedError.data.response.status === 401) {
       throw redirect({ to: "/login" });
     }
 
     throw error;
   }
-}
-
-function isUnauthorizedError(error: unknown) {
-  return (
-    !!error &&
-    typeof error === "object" &&
-    "response" in error &&
-    error.response instanceof Response &&
-    error.response.status === 401
-  );
 }
