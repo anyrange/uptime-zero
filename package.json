@@ -76,7 +76,6 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.40.0",
     "@cloudflare/vitest-pool-workers": "^0.16.13",
-    "@oxlint/plugins": "1.78.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/devtools-vite": "^0.7.0",
