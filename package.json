@@ -11,7 +11,7 @@
     "e2e:ui": "playwright test --ui",
     "e2e:debug": "playwright test --headed --debug",
     "e2e:prepare": "node ./e2e/support/reset-state.mjs && pnpm run e2e:db:migrate",
-    "e2e:db:migrate": "pnpm run db:migrations:prepare && wrangler d1 migrations apply DB --local --persist-to .wrangler/e2e-state && pnpm run db:migrations:cleanup",
+    "e2e:db:migrate": "wrangler d1 migrations apply DB --local --persist-to .wrangler/e2e-state",
     "dev:worker": "wrangler dev --port 8788",
     "lint": "pnpm run paraglide:compile && oxlint .",
     "format": "oxfmt",
@@ -21,14 +21,8 @@
     "test": "pnpm run paraglide:compile && vitest run",
     "cf-typegen": "wrangler types ./worker-configuration.d.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrations:prepare": "find drizzle -mindepth 2 -name '*.sql' -exec sh -c 'cp \"$1\" \"drizzle/$(basename \"$(dirname \"$1\")\").sql\"' _ {} \\;",
-    "db:migrations:cleanup": "rm drizzle/*.sql",
-    "predb:migrate": "pnpm run db:migrations:prepare",
     "db:migrate": "wrangler d1 migrations apply DB --local",
-    "postdb:migrate": "pnpm run db:migrations:cleanup",
-    "predb:migrate-remote": "pnpm run db:migrations:prepare",
     "db:migrate-remote": "wrangler d1 migrations apply DB --remote",
-    "postdb:migrate-remote": "pnpm run db:migrations:cleanup",
     "deploy": "pnpm run db:migrate-remote && wrangler deploy"
   },
   "dependencies": {
@@ -54,7 +48,7 @@
     "croner": "^10.0.1",
     "date-fns": "^4.4.0",
     "dayjs": "^1.11.21",
-    "drizzle-orm": "1.0.0-beta.22",
+    "drizzle-orm": "1.0.0-rc.4",
     "evlog": "^2.18.1",
     "hono": "^4.12.23",
     "jotai": "^2.20.0",
@@ -89,14 +83,14 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/runner": "^4.1.8",
     "@vitest/snapshot": "^4.1.8",
-    "drizzle-kit": "1.0.0-beta.22",
+    "drizzle-kit": "1.0.0-rc.4",
     "oxfmt": "^0.53.0",
     "oxlint": "^1.78.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
-    "wrangler": "^4.98.0"
+    "wrangler": "^4.128.0"
   },
   "lint-staged": {
     "*": "oxfmt --no-error-on-unmatched-pattern"

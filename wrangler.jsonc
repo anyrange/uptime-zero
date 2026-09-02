@@ -30,7 +30,8 @@
       // Create your own D1 database with `pnpm wrangler d1 create uptime-zero`
       // and paste the returned database_id here before deploying.
       "database_id": "replace-with-your-d1-database-id",
-      "migrations_dir": "drizzle",
+      "migrations_dir": "drizzle/migrations",
+      "migrations_pattern": "drizzle/migrations/*/migration.sql",
     },
   ],
   "migrations": [

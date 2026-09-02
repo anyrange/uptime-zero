@@ -10,10 +10,10 @@ import { UserModel } from "./models/user";
 import * as schema from "./schema";
 
 export function getDrizzle(db: D1Database) {
-  return drizzle(db, { schema });
+  return drizzle(db);
 }
 
-export type DrizzleDatabase = ReturnType<typeof drizzle<typeof schema>>;
+export type DrizzleDatabase = ReturnType<typeof getDrizzle>;
 
 export class Database {
   readonly incident: IncidentModel;

@@ -17,6 +17,7 @@ export const testAuth = betterAuth({
   baseURL: "http://localhost",
   database: drizzleAdapter(getDrizzle(env.DB), {
     provider: "sqlite",
+    schema,
   }),
   emailAndPassword: {
     enabled: true,

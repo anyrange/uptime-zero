@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { env as runtimeEnv } from "cloudflare:workers";
 
-import { getDrizzle } from "@/server/db";
+import { getDrizzle, schema } from "@/server/db";
 
 type AuthEnv = {
   DB: D1Database;
@@ -20,6 +20,7 @@ export function createAuth(env: AuthEnv, options: AuthOptions = {}) {
     baseURL: options.baseURL ?? env.BETTER_AUTH_URL,
     database: drizzleAdapter(getDrizzle(env.DB), {
       provider: "sqlite",
+      schema,
     }),
     emailAndPassword: {
       enabled: true,
