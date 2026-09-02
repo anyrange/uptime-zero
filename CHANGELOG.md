@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.15.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.14.0...uptime-zero-v0.15.0) (2026-09-02)
+
+
+### Features
+
+* deslop codebase ([621e554](https://github.com/anyrange/uptime-zero/commit/621e554625499a85f1b7ed08e2b43423c3d42ae6))
+* update migrations setup ([af70803](https://github.com/anyrange/uptime-zero/commit/af70803b405f0c1ac716dd1156a28639ff27f89b))
+
+
+### Reverts
+
+* change collection pipeline ([f8e1dfc](https://github.com/anyrange/uptime-zero/commit/f8e1dfc839b0e9b0a2f28b457fe57e4d974331ad))
+
+
+### Miscellaneous Chores
+
+* remove anti-slop ([facd54d](https://github.com/anyrange/uptime-zero/commit/facd54deea970396f5cb55773a0fb7e9669c20f3))
+
 ## [0.14.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.13.0...uptime-zero-v0.14.0) (2026-08-01)
 
 
