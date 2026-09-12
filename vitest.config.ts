@@ -13,6 +13,7 @@ export default defineConfig({
         import.meta.dirname,
         "drizzle/migrations",
       );
+
       const migrations = await readNestedD1Migrations(migrationsPath);
 
       return {
@@ -45,6 +46,7 @@ async function readNestedD1Migrations(
   migrationsPath: string,
 ): Promise<D1Migration[]> {
   const entries = await readdir(migrationsPath, { withFileTypes: true });
+
   const migrationDirs = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)

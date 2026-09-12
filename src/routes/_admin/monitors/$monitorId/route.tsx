@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_admin/monitors/$monitorId")({
 
 function RouteComponent() {
   const { monitorId } = Route.useParams();
+
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });

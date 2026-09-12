@@ -1,6 +1,7 @@
 import { createPermix, type Rules } from "permix";
 
 export type UserRole = "admin" | "user";
+
 export type PermissionProfile = "admin" | "user";
 
 export type AppPermissionsDefinition = {
@@ -21,6 +22,7 @@ export type AppPermissionsDefinition = {
 };
 
 export type AppPermissionPath = (typeof permix)["$inferPath"];
+
 export type AppPermissionRules = Rules<AppPermissionsDefinition>;
 
 export const permix = createPermix<AppPermissionsDefinition>();
@@ -99,6 +101,7 @@ export function resolvePermissionProfile(
   role: UserRole | null | undefined,
 ): PermissionProfile {
   if (role === "admin") return "admin";
+
   return "user";
 }
 
@@ -108,5 +111,6 @@ export function getPermissionRules(
   const profile = resolvePermissionProfile(role);
 
   if (profile === "admin") return adminPermissions();
+
   return userPermissions();
 }

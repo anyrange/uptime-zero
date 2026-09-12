@@ -8,5 +8,6 @@ export const Route = createFileRoute("/_admin/monitors/$monitorId/incidents")({
 
 function RouteComponent() {
   const { monitorId } = Route.useParams();
+
   return <MonitorIncidentsPage monitorId={monitorId} />;
 }

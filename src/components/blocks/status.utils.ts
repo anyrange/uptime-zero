@@ -34,6 +34,7 @@ export function formatDateRange(from?: Date, to?: Date) {
     if (from && to && from.getTime() === to.getTime()) {
       return formatDateTime(from);
     }
+
     if (from && to) {
       return `${formatDateTime(from)} - ${formatTime(to)}`;
     }
@@ -43,6 +44,7 @@ export function formatDateRange(from?: Date, to?: Date) {
     if (isFromStartDay && isToEndDay) {
       return `${formatDate(from)} - ${formatDate(to)}`;
     }
+
     return `${formatDateTime(from)} - ${formatDateTime(to)}`;
   }
 
@@ -287,11 +289,14 @@ export const defaultStatusBlocksLabels = {
     if (isSameDay(from, to)) {
       return { from: formatDateTime(from), to: formatTime(to) };
     }
+
     const isFromStartDay = startOfDay(from).getTime() === from.getTime();
     const isToEndDay = endOfDay(to).getTime() === to.getTime();
+
     if (isFromStartDay && isToEndDay) {
       return { from: formatDate(from), to: formatDate(to) };
     }
+
     return { from: formatDateTime(from), to: formatDateTime(to) };
   },
 } as const satisfies StatusBlocksLabels;

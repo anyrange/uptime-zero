@@ -1,5 +1,7 @@
 export type StatusType = "success" | "degraded" | "error" | "info" | "empty";
+
 export type StatusEventType = "incident" | "report" | "maintenance";
+
 export type StatusReportUpdateType =
   | "investigating"
   | "identified"
@@ -7,6 +9,7 @@ export type StatusReportUpdateType =
   | "resolved";
 
 export const THEME_VALUES = ["light", "dark", "system"] as const;
+
 export type ThemeValue = (typeof THEME_VALUES)[number];
 
 export interface StatusReportUpdate {

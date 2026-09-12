@@ -29,10 +29,13 @@ export function getNextCronHeartbeatExpectedAt(
   baselineMs: number,
 ) {
   const schedule = getCronHeartbeatSchedule(monitor);
+
   const cron = new Cron(schedule.cron, {
     paused: true,
     timezone: schedule.timezone,
   });
+
   const nextRun = cron.nextRun(new Date(baselineMs));
+
   return nextRun?.getTime() ?? baselineMs;
 }

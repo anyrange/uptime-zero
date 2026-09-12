@@ -264,9 +264,11 @@ describe("notification delivery", () => {
     const discordCall = fetchMock.mock.calls[0];
     const webhookCall = fetchMock.mock.calls[1];
     const telegramCall = fetchMock.mock.calls[2];
+
     if (!discordCall || !webhookCall || !telegramCall) {
       throw new Error("Expected one delivery call per notification provider");
     }
+
     const discordBody = JSON.parse(String(discordCall[1]?.body));
     const webhookBody = JSON.parse(String(webhookCall[1]?.body));
     const telegramBody = JSON.parse(String(telegramCall[1]?.body));
@@ -368,6 +370,7 @@ describe("notification delivery", () => {
     const fetchMock = vi.fn<typeof fetch>(
       async () => new Response(null, { status: 500 }),
     );
+
     // SAFETY: This focused service test supplies only the database method exercised here.
     const notificationService = new NotificationService({
       notification: {

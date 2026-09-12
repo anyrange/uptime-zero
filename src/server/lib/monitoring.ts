@@ -10,6 +10,7 @@ import {
   getNextCronHeartbeatExpectedAt,
 } from "@/server/lib/monitoring-cron";
 import { runHttpCheck } from "@/server/lib/monitoring-http";
+
 export {
   compareJsonValue,
   readJsonPath,
@@ -29,7 +30,9 @@ export async function runConfiguredMonitorCheck(
     ...monitor,
     timeoutMs: Math.min(monitor.timeoutMs, MAX_MONITOR_TIMEOUT_MS),
   };
+
   let result = await runHttpCheck(boundedMonitor, fetchImpl);
+
   for (
     let attempt = 0;
     attempt < Math.min(monitor.retries, MAX_MONITOR_RETRIES) &&
@@ -38,6 +41,7 @@ export async function runConfiguredMonitorCheck(
   ) {
     result = await runHttpCheck(boundedMonitor, fetchImpl);
   }
+
   return result;
 }
 
@@ -52,9 +56,11 @@ export function computeAggregateStatus(
   if (statuses.some((status) => status === "down")) {
     return "down";
   }
+
   if (statuses.some((status) => status === "up")) {
     return "up";
   }
+
   return "unknown";
 }
 
@@ -66,8 +72,10 @@ export function isPushMonitorOverdue(
   createdAt: string,
 ): DueCheck {
   const baseline = lastHeartbeatAt ?? createdAt;
+
   const overdueMs =
     nowMs - parseDateMs(baseline) - intervalSec * 1000 - timeoutMs;
+
   return {
     due: overdueMs >= 0,
     overdueMs,
@@ -89,6 +97,7 @@ export function isCronHeartbeatOverdue(
   const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
   const { graceSec } = getCronHeartbeatSchedule(monitor);
   const overdueMs = nowMs - expectedAt - graceSec * 1000;
+
   return {
     due: overdueMs >= 0,
     overdueMs,
@@ -114,6 +123,7 @@ export function isMonitorDue(
     if (monitor.heartbeatMode === "cron") {
       return isCronHeartbeatOverdue(monitor, nowMs);
     }
+
     return isPushMonitorOverdue(
       monitor.lastCheckedAt,
       nowMs,
@@ -122,8 +132,10 @@ export function isMonitorDue(
       monitor.createdAt,
     );
   }
+
   const baseline = monitor.lastCheckedAt ?? monitor.createdAt;
   const overdueMs = nowMs - parseDateMs(baseline) - monitor.intervalSec * 1000;
+
   return {
     due: overdueMs >= 0,
     overdueMs,
@@ -145,11 +157,15 @@ export function getMonitorNextDueAt(
   >,
 ): number {
   const baseline = parseDateMs(monitor.lastCheckedAt ?? monitor.createdAt);
+
   if (monitor.kind === "push" && monitor.heartbeatMode === "cron") {
     const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
     const { graceSec } = getCronHeartbeatSchedule(monitor);
+
     return expectedAt + graceSec * 1000;
   }
+
   const timeoutMs = monitor.kind === "push" ? monitor.timeoutMs : 0;
+
   return baseline + monitor.intervalSec * 1000 + timeoutMs;
 }

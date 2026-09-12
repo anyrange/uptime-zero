@@ -57,18 +57,24 @@ export type ApiType = typeof api;
 const app = new Hono<AppEnv>();
 
 app.use("*", evlog());
+
 app.use("*", loadSession);
+
 app.onError((error, ctx) => {
   const status = error instanceof HTTPException ? error.status : 500;
+
   const message =
     error instanceof HTTPException ? error.message : "Internal server error";
+
   ctx
     .get("log")
     .error(error instanceof Error ? error : new Error(String(error)));
+
   return ctx.json({ error: message }, status);
 });
 
 registerPushRoutes(app);
+
 app.route("/api", api);
 
 export { SchedulerActor };

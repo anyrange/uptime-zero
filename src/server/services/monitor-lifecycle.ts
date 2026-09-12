@@ -26,10 +26,12 @@ export class MonitorLifecycle {
 
   async recordPushOverdue(monitor: MonitorRecord) {
     const checkedAt = nowIso();
+
     const error =
       monitor.heartbeatMode === "cron"
         ? buildCronHeartbeatOverdueMessage(monitor)
         : `No heartbeat received in the last ${monitor.intervalSec}s`;
+
     await this.persistCheckResult(
       monitor,
       { status: "down", statusCode: null, durationMs: 0, error },
@@ -91,8 +93,10 @@ export class MonitorLifecycle {
       if (nextStatus === "down") {
         await this.deliverDownNotificationAfterGrace(monitor, checkedAt, error);
       }
+
       return;
     }
+
     if (nextStatus === "down") {
       await this.db.incident.openForMonitorIfMissing({
         monitorId: monitor.id,
@@ -100,16 +104,21 @@ export class MonitorLifecycle {
         body: error,
         openedAt: checkedAt,
       });
+
       if (monitor.notificationGraceSec === 0) {
         await this.deliverDownNotification(monitor, checkedAt, error);
       }
+
       return;
     }
+
     if (nextStatus === "up") {
       await this.db.incident.closeOpenForMonitor(monitor.id, checkedAt);
+
       if (monitor.lastDownNotifiedAt) {
         await this.deliverMonitorNotifications(monitor, "up", checkedAt, null);
       }
+
       await this.db.monitor.clearDownNotificationDelivered(
         monitor.id,
         checkedAt,
@@ -125,9 +134,11 @@ export class MonitorLifecycle {
     if (monitor.lastDownNotifiedAt) return;
 
     const incident = await this.db.incident.getOpenForMonitor(monitor.id);
+
     if (!incident) return;
 
     const downtimeMs = Date.parse(checkedAt) - Date.parse(incident.openedAt);
+
     if (downtimeMs < monitor.notificationGraceSec * 1000) return;
 
     await this.deliverDownNotification(monitor, checkedAt, error);
@@ -144,6 +155,7 @@ export class MonitorLifecycle {
       checkedAt,
       error,
     );
+
     if (result.delivered) {
       await this.db.monitor.markDownNotificationDelivered(
         monitor.id,
@@ -161,6 +173,7 @@ export class MonitorLifecycle {
     const destinations = (
       await this.db.notification.getForMonitor(monitor.id)
     ).slice(0, MAX_MONITOR_NOTIFICATION_DESTINATIONS);
+
     return dispatchNotificationEvent(destinations, {
       kind: "transition",
       monitor,
@@ -175,5 +188,6 @@ function buildCronHeartbeatOverdueMessage(monitor: MonitorRecord) {
   const baseline = Date.parse(monitor.lastCheckedAt ?? monitor.createdAt);
   const expectedAt = getNextCronHeartbeatExpectedAt(monitor, baseline);
   const schedule = getCronHeartbeatSchedule(monitor);
+
   return `No heartbeat received for the ${new Date(expectedAt).toISOString()} schedule within ${schedule.graceSec}s`;
 }

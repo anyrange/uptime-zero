@@ -5,6 +5,7 @@ dayjs.extend(utc);
 
 export function parseDateMs(value: ConfigType): number {
   const parsed = dayjs(value);
+
   return parsed.isValid() ? parsed.valueOf() : Number.NaN;
 }
 

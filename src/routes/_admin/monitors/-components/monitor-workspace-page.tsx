@@ -31,6 +31,7 @@ export function MonitorWorkspacePage({
   if (detail.status === "pending") {
     return <MonitorDetailSkeleton />;
   }
+
   if (detail.status === "error") {
     return <Error message={detail.error.message} />;
   }

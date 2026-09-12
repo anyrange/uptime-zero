@@ -8,5 +8,6 @@ export const Route = createFileRoute("/_admin/status-pages/$pageId/edit")({
 
 function RouteComponent() {
   const { pageId } = Route.useParams();
+
   return <EditStatusPagePage pageId={pageId} />;
 }

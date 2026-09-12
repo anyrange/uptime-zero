@@ -60,6 +60,7 @@ describe("formatting helpers", () => {
 
   it("formats open incidents using deterministic time windows", () => {
     vi.useFakeTimers();
+
     try {
       vi.setSystemTime(new Date("2026-06-13T00:03:00.000Z"));
 
@@ -85,6 +86,7 @@ describe("formatting helpers", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
+
     const webhook: NotificationDestinationRecord = {
       id: "2",
       name: "Webhook",
@@ -97,6 +99,7 @@ describe("formatting helpers", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
+
     const webhookNoHeaders: NotificationDestinationRecord = {
       id: "3",
       name: "Webhook",
@@ -106,6 +109,7 @@ describe("formatting helpers", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
+
     const telegramWithThread: NotificationDestinationRecord = {
       id: "4",
       name: "Telegram",
@@ -119,6 +123,7 @@ describe("formatting helpers", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
+
     const telegramFlat: NotificationDestinationRecord = {
       id: "5",
       name: "Telegram",

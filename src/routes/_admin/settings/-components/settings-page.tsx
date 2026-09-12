@@ -70,6 +70,7 @@ const sections = [
   "notifications",
   "retention",
 ] as const;
+
 type SettingsSection = (typeof sections)[number];
 
 const retentionSchema = z.object({
@@ -85,12 +86,15 @@ export function SettingsPage() {
   const params = z
     .object({ section: z.string().optional() })
     .safeParse(useParams({ strict: false }));
+
   const parsedSection = z
     .enum(sections)
     .safeParse(params.success ? params.data.section : undefined);
+
   const section: SettingsSection = parsedSection.success
     ? parsedSection.data
     : "general";
+
   const settings = useSettingsQuery();
 
   return (
@@ -150,6 +154,7 @@ function AccountSettings() {
   const account = useAccountQuery();
 
   if (account.status === "pending") return <SettingsSkeleton />;
+
   if (account.status === "error") {
     return <Error message={account.error.message} />;
   }
@@ -164,6 +169,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
   const canDeleteWorkspace = isReady && check("account.deleteWorkspace");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
+
   const form = useForm({
     defaultValues: {
       name: data.user.name,
@@ -182,6 +188,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
   }
 
   const canDelete = confirmEmail === data.user.email && !remove.isPending;
+
   const providerLabels = data.accounts
     .map((account) => providerName(account.providerId))
     .join(", ");
@@ -326,6 +333,7 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
       <AlertDialog
         onOpenChange={(open) => {
           setConfirmOpen(open);
+
           if (!open) setConfirmEmail("");
         }}
         open={confirmOpen}
@@ -446,9 +454,11 @@ function DataSettings({ data }: { data: SettingsData }) {
 
   async function handleExport() {
     const exported = await exportMonitors.mutateAsync();
+
     const blob = new Blob([JSON.stringify(exported, null, 2)], {
       type: "application/json",
     });
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -460,6 +470,7 @@ function DataSettings({ data }: { data: SettingsData }) {
   async function handleImport(file: File | undefined) {
     if (!file) return;
     setImportError(null);
+
     try {
       const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
       await importMonitors.mutateAsync(payload);
@@ -563,6 +574,7 @@ function providerName(providerId: string) {
 function formatDateTime(value: Date | string | number | null) {
   if (!value) return m.common_unknown();
   const date = new Date(value);
+
   return Number.isNaN(date.valueOf())
     ? m.common_unknown()
     : new Intl.DateTimeFormat(undefined, {
@@ -612,6 +624,7 @@ function NotificationsSettings() {
   const notifications = useNotificationsQuery();
 
   if (notifications.status === "pending") return <SettingsSkeleton />;
+
   if (notifications.status === "error") {
     return <Error message={notifications.error.message} />;
   }
@@ -621,6 +634,7 @@ function NotificationsSettings() {
   >(
     (counts, destination) => {
       counts[destination.provider] += 1;
+
       return counts;
     },
     { discord: 0, webhook: 0, telegram: 0 },
@@ -675,6 +689,7 @@ function RetentionSettings({ data }: { data: SettingsData }) {
   const update = useUpdateRetentionMutation();
   const { check, isReady } = usePermissions();
   const canUpdateRetention = isReady && check("settings.updateRetention");
+
   const form = useForm({
     defaultValues: {
       heartbeatRetentionDays: data.settings.heartbeatRetentionDays,

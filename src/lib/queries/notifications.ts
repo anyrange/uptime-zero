@@ -114,11 +114,13 @@ async function invalidateNotificationQueries(
   await queryClient.invalidateQueries({
     queryKey: privateKey("notifications"),
   });
+
   if (id) {
     await queryClient.invalidateQueries({
       queryKey: privateKey("notifications", id),
     });
   }
+
   await queryClient.invalidateQueries({ queryKey: privateKey("settings") });
   await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
   await queryClient.invalidateQueries({ queryKey: privateKey("dashboard") });

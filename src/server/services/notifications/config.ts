@@ -11,6 +11,7 @@ import type {
 const discordConfigSchema = z.object({
   webhookUrl: z.string().catch("").default(""),
 });
+
 const notificationHeaderSchema = z.object({
   key: z
     .string()
@@ -21,16 +22,19 @@ const notificationHeaderSchema = z.object({
     .transform((value) => value.trim())
     .catch(""),
 });
+
 const notificationHeadersSchema = z.preprocess(
   (value) => (Array.isArray(value) ? value : []),
   z
     .array(notificationHeaderSchema)
     .transform((headers) => headers.filter((header) => header.key.length > 0)),
 );
+
 const webhookConfigSchema = z.object({
   url: z.string().catch("").default(""),
   headers: notificationHeadersSchema,
 });
+
 const telegramConfigSchema = z.object({
   botToken: z.string().catch("").default(""),
   chatId: z.string().catch("").default(""),
@@ -58,11 +62,13 @@ export function parseNotificationConfig(
   configJson: string,
 ): NotificationDestinationConfig {
   const parsed = JSON.parse(configJson);
+
   if (provider === "discord") {
     return discordConfigSchema.parse(
       parsed,
     ) satisfies DiscordNotificationConfig;
   }
+
   if (provider === "webhook") {
     return webhookConfigSchema.parse(
       parsed,
@@ -80,12 +86,15 @@ export function serializeNotificationConfig(
 ) {
   if (provider === "discord") {
     const discordConfig = discordConfigSchema.parse(config);
+
     return JSON.stringify({
       webhookUrl: discordConfig.webhookUrl,
     });
   }
+
   if (provider === "webhook") {
     const webhookConfig = webhookConfigSchema.parse(config);
+
     return JSON.stringify({
       url: webhookConfig.url,
       headers: parseNotificationHeaders(webhookConfig.headers),
@@ -93,6 +102,7 @@ export function serializeNotificationConfig(
   }
 
   const telegramConfig = telegramConfigSchema.parse(config);
+
   return JSON.stringify({
     botToken: telegramConfig.botToken,
     chatId: telegramConfig.chatId,

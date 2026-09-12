@@ -7,6 +7,7 @@ test("creates, publishes, opens, edits, and deletes a status page", async ({
   page,
 }) => {
   await page.goto("/monitors");
+
   if (
     !(await page
       .getByRole("link", { name: "Imported fixture monitor" })
@@ -36,6 +37,7 @@ test("creates, publishes, opens, edits, and deletes a status page", async ({
   const publicContext = await browser.newContext({
     storageState: { cookies: [], origins: [] },
   });
+
   const publicPage = await publicContext.newPage();
   await publicPage.goto("/status/public-e2e-status");
   await expect(

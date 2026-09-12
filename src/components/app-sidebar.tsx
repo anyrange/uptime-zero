@@ -317,13 +317,17 @@ function SidebarResourceGroup({
 
 function getMonitorStatusLabel(status: MonitorStatus) {
   if (status === "up") return m.common_up();
+
   if (status === "down") return m.common_down();
+
   return m.common_unknown();
 }
 
 function getMonitorStatusClass(status: MonitorStatus) {
   if (status === "up") return "bg-success";
+
   if (status === "down") return "bg-destructive";
+
   return "bg-muted-foreground";
 }
 
@@ -358,9 +362,11 @@ function SessionFooter({
     const { user } = session.data;
     const name = user.name?.trim();
     const primaryLabel = name || m.auth_signed_in();
+
     const secondaryLabel = name
       ? m.auth_administrator()
       : m.auth_uptime_console();
+
     const initials = primaryLabel
       .split(/\s+/)
       .filter(Boolean)

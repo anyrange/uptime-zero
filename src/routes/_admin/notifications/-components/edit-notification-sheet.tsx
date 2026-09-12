@@ -41,10 +41,12 @@ export function EditNotificationSheet({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const open = Boolean(editingId);
   const formId = useId();
+
   const destination =
     detail.status === "success" && detail.data.id === editingId
       ? detail.data
       : null;
+
   const pending = update.isPending || test.isPending;
 
   useEffect(() => {

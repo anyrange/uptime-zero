@@ -70,10 +70,13 @@ export function buildPublicStatusPageView(
   const historyDays = Number.isFinite(data.historyDays)
     ? Math.max(1, data.historyDays)
     : 30;
+
   const heartbeatMap = groupHeartbeats(data.heartbeats);
+
   const monitorMap = new Map(
     data.monitors.map((monitor) => [monitor.id, monitor]),
   );
+
   const monitors = data.monitors.map((monitor) => {
     const heartbeats = heartbeatMap.get(monitor.id) ?? [];
 
@@ -142,13 +145,17 @@ function buildPublicUptimeWindows(
     { days: 90, label: m.status_page_uptime_last_90_days() },
   ].map((window) => {
     const cutoff = Date.now() - window.days * 24 * 60 * 60 * 1000;
+
     const relevant = heartbeats.filter((heartbeat) => {
       const timestamp = new Date(heartbeat.createdAt).getTime();
+
       return Number.isFinite(timestamp) && timestamp >= cutoff;
     });
+
     const upChecks = relevant.filter(
       (heartbeat) => heartbeat.status === "up",
     ).length;
+
     const uptime = relevant.length
       ? `${formatUptimePercent((upChecks / relevant.length) * 100)}%`
       : "-";
@@ -173,6 +180,7 @@ function groupPublicMonitors(
     MonitorRecord["kind"],
     PublicStatusPageMonitorView[]
   >();
+
   for (const monitor of monitors) {
     const bucket = monitor.kind;
     grouped.set(bucket, [...(grouped.get(bucket) ?? []), monitor]);
@@ -191,12 +199,15 @@ function aggregateBlockStatus(
   if (statuses.includes("error")) {
     return "error";
   }
+
   if (statuses.includes("degraded")) {
     return "degraded";
   }
+
   if (statuses.includes("info")) {
     return "info";
   }
+
   return "success";
 }
 
@@ -225,9 +236,11 @@ function latestUpdatedAt(data: PublicStatusPageData) {
     data.page.updatedAt,
     ...data.monitors.map((monitor) => monitor.updatedAt),
     ...data.incidents.map((incident) => incident.openedAt),
-  ]
-    .map((value) => new Date(value).getTime())
-    .filter((value) => Number.isFinite(value));
+  ].flatMap((value) => {
+    const timestamp = new Date(value).getTime();
+
+    return Number.isFinite(timestamp) ? [timestamp] : [];
+  });
 
   return new Date(Math.max(...timestamps));
 }

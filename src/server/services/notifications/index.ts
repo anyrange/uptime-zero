@@ -11,6 +11,7 @@ export class NotificationService {
     fetchImpl: typeof fetch = fetch,
   ) {
     const destination = await this.db.notification.getById(destinationId);
+
     if (!destination) {
       return false;
     }
@@ -29,6 +30,7 @@ export class NotificationService {
       fetchImpl,
       { throwOnFailure: true },
     );
+
     return true;
   }
 }

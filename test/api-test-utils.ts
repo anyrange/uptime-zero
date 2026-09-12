@@ -81,11 +81,13 @@ export async function seedMonitorWithHeartbeats(count: number) {
 
 export async function apiFetch(path: string, init?: RequestInit | string) {
   const stringInit = z.string().safeParse(init);
+
   const requestInit = stringInit.success
     ? { headers: { cookie: stringInit.data } }
     : init instanceof Object
       ? init
       : undefined;
+
   const ctx = createExecutionContext();
 
   // SAFETY: The worker test pool supplies a runtime Request compatible with the Workerd request type.
@@ -96,7 +98,9 @@ export async function apiFetch(path: string, init?: RequestInit | string) {
     env,
     ctx,
   );
+
   await waitOnExecutionContext(ctx);
   await new Promise((resolve) => setTimeout(resolve, 25));
+
   return response;
 }

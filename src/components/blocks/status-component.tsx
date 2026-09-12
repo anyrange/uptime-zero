@@ -147,6 +147,7 @@ export function StatusComponentDescription({
             if (isTouch) {
               setOpen((current) => !current);
             }
+
             onClick?.(event);
           }}
           {...props}

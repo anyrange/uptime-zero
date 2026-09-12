@@ -11,7 +11,7 @@
       "source": "dmmulroy/anti-slop",
       "sourceType": "github",
       "skillPath": "skills/install-anti-slop/SKILL.md",
-      "computedHash": "0c4528204299fd9ad25b21400b353cf764f64e921030ce104debaf7cf5b46423"
+      "computedHash": "4031728fbe75bdcad6ee3208fd52b5d66e167b056fefee1fa9758e9a6cb9c0c8"
     },
     "shadcn": {
       "source": "shadcn/ui",

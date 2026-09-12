@@ -91,6 +91,7 @@ describe("public status page view model", () => {
         monitors: [monitor("http-1", "API", "http", "up")],
       }),
     );
+
     const visible = buildPublicStatusPageView(
       publicStatusPageData({
         page: { showTarget: 1 },

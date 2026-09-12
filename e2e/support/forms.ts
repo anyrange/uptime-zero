@@ -4,8 +4,10 @@ import { expect } from "@playwright/test";
 
 export async function fillField(page: Page, label: string, value: string) {
   const accessible = page.getByLabel(label).first();
+
   if (await accessible.count()) {
     await replaceValue(accessible, value);
+
     return;
   }
 
@@ -15,6 +17,7 @@ export async function fillField(page: Page, label: string, value: string) {
       has: page.locator("input, textarea"),
     })
     .first();
+
   await replaceValue(field.locator("input, textarea").first(), value);
 }
 

@@ -120,10 +120,15 @@ import {
 } from "../-components/monitors-skeleton";
 
 const monitorKindSchema = z.enum(["http", "dns", "push"]);
+
 const heartbeatModeSchema = z.enum(["interval", "cron"]);
+
 const textOperatorOptions = textAssertionOperators;
+
 const jsonOperatorOptions = jsonOperators;
+
 const dnsRecordTypeOptions = dnsRecordTypes;
+
 const monitorIntervalOptions = [60, 300, 600, 1800, 3600] as const;
 
 export function NewMonitorPage() {
@@ -160,12 +165,14 @@ export function NewMonitorPage() {
             onTest={async (payload) => {
               try {
                 const result = await test.mutateAsync(payload);
+
                 if (result.status === "up") {
                   toast.success(m.monitor_test_success(), {
                     description: m.monitor_test_success_description({
                       duration: result.durationMs,
                     }),
                   });
+
                   return;
                 }
 
@@ -353,32 +360,41 @@ function MonitorForm({
     monitor,
     selectedDestinationIds,
   );
+
   const [name, setName] = useState(defaults.name);
   const [kind, setKind] = useState(defaults.kind);
   const [target, setTarget] = useState(defaults.target);
   const [intervalSec, setIntervalSec] = useState(defaults.intervalSec);
   const [timeoutMs, setTimeoutMs] = useState(defaults.timeoutMs);
   const [retries, setRetries] = useState(defaults.retries);
+
   const [assertions, setAssertions] = useState<MonitorAssertion[]>(
     defaults.assertions,
   );
+
   const [heartbeatMode, setHeartbeatMode] = useState(defaults.heartbeatMode);
   const [heartbeatCron, setHeartbeatCron] = useState(defaults.heartbeatCron);
+
   const [heartbeatGraceSec, setHeartbeatGraceSec] = useState(
     defaults.heartbeatGraceSec,
   );
+
   const [heartbeatTimezone, setHeartbeatTimezone] = useState(
     defaults.heartbeatTimezone,
   );
+
   const [notificationGraceSec, setNotificationGraceSec] = useState(
     defaults.notificationGraceSec,
   );
+
   const [notificationDestinationIds, setNotificationDestinationIds] = useState(
     defaults.notificationDestinationIds,
   );
+
   const [submitError, setSubmitError] = useState<string | null>(null);
   const pause = usePauseMonitorMutation(monitor?.id ?? "");
   const resume = useResumeMonitorMutation(monitor?.id ?? "");
+
   const actionPending =
     pending || testPending || pause.isPending || resume.isPending;
 
@@ -409,6 +425,7 @@ function MonitorForm({
 
     if (!result.ok) {
       setSubmitError(result.error);
+
       return;
     }
 
@@ -420,8 +437,10 @@ function MonitorForm({
     setSubmitError(null);
 
     const result = validateCurrentConfig();
+
     if (!result.ok) {
       toast.error(m.monitor_test_failed(), { description: result.error });
+
       return;
     }
 
@@ -475,6 +494,7 @@ function MonitorForm({
                 className="grid w-full grid-cols-1 md:grid-cols-3"
                 onValueChange={(value) => {
                   const kind = monitorKindSchema.safeParse(value);
+
                   if (kind.success) handleKindChange(kind.data);
                 }}
                 type="single"
@@ -722,6 +742,7 @@ function MonitorForm({
                 <Select
                   onValueChange={(value) => {
                     const mode = heartbeatModeSchema.safeParse(value);
+
                     if (mode.success) setHeartbeatMode(mode.data);
                   }}
                   value={heartbeatMode}
@@ -757,6 +778,7 @@ function MonitorForm({
                   min={0}
                   onValueChange={([nextIndex]) => {
                     const nextInterval = monitorIntervalOptions[nextIndex ?? 0];
+
                     if (nextInterval) setIntervalSec(nextInterval);
                   }}
                   step={1}
@@ -862,6 +884,7 @@ function MonitorForm({
                   const checked = notificationDestinationIds.includes(
                     destination.id,
                   );
+
                   return (
                     <Item
                       asChild
@@ -879,8 +902,10 @@ function MonitorForm({
                                   ...notificationDestinationIds,
                                   destination.id,
                                 ]);
+
                                 return;
                               }
+
                               setNotificationDestinationIds(
                                 notificationDestinationIds.filter(
                                   (id) => id !== destination.id,
@@ -945,6 +970,7 @@ function MonitorForm({
 function getMonitorIntervalIndex(intervalSec: number) {
   return monitorIntervalOptions.reduce((closestIndex, option, index) => {
     const closest = monitorIntervalOptions[closestIndex];
+
     return Math.abs(option - intervalSec) < Math.abs(closest - intervalSec)
       ? index
       : closestIndex;
@@ -1015,6 +1041,7 @@ function AssertionEditor({
               <Select
                 onValueChange={(value) => {
                   const operator = textOperatorSchema.safeParse(value);
+
                   if (operator.success) {
                     onChange({ ...assertion, operator: operator.data });
                   }
@@ -1054,6 +1081,7 @@ function AssertionEditor({
               <Select
                 onValueChange={(value) => {
                   const operator = textOperatorSchema.safeParse(value);
+
                   if (operator.success) {
                     onChange({ ...assertion, operator: operator.data });
                   }
@@ -1102,6 +1130,7 @@ function AssertionEditor({
               <Select
                 onValueChange={(value) => {
                   const operator = jsonOperatorSchema.safeParse(value);
+
                   if (operator.success) {
                     onChange({ ...assertion, operator: operator.data });
                   }
@@ -1141,6 +1170,7 @@ function AssertionEditor({
               <Select
                 onValueChange={(value) => {
                   const recordType = dnsRecordTypeSchema.safeParse(value);
+
                   if (recordType.success) {
                     onChange({ ...assertion, recordType: recordType.data });
                   }
@@ -1166,6 +1196,7 @@ function AssertionEditor({
               <Select
                 onValueChange={(value) => {
                   const operator = textOperatorSchema.safeParse(value);
+
                   if (operator.success) {
                     onChange({ ...assertion, operator: operator.data });
                   }

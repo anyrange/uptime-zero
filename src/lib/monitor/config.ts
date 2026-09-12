@@ -29,12 +29,19 @@ export type MonitorPayload = {
 };
 
 export const DEFAULT_HEARTBEAT_CRON = "0 * * * *";
+
 export const DEFAULT_HEARTBEAT_GRACE_SEC = 300;
+
 export const DEFAULT_HEARTBEAT_TIMEZONE = "UTC";
+
 export const DEFAULT_NOTIFICATION_GRACE_SEC = 0;
+
 export const MIN_MONITOR_INTERVAL_SEC = 60;
+
 export const MAX_MONITOR_TIMEOUT_MS = 30_000;
+
 export const MAX_MONITOR_RETRIES = 1;
+
 export const MAX_MONITOR_NOTIFICATION_DESTINATIONS = 8;
 
 export const monitorConfigObjectSchema = z.object({
@@ -108,6 +115,7 @@ export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(
           path: ["heartbeatCron"],
         });
       }
+
       if (!value.heartbeatTimezone?.trim()) {
         ctx.addIssue({
           code: "custom",
@@ -115,6 +123,7 @@ export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(
           path: ["heartbeatTimezone"],
         });
       }
+
       if (value.heartbeatCron?.trim() && !isValidCron(value.heartbeatCron)) {
         ctx.addIssue({
           code: "custom",
@@ -122,6 +131,7 @@ export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(
           path: ["heartbeatCron"],
         });
       }
+
       if (
         value.heartbeatTimezone?.trim() &&
         !isValidTimezone(value.heartbeatTimezone)
@@ -137,6 +147,7 @@ export const monitorConfigSchema = monitorConfigObjectSchema.superRefine(
 );
 
 export type MonitorConfigInput = z.input<typeof monitorConfigObjectSchema>;
+
 export type MonitorConfig = z.output<typeof monitorConfigObjectSchema>;
 
 export function prepareMonitorConfig(config: MonitorConfig): MonitorConfig {
@@ -162,6 +173,7 @@ export function prepareMonitorConfig(config: MonitorConfig): MonitorConfig {
 
 export function parseMonitorConfigForStorage(config: MonitorConfig) {
   const monitor = prepareMonitorConfig(config);
+
   return {
     name: monitor.name,
     kind: monitor.kind,
@@ -210,6 +222,7 @@ export function applyMonitorKindChange(
 ): Pick<MonitorPayload, "assertions" | "target"> {
   if (nextKind === "dns") {
     const assertions = state.assertions.filter(isDnsAssertion);
+
     return {
       assertions: assertions.length > 0 ? assertions : [createDnsAssertion()],
       target: state.target,
@@ -218,6 +231,7 @@ export function applyMonitorKindChange(
 
   if (nextKind === "http") {
     const assertions = state.assertions.filter(isHttpAssertion);
+
     return {
       assertions:
         assertions.length > 0 ? assertions : [createStatusAssertion()],
@@ -306,6 +320,7 @@ function isHttpAssertion(assertion: MonitorAssertion) {
 function isValidCron(expression: string) {
   try {
     new Cron(expression, { paused: true });
+
     return true;
   } catch {
     return false;
@@ -315,6 +330,7 @@ function isValidCron(expression: string) {
 function isValidTimezone(timezone: string) {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+
     return true;
   } catch {
     return false;

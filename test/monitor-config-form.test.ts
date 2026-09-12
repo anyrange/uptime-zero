@@ -38,6 +38,7 @@ describe("monitor config form helpers", () => {
 
   it("creates existing monitor defaults", () => {
     const assertion = createDnsAssertion();
+
     const defaults = getMonitorConfigFormDefaults(
       createMonitorRecord({
         active: 0,
@@ -74,6 +75,7 @@ describe("monitor config form helpers", () => {
       { assertions: [status], target: "example.com" },
       "dns",
     );
+
     expect(next.target).toBe("example.com");
     expect(next.assertions).toHaveLength(1);
     expect(next.assertions[0]?.type).toBe("record");
@@ -94,6 +96,7 @@ describe("monitor config form helpers", () => {
       { assertions: [record], target: "https://example.com" },
       "http",
     );
+
     expect(next.target).toBe("https://example.com");
     expect(next.assertions).toHaveLength(1);
     expect(next.assertions[0]).toMatchObject({

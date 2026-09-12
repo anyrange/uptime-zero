@@ -21,6 +21,7 @@ async function setupTestSession(role: "admin" | "user") {
     email: `${role}-${crypto.randomUUID()}@example.com`,
     role,
   });
+
   await test.saveUser(user);
 
   const headers = await test.getAuthHeaders({
@@ -28,6 +29,7 @@ async function setupTestSession(role: "admin" | "user") {
   });
 
   const cookie = headers.get("cookie");
+
   if (!cookie) {
     throw new Error("Failed to setup test auth session");
   }
@@ -92,9 +94,11 @@ describe("pre-save monitor test API", () => {
 
   it("returns a failed outcome after the configured retry", async () => {
     const cookie = await setupTestSession("admin");
+
     const fetchMock = vi.fn(
       async () => new Response("unavailable", { status: 503 }),
     );
+
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await apiFetch("/api/monitors/test", {
@@ -120,6 +124,7 @@ describe("pre-save monitor test API", () => {
 
   it("rejects pre-save heartbeat tests", async () => {
     const cookie = await setupTestSession("admin");
+
     const response = await apiFetch("/api/monitors/test", {
       method: "POST",
       headers: {
@@ -149,6 +154,7 @@ describe("monitor import/export API", () => {
     const response = await apiFetch("/api/settings/monitors/export", cookie);
 
     expect(response.status).toBe(200);
+
     const exported = z
       .object({
         kind: z.string(),
@@ -156,6 +162,7 @@ describe("monitor import/export API", () => {
         monitors: z.array(z.record(z.string(), z.json())),
       })
       .parse(await response.json());
+
     expect(exported).toMatchObject({
       kind: "uptime-monitor-export",
       version: 1,
@@ -322,6 +329,7 @@ describe("monitor import/export API", () => {
       },
       body: "{",
     });
+
     expect(invalidJson.status).toBe(400);
 
     const badEnvelope = await apiFetch("/api/settings/monitors/import", {
@@ -337,6 +345,7 @@ describe("monitor import/export API", () => {
         monitors: [],
       }),
     });
+
     expect(badEnvelope.status).toBe(400);
 
     const badMonitor = await apiFetch("/api/settings/monitors/import", {
@@ -363,6 +372,7 @@ describe("monitor import/export API", () => {
         ],
       }),
     });
+
     expect(badMonitor.status).toBe(400);
   });
 });
@@ -468,10 +478,12 @@ describe("monitor API", () => {
 
     expect(response.status).toBe(201);
     const created = idResponseSchema.parse(await response.json());
+
     const detailResponse = await apiFetch(
       `/api/monitors/${created.id}`,
       cookie,
     );
+
     expect(detailResponse.status).toBe(200);
     await expect(detailResponse.json()).resolves.toMatchObject({
       monitor: {
@@ -521,12 +533,14 @@ describe("monitor API", () => {
         assertions: [],
       }),
     });
+
     const created = idResponseSchema.parse(await createResponse.json());
 
     const pauseResponse = await apiFetch(`/api/monitors/${created.id}/pause`, {
       method: "POST",
       headers: { cookie },
     });
+
     expect(pauseResponse.status).toBe(200);
     await expect(pauseResponse.json()).resolves.toMatchObject({ active: 0 });
 
@@ -537,6 +551,7 @@ describe("monitor API", () => {
         headers: { cookie },
       },
     );
+
     expect(resumeResponse.status).toBe(200);
     await expect(resumeResponse.json()).resolves.toMatchObject({ active: 1 });
   });
@@ -614,6 +629,7 @@ describe("status page API", () => {
     ]) {
       await db.insert(schema.heartbeats).values(heartbeat);
     }
+
     const settingsDb = createDatabase(env.DB);
     await settingsDb.settings.update({
       heartbeatRetentionDays: 365,
@@ -637,16 +653,19 @@ describe("status page API", () => {
     });
 
     expect(createResponse.status).toBe(201);
+
     const created = z
       .object({
         page: z.object({ id: z.string() }),
         monitorIds: z.array(z.string()),
       })
       .parse(await createResponse.json());
+
     expect(created.monitorIds).toEqual([busyMonitorId, quietMonitorId]);
 
     const publicResponse = await apiFetch("/api/status/public");
     expect(publicResponse.status).toBe(200);
+
     const publicData = z
       .object({
         heartbeats: z.array(
@@ -654,9 +673,11 @@ describe("status page API", () => {
         ),
       })
       .parse(await publicResponse.json());
+
     const busyHeartbeats = publicData.heartbeats.filter(
       (heartbeat) => heartbeat.monitorId === busyMonitorId,
     );
+
     const quietHeartbeats = publicData.heartbeats.filter(
       (heartbeat) => heartbeat.monitorId === quietMonitorId,
     );

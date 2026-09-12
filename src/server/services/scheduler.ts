@@ -6,7 +6,9 @@ import { getMonitorNextDueAt, isMonitorDue } from "@/server/lib/monitoring";
 import { MonitorLifecycle } from "@/server/services/monitor-lifecycle";
 
 const DEFAULT_BATCH_SIZE = 2;
+
 const MIN_RESCHEDULE_DELAY_MS = 1000;
+
 const FAILED_CHECK_RETRY_DELAY_MS = 30_000;
 
 export interface SchedulerAlarmAdapter {
@@ -41,9 +43,11 @@ export async function runDueMonitorsAndReschedule(
   const currentTime = options.now ?? nowMs();
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
   const activeMonitors = await db.monitor.listActive();
+
   const dueMonitors = activeMonitors.filter(
     (monitor) => isMonitorDue(monitor, currentTime).due,
   );
+
   const selectedMonitors = dueMonitors.slice(0, batchSize);
 
   const checkResults = await Promise.allSettled(
@@ -53,6 +57,7 @@ export async function runDueMonitorsAndReschedule(
         : runMonitorCheck(db, monitor),
     ),
   );
+
   for (const [index, result] of checkResults.entries()) {
     if (result.status === "rejected") {
       console.error(
@@ -96,7 +101,9 @@ export async function syncScheduler(
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
   });
+
   const activeMonitors = await db.monitor.listActive();
+
   return {
     active: activeMonitors.length,
     nextAlarmAt,
@@ -113,6 +120,7 @@ export async function runMonitorNowAndReschedule(
 ): Promise<SchedulerSingleRunResult> {
   const monitor = await db.monitor.getById(monitorId);
   let ran = false;
+
   if (monitor?.active === 1) {
     await runMonitorCheck(db, monitor);
     ran = true;
@@ -121,6 +129,7 @@ export async function runMonitorNowAndReschedule(
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
   });
+
   const activeMonitors = await db.monitor.listActive();
 
   return {
@@ -151,7 +160,9 @@ export async function recordPushHeartbeatAndReschedule(
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
   });
+
   const activeMonitors = await db.monitor.listActive();
+
   return {
     ran,
     active: activeMonitors.length,
@@ -161,8 +172,10 @@ export async function recordPushHeartbeatAndReschedule(
 
 export async function runMonitorCheck(db: Database, monitor: MonitorRecord) {
   const lifecycle = new MonitorLifecycle(db);
+
   if (monitor.kind === "push") {
     await lifecycle.recordPushOverdue(monitor);
+
     return;
   }
 
@@ -179,18 +192,24 @@ async function rescheduleFromActiveMonitors(
   },
 ) {
   const activeMonitors = await db.monitor.listActive();
+
   if (activeMonitors.length === 0) {
     await clearAlarm(alarm);
+
     return null;
   }
 
   const earliestDueAt = Math.min(...activeMonitors.map(getMonitorNextDueAt));
+
   const minimumNextAlarmAt =
     options.now + (options.minimumDelayMs ?? MIN_RESCHEDULE_DELAY_MS);
+
   const nextAlarmAt = options.forceSoon
     ? minimumNextAlarmAt
     : Math.max(minimumNextAlarmAt, earliestDueAt);
+
   await setAlarmIfChanged(alarm, nextAlarmAt);
+
   return nextAlarmAt;
 }
 
@@ -199,6 +218,7 @@ async function setAlarmIfChanged(
   nextAlarmAt: number,
 ) {
   const existingAlarm = await alarm.getAlarm();
+
   if (existingAlarm !== nextAlarmAt) {
     await alarm.setAlarm(nextAlarmAt);
   }
@@ -206,6 +226,7 @@ async function setAlarmIfChanged(
 
 async function clearAlarm(alarm: SchedulerAlarmAdapter) {
   const existingAlarm = await alarm.getAlarm();
+
   if (existingAlarm !== null) {
     await alarm.deleteAlarm();
   }

@@ -10,19 +10,24 @@ import { cn } from "@/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
+
 const THEME_NAMES = ["light", "dark"] as const;
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
+
 type TooltipNameType = number | string;
+
 type ChartTooltipPayload = NonNullable<
   RechartsPrimitive.DefaultTooltipContentProps<
     TooltipValueType,
     TooltipNameType
   >["payload"]
 >[number];
+
 type ChartLegendPayload = NonNullable<
   RechartsPrimitive.DefaultLegendContentProps["payload"]
 >[number];
+
 type ChartPayload = ChartTooltipPayload | ChartLegendPayload;
 
 export type ChartConfig = Record<
@@ -112,6 +117,7 @@ ${THEMES[theme]} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme] ?? itemConfig.color;
+
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join("\n")}
@@ -164,6 +170,7 @@ function ChartTooltipContent({
     const key = `${labelKey ?? item?.dataKey ?? item?.name ?? "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
     const stringLabel = z.string().safeParse(label);
+
     const value =
       !labelKey && stringLabel.success
         ? (config[stringLabel.data]?.label ?? stringLabel.data)
@@ -344,14 +351,17 @@ function getPayloadConfigFromPayload(
   key: string,
 ) {
   const recordResult = z.record(z.string(), z.unknown()).safeParse(payload);
+
   if (!recordResult.success) {
     return undefined;
   }
 
   const payloadRecord = recordResult.data;
+
   const nestedResult = z
     .record(z.string(), z.unknown())
     .safeParse(payloadRecord.payload);
+
   const payloadPayload = nestedResult.success ? nestedResult.data : undefined;
 
   let configLabelKey: string = key;

@@ -13,9 +13,11 @@ export function monitorStatusToBlockStatus(
   if (status === "up") {
     return "success";
   }
+
   if (status === "down") {
     return "error";
   }
+
   return "degraded";
 }
 
@@ -27,7 +29,9 @@ export function formatMonitorUptime(heartbeats: HeartbeatRecord[]) {
   const upChecks = heartbeats.filter(
     (heartbeat) => heartbeat.status === "up",
   ).length;
+
   const percentage = (upChecks / heartbeats.length) * 100;
+
   return m.monitor_uptime_percent({ percent: formatUptimePercent(percentage) });
 }
 
@@ -58,19 +62,23 @@ export function buildStatusBarData(
                   : heartbeat.error || m.common_no_details(),
           },
         ],
-        events: incidents
-          .filter((incident) =>
-            incidentOverlapsHeartbeat(incident, heartbeatAt),
-          )
-          .map((incident, index) => ({
-            id:
-              Number.parseInt(incident.id.replace(/\D/g, "").slice(0, 9), 10) ||
-              index + 1,
-            name: incident.title,
-            type: "incident" as const,
-            from: new Date(incident.openedAt),
-            to: incident.closedAt ? new Date(incident.closedAt) : null,
-          })),
+        events: incidents.flatMap((incident, index) =>
+          incidentOverlapsHeartbeat(incident, heartbeatAt)
+            ? [
+                {
+                  id:
+                    Number.parseInt(
+                      incident.id.replace(/\D/g, "").slice(0, 9),
+                      10,
+                    ) || index + 1,
+                  name: incident.title,
+                  type: "incident" as const,
+                  from: new Date(incident.openedAt),
+                  to: incident.closedAt ? new Date(incident.closedAt) : null,
+                },
+              ]
+            : [],
+        ),
       };
     });
 }
@@ -121,18 +129,22 @@ function buildBucketedStatusBarData({
   emptyBuckets: boolean;
 }): StatusBarData[] {
   const latestBucketStart = startOfBucket(new Date());
+
   const firstBucketStart = new Date(
     latestBucketStart.getTime() - (count - 1) * intervalMs,
   );
+
   const buckets = Array.from({ length: count }, (_, index) => {
     const start = new Date(firstBucketStart.getTime() + index * intervalMs);
     const bucketHeartbeats: HeartbeatRecord[] = [];
+
     return {
       start,
       end: new Date(start.getTime() + intervalMs),
       heartbeats: bucketHeartbeats,
     };
   });
+
   const bucketByTime = new Map(
     buckets.map((bucket) => [bucket.start.getTime(), bucket]),
   );
@@ -173,11 +185,14 @@ function bucketToStatusBarData(
   const counts = heartbeats.reduce(
     (result, heartbeat) => {
       result[heartbeat.status] += 1;
+
       return result;
     },
     { up: 0, down: 0, unknown: 0 } satisfies Record<MonitorStatus, number>,
   );
+
   const total = heartbeats.length;
+
   const orderedCounts = [
     { status: "success" as const, value: counts.up },
     { status: "error" as const, value: counts.down },
@@ -189,26 +204,34 @@ function bucketToStatusBarData(
     bar:
       total === 0
         ? [{ status: "empty", height: 100 }]
-        : orderedCounts
-            .filter((item) => item.value > 0)
-            .map((item) => ({
-              status: item.status,
-              height: (item.value / total) * 100,
-            })),
+        : orderedCounts.flatMap((item) =>
+            item.value > 0
+              ? [
+                  {
+                    status: item.status,
+                    height: (item.value / total) * 100,
+                  },
+                ]
+              : [],
+          ),
     card:
       total === 0
         ? [{ status: "empty", value: m.common_no_data() }]
-        : orderedCounts
-            .filter((item) => item.value > 0)
-            .map((item) => ({
-              status: item.status,
-              value: formatBucketCheckCount(item.value, item.status),
-            })),
-    events: incidents
-      .filter((incident) =>
-        incidentOverlapsWindow(incident, bucketStart, bucketEnd),
-      )
-      .map((incident, index) => incidentToStatusBarEvent(incident, index)),
+        : orderedCounts.flatMap((item) =>
+            item.value > 0
+              ? [
+                  {
+                    status: item.status,
+                    value: formatBucketCheckCount(item.value, item.status),
+                  },
+                ]
+              : [],
+          ),
+    events: incidents.flatMap((incident, index) =>
+      incidentOverlapsWindow(incident, bucketStart, bucketEnd)
+        ? [incidentToStatusBarEvent(incident, index)]
+        : [],
+    ),
   };
 }
 

@@ -52,9 +52,11 @@ export const monitorsApi = new Hono<AppEnv>()
       const db = createDatabase(ctx.env.DB);
 
       const savedMonitor = await db.monitor.createOrUpdate(monitor);
+
       if (!savedMonitor) {
         throw new HTTPException(500, { message: "Failed to save monitor" });
       }
+
       if (savedMonitor.active === 1) {
         await runMonitorNow(ctx.env, savedMonitor.id, "save");
       } else {
@@ -70,6 +72,7 @@ export const monitorsApi = new Hono<AppEnv>()
     zValidator("json", monitorConfigSchema),
     async (ctx) => {
       const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
+
       if (monitor.kind === "push") {
         throw new HTTPException(400, {
           message: m.monitor_test_push_unavailable(),
@@ -104,6 +107,7 @@ export const monitorsApi = new Hono<AppEnv>()
     const monitorService = new MonitorService(db);
 
     const detail = await monitorService.getDetailData(ctx.req.param("id"));
+
     if (!detail) {
       throw new HTTPException(404, { message: "Monitor not found" });
     }
@@ -124,6 +128,7 @@ export const monitorsApi = new Hono<AppEnv>()
         ctx.req.param("id"),
         page,
       );
+
       if (!detail) {
         throw new HTTPException(404, { message: "Monitor not found" });
       }
@@ -154,9 +159,11 @@ export const monitorsApi = new Hono<AppEnv>()
         ...monitor,
         id: ctx.req.param("id"),
       });
+
       if (!savedMonitor) {
         throw new HTTPException(500, { message: "Failed to save monitor" });
       }
+
       queueSchedulerForSavedMonitor(ctx, savedMonitor, "monitor-resume");
 
       return ctx.json(savedMonitor);
@@ -186,6 +193,7 @@ export const monitorsApi = new Hono<AppEnv>()
       id: monitorId,
       active: 0,
     });
+
     if (!savedMonitor) {
       throw new HTTPException(404, { message: "Monitor not found" });
     }
@@ -203,6 +211,7 @@ export const monitorsApi = new Hono<AppEnv>()
       id: monitorId,
       active: 1,
     });
+
     if (!savedMonitor) {
       throw new HTTPException(404, { message: "Monitor not found" });
     }

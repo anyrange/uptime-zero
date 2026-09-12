@@ -79,6 +79,7 @@ export function MonitorsIndexContent({
 }) {
   const activeCount = monitors.filter((monitor) => monitor.active === 1).length;
   const pausedCount = monitors.length - activeCount;
+
   const downCount = monitors.filter(
     (monitor) => monitor.lastStatus === "down",
   ).length;
@@ -159,7 +160,9 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
   const selectedMonitors = table
     .getFilteredSelectedRowModel()
     .rows.map((row) => row.original);
+
   const selectedMonitorIds = selectedMonitors.map((monitor) => monitor.id);
+
   const nameFilter = z
     .string()
     .catch("")
@@ -168,6 +171,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
   async function handleImport(file: File | undefined) {
     if (!file) return;
     setImportError(null);
+
     try {
       const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
       await importMonitors.mutateAsync(payload);
@@ -401,8 +405,10 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
     accessorKey: "name",
     filterFn: (row, columnId, filterValue) => {
       const query = String(filterValue).toLowerCase().trim();
+
       if (!query) return true;
       const monitor = row.original;
+
       return [
         row.getValue(columnId),
         monitor.kind,
@@ -422,6 +428,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
     ),
     cell: ({ row }) => {
       const monitor = row.original;
+
       return (
         <Link
           className="block max-w-[160px] truncate font-medium"
@@ -468,6 +475,7 @@ const monitorColumns: ColumnDef<MonitorRecord>[] = [
     header: m.monitor_target(),
     cell: ({ row }) => {
       const target = displayMonitorTarget(row.original);
+
       return row.original.kind === "push" ? (
         <span className="block max-w-[180px] truncate text-muted-foreground">
           {target}
@@ -599,9 +607,11 @@ function exportMonitors(monitors: MonitorRecord[]) {
       active: monitor.active === 1,
     })),
   };
+
   const blob = new Blob([JSON.stringify(exported, null, 2)], {
     type: "application/json",
   });
+
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

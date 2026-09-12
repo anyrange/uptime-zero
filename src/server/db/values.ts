@@ -11,10 +11,15 @@ import type {
 import { parseNotificationConfig } from "@/server/services/notifications/config";
 
 const monitorKinds = ["http", "dns", "push"] as const;
+
 const monitorStatuses = ["up", "down", "unknown"] as const;
+
 const heartbeatModes = ["interval", "cron"] as const;
+
 const heartbeatSources = ["poll", "push", "system"] as const;
+
 const incidentStatuses = ["open", "closed"] as const;
+
 const notificationProviders = ["discord", "webhook", "telegram"] as const;
 
 export function readMonitorKind(value: string): MonitorKind {

@@ -224,9 +224,11 @@ export function StatusEventTimelineReport({
   renderMessage?: (message: string) => React.ReactNode;
 }) {
   const labels = useStatusBlocksLabels();
+
   const sortedUpdates = [...updates].sort(
     (a, b) => b.date.getTime() - a.date.getTime(),
   );
+
   const displayedUpdates = maxUpdates
     ? sortedUpdates.slice(0, maxUpdates)
     : sortedUpdates;
@@ -244,7 +246,9 @@ export function StatusEventTimelineReport({
           const startedAt = new Date(
             sortedUpdates[sortedUpdates.length - 1].date,
           );
+
           const duration = formatDistanceStrict(startedAt, update.date);
+
           if (duration !== "0 seconds" && update.status === "resolved") {
             durationText = labels.durationIn(duration);
           }

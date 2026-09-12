@@ -22,6 +22,7 @@ export async function requireSession({ queryClient }: AppRouterContext) {
     const parsedError = z
       .object({ response: z.instanceof(Response) })
       .safeParse(error);
+
     if (parsedError.success && parsedError.data.response.status === 401) {
       throw redirect({ to: "/login" });
     }

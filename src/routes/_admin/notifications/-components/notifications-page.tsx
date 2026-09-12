@@ -75,12 +75,15 @@ export function NotificationsPage() {
 
   const [createProvider, setCreateProvider] =
     useState<NotificationProvider | null>(null);
+
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const destinations =
     notifications.status === "success" ? notifications.data.destinations : [];
+
   const monitors =
     notifications.status === "success" ? notifications.data.monitors : [];
+
   const assignedCount = destinations.reduce(
     (count, destination) => count + destination.monitorCount,
     0,

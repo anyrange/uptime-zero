@@ -41,11 +41,13 @@ export const dashboardApi = new Hono<AppEnv>()
         db.monitor.listRecentHeartbeats(RECENT_DASHBOARD_HEARTBEAT_LIMIT),
       statusPages: () => db.statusPage.list(),
     });
+
     const counts = monitors.reduce(
-      (current, monitor) => ({
-        ...current,
-        [monitor.lastStatus]: current[monitor.lastStatus] + 1,
-      }),
+      (current, monitor) => {
+        current[monitor.lastStatus] += 1;
+
+        return current;
+      },
       { up: 0, down: 0, unknown: 0 },
     );
 

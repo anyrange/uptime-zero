@@ -38,6 +38,7 @@ export function StatusPagePoweredBy({
   ...props
 }: React.ComponentProps<"p">) {
   const labels = useStatusBlocksLabels();
+
   return (
     <p
       className={cn(

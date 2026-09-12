@@ -67,6 +67,7 @@ export const statusPagesApi = new Hono<AppEnv>()
     const db = createDatabase(ctx.env.DB);
 
     const page = await db.statusPage.getById(ctx.req.param("id"));
+
     if (!page) {
       throw new HTTPException(404, { message: "Status page not found" });
     }
@@ -111,6 +112,7 @@ export const publicStatusApi = new Hono<AppEnv>().get("/:slug", async (ctx) => {
   const db = createDatabase(ctx.env.DB);
 
   const page = await db.statusPage.getPublishedBySlug(ctx.req.param("slug"));
+
   if (!page) {
     throw new HTTPException(404, { message: "Status page not found" });
   }
@@ -118,6 +120,7 @@ export const publicStatusApi = new Hono<AppEnv>().get("/:slug", async (ctx) => {
   const monitorIds = await db.statusPage.getMonitorIds(page.id);
   const settings = await db.settings.get();
   const heartbeatCutoff = daysAgoIso(settings.heartbeatRetentionDays);
+
   const { monitors, incidents, heartbeats } = monitorIds.length
     ? await all({
         monitors: () => db.monitor.listByIdsByName(monitorIds),

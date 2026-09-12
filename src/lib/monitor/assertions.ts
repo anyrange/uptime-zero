@@ -7,6 +7,7 @@ export const textAssertionOperators = [
   "equals",
   "not_contains",
 ] as const;
+
 export const jsonOperators = [
   "eq",
   "ne",
@@ -16,6 +17,7 @@ export const jsonOperators = [
   "lt",
   "lte",
 ] as const;
+
 export const dnsRecordTypes = [
   "A",
   "AAAA",
@@ -26,8 +28,11 @@ export const dnsRecordTypes = [
 ] as const;
 
 export const textOperatorSchema = z.enum(textAssertionOperators);
+
 export const jsonOperatorSchema = z.enum(jsonOperators);
+
 export const dnsRecordTypeSchema = z.enum(dnsRecordTypes);
+
 const jsonObjectSchema = z.record(z.string(), z.json());
 
 export const monitorAssertionSchema = z.union([
@@ -71,13 +76,16 @@ export function parseMonitorAssertions(
   source: MonitorAssertion[] | string | null | undefined,
 ) {
   const stringSource = z.string().safeParse(source);
+
   const parsed = stringSource.success
     ? safeParseAssertionsJson(stringSource.data)
     : Array.isArray(source)
       ? source
       : [];
+
   return parsed.flatMap((value) => {
     const result = monitorAssertionSchema.safeParse(withAssertionId(value));
+
     return result.success ? [result.data] : [];
   });
 }
@@ -85,6 +93,7 @@ export function parseMonitorAssertions(
 function safeParseAssertionsJson(source: string) {
   try {
     const parsed = JSON.parse(source);
+
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -93,12 +102,14 @@ function safeParseAssertionsJson(source: string) {
 
 function withAssertionId(value: z.input<typeof jsonObjectSchema>) {
   const parsed = jsonObjectSchema.safeParse(value);
+
   if (!parsed.success) {
     return value;
   }
 
   const candidate = parsed.data;
   const id = z.string().safeParse(candidate.id);
+
   if (id.success && id.data.trim()) {
     return candidate;
   }

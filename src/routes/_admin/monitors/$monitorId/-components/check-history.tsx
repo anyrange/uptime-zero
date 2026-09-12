@@ -105,6 +105,7 @@ export function CheckHistory({
     () => deriveMonitorCharts({ heartbeats, incidents, monitorKind }),
     [heartbeats, incidents, monitorKind],
   );
+
   const statusBarData = useMemo(
     () => buildHourlyStatusBarData(heartbeats, incidents, 48),
     [heartbeats, incidents],
@@ -315,16 +316,19 @@ function deriveMonitorCharts({
     (left, right) =>
       new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
+
   const latencyPoints = sortedHeartbeats
     .filter(hasUsableDuration)
     .map((heartbeat) => {
       const timestamp = new Date(heartbeat.createdAt).getTime();
+
       return {
         timestamp,
         timeLabel: formatChartTooltipTime(timestamp),
         latencyMs: heartbeat.durationMs,
       };
     });
+
   const bucket = selectLatencyBucket(latencyPoints.length);
 
   return {
@@ -353,9 +357,11 @@ function selectLatencyBucket(pointCount: number) {
   if (pointCount <= 96) {
     return { label: m.monitor_latency_sample_bucket(), ms: 0 };
   }
+
   if (pointCount <= 288) {
     return { label: m.monitor_latency_15_minute_bucket(), ms: 15 * 60 * 1000 };
   }
+
   return { label: m.monitor_latency_1_hour_bucket(), ms: 60 * 60 * 1000 };
 }
 
@@ -383,6 +389,7 @@ function buildPercentileSeries(points: LatencyPoint[], bucketMs: number) {
     .sort(([left], [right]) => left - right)
     .map(([timestamp, values]) => {
       const sorted = [...values].sort((left, right) => left - right);
+
       return {
         timestamp,
         timeLabel: formatChartTooltipTime(timestamp),
@@ -399,6 +406,7 @@ function buildOutcomePoints(heartbeats: HeartbeatRecord[]): OutcomePoint[] {
   const counts = heartbeats.reduce(
     (totals, heartbeat) => {
       totals[heartbeat.status] += 1;
+
       return totals;
     },
     { up: 0, down: 0, unknown: 0 },
@@ -426,19 +434,21 @@ function buildIncidentMarkers(
     return [];
   }
 
-  return incidents
-    .map((incident) => {
-      const opened = new Date(incident.openedAt).getTime();
-      const closed = incident.closedAt
-        ? new Date(incident.closedAt).getTime()
-        : last;
-      return {
-        id: incident.id,
-        start: Math.max(opened, first),
-        end: Math.min(closed, last),
-      };
-    })
-    .filter((incident) => incident.start <= last && incident.end >= first);
+  return incidents.flatMap((incident) => {
+    const opened = new Date(incident.openedAt).getTime();
+
+    const closed = incident.closedAt
+      ? new Date(incident.closedAt).getTime()
+      : last;
+
+    const marker = {
+      id: incident.id,
+      start: Math.max(opened, first),
+      end: Math.min(closed, last),
+    };
+
+    return marker.start <= last && marker.end >= first ? [marker] : [];
+  });
 }
 
 function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {
@@ -448,6 +458,7 @@ function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {
     if (heartbeat.statusCode == null) {
       continue;
     }
+
     const bucket = `${Math.floor(heartbeat.statusCode / 100)}xx`;
     grouped.set(bucket, (grouped.get(bucket) ?? 0) + 1);
   }
@@ -464,9 +475,11 @@ function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {
 
 function formatChartTick(value: number | string) {
   const timestamp = Number(value);
+
   if (!Number.isFinite(timestamp)) {
     return "";
   }
+
   return new Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit",
@@ -477,9 +490,11 @@ function formatChartTooltipTime(
   value: number | string | readonly (number | string)[] | null | undefined,
 ) {
   const timestamp = Number(value);
+
   if (!Number.isFinite(timestamp)) {
     return "";
   }
+
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -490,9 +505,11 @@ function percentile(values: number[], ratio: number) {
   if (values.length === 0) {
     return null;
   }
+
   const index = Math.min(
     values.length - 1,
     Math.max(0, Math.ceil(values.length * ratio) - 1),
   );
+
   return values[index] ?? null;
 }

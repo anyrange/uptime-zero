@@ -36,6 +36,7 @@ export class MonitorService {
 
   async getDetailData(monitorId: string) {
     const monitor = await this.db.monitor.getById(monitorId);
+
     if (!monitor) {
       return null;
     }
@@ -76,15 +77,19 @@ export class MonitorService {
 
   async getHeartbeatPage(monitorId: string, pageInput: number) {
     const monitor = await this.db.monitor.getById(monitorId);
+
     if (!monitor) {
       return null;
     }
 
     const total = await this.db.monitor.countHeartbeats(monitorId);
+
     const totalPages =
       total === 0 ? 0 : Math.ceil(total / MONITOR_LOGS_PAGE_SIZE);
+
     const page = clampMonitorLogsPage(pageInput, totalPages);
     const offset = (page - 1) * MONITOR_LOGS_PAGE_SIZE;
+
     const rows =
       total === 0
         ? []
@@ -110,11 +115,14 @@ function computeSlowestP95ResponseMs(
   durations: Array<{ monitorId: string; durationMs: number | null }>,
 ) {
   const byMonitor = new Map<string, number[]>();
+
   for (const row of durations) {
     if (row.durationMs == null) {
       continue;
     }
+
     const monitorDurations = byMonitor.get(row.monitorId);
+
     if (monitorDurations) {
       monitorDurations.push(row.durationMs);
     } else {
@@ -123,15 +131,18 @@ function computeSlowestP95ResponseMs(
   }
 
   let slowest: number | null = null;
+
   for (const values of byMonitor.values()) {
     const p95 = percentile(
       values.sort((left, right) => left - right),
       0.95,
     );
+
     if (p95 != null && (slowest == null || p95 > slowest)) {
       slowest = p95;
     }
   }
+
   return slowest;
 }
 
@@ -151,9 +162,11 @@ function computeMonitorDetailMetrics(
     totalChecks,
     upChecks,
   }));
+
   const successfulDurations = heartbeats
-    .filter(isSuccessfulHeartbeat)
-    .map((heartbeat) => heartbeat.durationMs)
+    .flatMap((heartbeat) =>
+      isSuccessfulHeartbeat(heartbeat) ? [heartbeat.durationMs] : [],
+    )
     .sort((left, right) => left - right);
 
   return {
@@ -179,25 +192,29 @@ function percentile(values: number[], ratio: number) {
   if (values.length === 0) {
     return null;
   }
+
   const index = Math.min(
     values.length - 1,
     Math.max(0, Math.ceil(values.length * ratio) - 1),
   );
+
   return values[index] ?? null;
 }
 
 function computeMttrMinutes(incidents: IncidentRecord[]) {
-  const durations = incidents
-    .filter(hasClosedAt)
-    .map(
-      (incident) =>
-        (parseDateMs(incident.closedAt) - parseDateMs(incident.openedAt)) /
-        60000,
-    )
-    .filter((duration) => Number.isFinite(duration) && duration >= 0);
+  const durations = incidents.flatMap((incident) => {
+    if (!hasClosedAt(incident)) return [];
+
+    const duration =
+      (parseDateMs(incident.closedAt) - parseDateMs(incident.openedAt)) / 60000;
+
+    return Number.isFinite(duration) && duration >= 0 ? [duration] : [];
+  });
+
   if (durations.length === 0) {
     return null;
   }
+
   return roundTo(
     durations.reduce((sum, duration) => sum + duration, 0) / durations.length,
   );
@@ -217,5 +234,6 @@ function isSuccessfulHeartbeat(
 
 function roundTo(value: number, digits = 2) {
   const factor = 10 ** digits;
+
   return Math.round(value * factor) / factor;
 }

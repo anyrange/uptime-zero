@@ -22,6 +22,7 @@ export function registerPushRoutes(app: Hono<AppEnv>) {
     if (!monitor) {
       throw new HTTPException(404, { message: "Heartbeat monitor not found" });
     }
+
     await recordPushHeartbeat(ctx.env, monitor.id, "push");
 
     return ctx.json({ ok: true });

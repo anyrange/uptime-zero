@@ -170,11 +170,13 @@ function LatestChecksTable({ data }: { data: DashboardData }) {
     const monitorNames = new Map(
       data.monitors.map((monitor) => [monitor.id, monitor.name]),
     );
+
     return data.heartbeats.slice(0, 10).map((heartbeat) => ({
       heartbeat,
       monitorName: monitorNames.get(heartbeat.monitorId),
     }));
   }, [data.heartbeats, data.monitors]);
+
   const table = useReactTable({
     data: rows,
     columns: latestCheckColumns,
@@ -293,11 +295,13 @@ function RecentIncidentsTable({
     const monitorNames = new Map(
       data.monitors.map((monitor) => [monitor.id, monitor.name]),
     );
+
     return incidents.map((incident) => ({
       incident,
       monitorName: monitorNames.get(incident.monitorId),
     }));
   }, [data.monitors, incidents]);
+
   const table = useReactTable({
     data: rows,
     columns: recentIncidentColumns,
@@ -388,8 +392,10 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
 
 function getRecentIncidents(incidents: IncidentRecord[]) {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
   return incidents.filter((incident) => {
     const openedAt = new Date(incident.openedAt).getTime();
+
     return !Number.isNaN(openedAt) && openedAt >= cutoff;
   });
 }

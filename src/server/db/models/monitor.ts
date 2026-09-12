@@ -18,6 +18,7 @@ import {
 import { nowIso } from "@/server/lib/dates";
 
 type MonitorRow = typeof schema.monitors.$inferSelect;
+
 type HeartbeatRow = typeof schema.heartbeats.$inferSelect;
 
 export class MonitorModel {
@@ -31,6 +32,7 @@ export class MonitorModel {
   ) {
     const now = nowIso();
     const id = payload.id ?? crypto.randomUUID();
+
     const existing = payload.id
       ? await this.db
           .select()
@@ -38,10 +40,13 @@ export class MonitorModel {
           .where(eq(schema.monitors.id, payload.id))
           .get()
       : null;
+
     const kind = readMonitorKind(payload.kind ?? existing?.kind ?? "http");
+
     const assertions = parseMonitorAssertions(
       payload.assertions ?? existing?.assertionsJson ?? null,
     );
+
     const pushToken =
       kind === "push"
         ? (existing?.pushToken ?? payload.pushToken ?? crypto.randomUUID())
@@ -123,6 +128,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.id, id))
       .get();
+
     return monitor ? mapMonitorRecord(monitor) : null;
   }
 
@@ -132,6 +138,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.id, id))
       .get();
+
     return monitor ? mapMonitorRecord(monitor) : null;
   }
 
@@ -141,6 +148,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.active, 1))
       .orderBy(asc(schema.monitors.createdAt));
+
     return rows.map((row) => row.id);
   }
 
@@ -150,6 +158,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.active, 1))
       .orderBy(asc(schema.monitors.createdAt));
+
     return rows.map(mapMonitorRecord);
   }
 
@@ -158,6 +167,7 @@ export class MonitorModel {
       .select()
       .from(schema.monitors)
       .orderBy(asc(schema.monitors.name));
+
     return rows.map(mapMonitorRecord);
   }
 
@@ -169,11 +179,13 @@ export class MonitorModel {
     if (ids.length === 0) {
       return [];
     }
+
     const rows = await this.db
       .select()
       .from(schema.monitors)
       .where(inArray(schema.monitors.id, ids))
       .orderBy(asc(schema.monitors.name));
+
     return rows.map(mapMonitorRecord);
   }
 
@@ -183,6 +195,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.pushToken, token))
       .get();
+
     return monitor ? mapMonitorRecord(monitor) : null;
   }
 
@@ -200,6 +213,7 @@ export class MonitorModel {
       .from(schema.monitors)
       .where(eq(schema.monitors.id, id))
       .get();
+
     return Boolean(row);
   }
 
@@ -222,6 +236,7 @@ export class MonitorModel {
       .where(eq(schema.heartbeats.monitorId, monitorId))
       .orderBy(desc(schema.heartbeats.createdAt))
       .limit(limit);
+
     return rows.map(mapHeartbeatRecord);
   }
 
@@ -231,6 +246,7 @@ export class MonitorModel {
       .from(schema.heartbeats)
       .orderBy(desc(schema.heartbeats.createdAt))
       .limit(limit);
+
     return rows.map(mapHeartbeatRecord);
   }
 
@@ -239,6 +255,7 @@ export class MonitorModel {
       .select({ count: sql<number>`count(*)` })
       .from(schema.heartbeats)
       .where(sql`${schema.heartbeats.createdAt} >= ${cutoff}`);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -318,6 +335,7 @@ export class MonitorModel {
       .select({ count: sql<number>`count(*)` })
       .from(schema.heartbeats)
       .where(eq(schema.heartbeats.monitorId, monitorId));
+
     return count ?? 0;
   }
 
@@ -369,6 +387,7 @@ export class MonitorModel {
       .orderBy(desc(schema.heartbeats.createdAt))
       .limit(limit)
       .offset(offset);
+
     return rows.map(mapHeartbeatRecord);
   }
 
@@ -448,9 +467,11 @@ export class MonitorModel {
     await this.db
       .delete(schema.monitorNotificationDestinations)
       .where(eq(schema.monitorNotificationDestinations.monitorId, monitorId));
+
     if (dedupedIds.length === 0) {
       return;
     }
+
     await this.db.insert(schema.monitorNotificationDestinations).values(
       dedupedIds.map((notificationDestinationId) => ({
         monitorId,

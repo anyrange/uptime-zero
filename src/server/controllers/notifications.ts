@@ -40,6 +40,7 @@ const notificationInputSchema = z.discriminatedUnion("provider", [
     monitorIds: z.array(z.string()).default([]),
   }),
 ]);
+
 type NotificationInput = z.infer<typeof notificationInputSchema>;
 
 export const notificationsApi = new Hono<AppEnv>()
@@ -55,6 +56,7 @@ export const notificationsApi = new Hono<AppEnv>()
     const db = createDatabase(ctx.env.DB);
 
     const detail = await db.notification.getDetail(ctx.req.param("id"));
+
     if (!detail) {
       throw new HTTPException(404, { message: "Notification not found" });
     }
@@ -71,17 +73,20 @@ export const notificationsApi = new Hono<AppEnv>()
 
       try {
         const db = createDatabase(ctx.env.DB);
+
         const destination = await db.notification.create(
           destinationInput.name,
           destinationInput.provider,
           destinationInput.config,
           destinationInput.monitorIds,
         );
+
         return ctx.json(destination, 201);
       } catch (error) {
         if (error instanceof NotificationDestinationValidationError) {
           throw new HTTPException(400, { message: error.message });
         }
+
         throw new HTTPException(500, {
           message: "Failed to create notification",
         });
@@ -98,23 +103,28 @@ export const notificationsApi = new Hono<AppEnv>()
 
       try {
         const db = createDatabase(ctx.env.DB);
+
         const destination = await db.notification.update(ctx.req.param("id"), {
           name: destinationInput.name,
           provider: destinationInput.provider,
           config: destinationInput.config,
           monitorIds: destinationInput.monitorIds,
         });
+
         if (!destination) {
           throw new HTTPException(404, { message: "Notification not found" });
         }
+
         return ctx.json(destination);
       } catch (error) {
         if (error instanceof HTTPException) {
           throw error;
         }
+
         if (error instanceof NotificationDestinationValidationError) {
           throw new HTTPException(400, { message: error.message });
         }
+
         throw new HTTPException(500, {
           message: "Failed to update notification",
         });
@@ -134,6 +144,7 @@ export const notificationsApi = new Hono<AppEnv>()
     const notificationService = new NotificationService(db);
 
     let sent: boolean;
+
     try {
       sent = await notificationService.sendTestNotification(
         ctx.req.param("id"),
@@ -142,6 +153,7 @@ export const notificationsApi = new Hono<AppEnv>()
       if (error instanceof NotificationDeliveryError) {
         throw new HTTPException(502, { message: error.message });
       }
+
       throw error;
     }
 

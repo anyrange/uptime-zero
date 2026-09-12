@@ -15,8 +15,11 @@ type MonitorCheckConfig = Pick<
 >;
 
 const MAX_HTTP_REDIRECTS = 2;
+
 const MAX_RESPONSE_BODY_BYTES = 1024 * 1024;
+
 const DEFAULT_DNS_RECORD_TYPES = ["A"] as const;
+
 const dnsJsonResponseSchema = z.object({
   Status: z.number().optional(),
   Answer: z
@@ -36,6 +39,7 @@ export function compareJsonValue(
   expectedRaw: string,
 ): boolean {
   const expectedParsed = tryParseScalar(expectedRaw);
+
   switch (operator) {
     case "eq":
       return actual === expectedParsed;
@@ -43,12 +47,15 @@ export function compareJsonValue(
       return actual !== expectedParsed;
     case "includes":
       const stringValue = z.string().safeParse(actual);
+
       if (stringValue.success) {
         return stringValue.data.includes(expectedRaw);
       }
+
       if (Array.isArray(actual)) {
         return actual.includes(expectedParsed);
       }
+
       return false;
     case "gt":
       return Number(actual) > Number(expectedParsed);
@@ -68,7 +75,9 @@ export function readJsonPath(
   if (!path) {
     return input;
   }
+
   const normalized = path.replace(/\[(\d+)\]/g, ".$1");
+
   return normalized
     .split(".")
     .filter(Boolean)
@@ -76,14 +85,19 @@ export function readJsonPath(
       if (current == null) {
         return undefined;
       }
+
       if (Array.isArray(current)) {
         const index = Number.parseInt(segment, 10);
+
         return Number.isFinite(index) ? current[index] : undefined;
       }
+
       const record = z.record(z.string(), z.json()).safeParse(current);
+
       if (record.success) {
         return record.data[segment];
       }
+
       return undefined;
     }, input);
 }
@@ -97,6 +111,7 @@ export async function runHttpCheck(
   }
 
   const startedAt = Date.now();
+
   try {
     const response = await fetchWithRedirectLimit(fetchImpl, monitor.target, {
       method: "GET",
@@ -105,21 +120,27 @@ export async function runHttpCheck(
         "user-agent": "uptime-zero/0.1.0",
       },
     });
+
     const needsBody = monitor.assertions.some(
       (assertion) => assertion.type === "body",
     );
+
     const bodyText = needsBody
       ? await readBoundedResponseText(response, MAX_RESPONSE_BODY_BYTES)
       : "";
+
     if (!needsBody) {
       await response.body?.cancel();
     }
+
     const durationMs = Date.now() - startedAt;
+
     const assertionFailure = runHttpAssertions(
       monitor.assertions,
       response,
       bodyText,
     );
+
     if (assertionFailure) {
       return {
         status: "down",
@@ -129,9 +150,11 @@ export async function runHttpCheck(
         responseText: bodyText,
       };
     }
+
     const hasStatusAssertion = monitor.assertions.some(
       (assertion) => assertion.type === "status",
     );
+
     if (!response.ok && !hasStatusAssertion) {
       return {
         status: "down",
@@ -169,14 +192,17 @@ function runHttpAssertions(
       if (response.status !== assertion.expected) {
         return `Expected HTTP ${assertion.expected}, got ${response.status}`;
       }
+
       continue;
     }
 
     if (assertion.type === "header") {
       const actualValue = response.headers.get(assertion.header) ?? "";
+
       if (!compareTextValue(actualValue, assertion.operator, assertion.value)) {
         return `Header assertion failed for ${assertion.header}`;
       }
+
       continue;
     }
 
@@ -184,22 +210,27 @@ function runHttpAssertions(
       if (!compareTextValue(bodyText, assertion.operator, assertion.value)) {
         return "Body assertion failed";
       }
+
       continue;
     }
 
     if (assertion.type === "body" && assertion.source === "json") {
       let payload: JSONType;
+
       try {
         payload = bodyText ? z.json().parse(JSON.parse(bodyText)) : null;
       } catch {
         return "Response was not valid JSON";
       }
+
       const actual = readJsonPath(payload, assertion.path);
+
       const matched = compareJsonValue(
         actual,
         assertion.operator,
         assertion.value,
       );
+
       if (!matched) {
         return `JSON assertion failed at ${assertion.path || "$"}`;
       }
@@ -214,10 +245,12 @@ async function runDnsCheck(
   fetchImpl: typeof fetch,
 ): Promise<MonitorCheckResult> {
   const startedAt = Date.now();
+
   const recordAssertions = monitor.assertions.filter(
     (assertion): assertion is Extract<MonitorAssertion, { type: "record" }> =>
       assertion.type === "record",
   );
+
   const requestedTypes = Array.from(
     new Set(recordAssertions.map((assertion) => assertion.recordType)),
   );
@@ -227,6 +260,7 @@ async function runDnsCheck(
       recordType: DnsRecordType;
       answers: Array<{ data: string; type: DnsRecordType }>;
     }> = [];
+
     for (const recordType of requestedTypes.length
       ? requestedTypes
       : DEFAULT_DNS_RECORD_TYPES) {
@@ -239,16 +273,19 @@ async function runDnsCheck(
         ),
       );
     }
+
     const durationMs = Date.now() - startedAt;
     const flattenedAnswers = results.flatMap((result) => result.answers);
 
     for (const assertion of recordAssertions) {
-      const matchingAnswers = flattenedAnswers
-        .filter((answer) => answer.type === assertion.recordType)
-        .map((answer) => answer.data);
+      const matchingAnswers = flattenedAnswers.flatMap((answer) =>
+        answer.type === assertion.recordType ? [answer.data] : [],
+      );
+
       const matched = matchingAnswers.some((answer) =>
         compareTextValue(answer, assertion.operator, assertion.value),
       );
+
       if (!matched) {
         return {
           status: "down",
@@ -304,6 +341,7 @@ async function queryDnsRecord(
   }
 
   const payload = dnsJsonResponseSchema.parse(await response.json());
+
   if ((payload.Status ?? 0) !== 0) {
     throw new Error(payload.Comment || `DNS lookup failed (${payload.Status})`);
   }
@@ -328,15 +366,18 @@ async function fetchWithRedirectLimit(
 
   for (let redirectCount = 0; ; redirectCount += 1) {
     const response = await fetchImpl(url, { ...init, redirect: "manual" });
+
     if (![301, 302, 303, 307, 308].includes(response.status)) {
       return response;
     }
 
     const location = response.headers.get("location");
     await response.body?.cancel();
+
     if (!location) {
       throw new Error("Redirect response was missing a location header");
     }
+
     if (redirectCount >= MAX_HTTP_REDIRECTS) {
       throw new Error(`Too many redirects (maximum ${MAX_HTTP_REDIRECTS})`);
     }
@@ -347,10 +388,12 @@ async function fetchWithRedirectLimit(
 
 async function readBoundedResponseText(response: Response, maxBytes: number) {
   const contentLength = Number(response.headers.get("content-length"));
+
   if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     await response.body?.cancel();
     throw new Error(`Response body exceeded ${maxBytes} bytes`);
   }
+
   if (!response.body) {
     return "";
   }
@@ -363,16 +406,21 @@ async function readBoundedResponseText(response: Response, maxBytes: number) {
   try {
     while (true) {
       const { done, value } = await reader.read();
+
       if (done) break;
 
       bytesRead += value.byteLength;
+
       if (bytesRead > maxBytes) {
         await reader.cancel();
         throw new Error(`Response body exceeded ${maxBytes} bytes`);
       }
+
       chunks.push(decoder.decode(value, { stream: true }));
     }
+
     chunks.push(decoder.decode());
+
     return chunks.join("");
   } finally {
     reader.releaseLock();
@@ -421,15 +469,20 @@ function tryParseScalar(value: string): string | number | boolean | null {
   if (value === "true") {
     return true;
   }
+
   if (value === "false") {
     return false;
   }
+
   if (value === "null") {
     return null;
   }
+
   const numberValue = Number(value);
+
   if (!Number.isNaN(numberValue) && value.trim() !== "") {
     return numberValue;
   }
+
   return value;
 }

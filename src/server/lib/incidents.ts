@@ -7,6 +7,7 @@ export function filterIncidentListRecords(
   filters: IncidentListFilters,
 ) {
   const queryText = filters.query?.trim().toLowerCase();
+
   return rows
     .filter((row) =>
       filters.status === "all" ? true : row.status === filters.status,
@@ -18,6 +19,7 @@ export function filterIncidentListRecords(
       if (!queryText) {
         return true;
       }
+
       return [row.title, row.body ?? "", row.monitorName].some((value) =>
         value.toLowerCase().includes(queryText),
       );
@@ -31,8 +33,10 @@ export function compareIncidentListRecords(
 ) {
   const leftBucket = left.status === "open" ? 0 : 1;
   const rightBucket = right.status === "open" ? 0 : 1;
+
   if (leftBucket !== rightBucket) {
     return leftBucket - rightBucket;
   }
+
   return parseDateMs(right.openedAt) - parseDateMs(left.openedAt);
 }

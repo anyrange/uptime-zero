@@ -20,6 +20,7 @@ export class UserModel {
     const rows = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(schema.user);
+
     return rows[0]?.count ?? 0;
   }
 
@@ -44,6 +45,7 @@ export class UserModel {
       .from(schema.user)
       .where(eq(schema.user.id, userId))
       .get();
+
     return readUserRole(user?.role);
   }
 
@@ -106,6 +108,7 @@ export class UserModel {
 
   async updateAccountName(userId: string, name: string) {
     await this.updateUserName(userId, name);
+
     return this.getAccount(userId);
   }
 

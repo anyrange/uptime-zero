@@ -10,6 +10,7 @@ export function formatDateTime(value: string | null | undefined) {
   }
 
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) {
     return m.common_unknown();
   }
@@ -26,6 +27,7 @@ export function formatRelativeDateTime(
   }
 
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) {
     return m.common_unknown();
   }
@@ -41,6 +43,7 @@ export function formatRelativeDateTime(
   }
 
   const minutes = Math.floor(absSeconds / 60);
+
   if (minutes < 60) {
     return suffix === "ago"
       ? m.common_minutes_ago({ count: minutes })
@@ -48,6 +51,7 @@ export function formatRelativeDateTime(
   }
 
   const hours = Math.floor(minutes / 60);
+
   if (hours < 24) {
     return suffix === "ago"
       ? m.common_hours_ago({ count: hours })
@@ -55,6 +59,7 @@ export function formatRelativeDateTime(
   }
 
   const days = Math.floor(hours / 24);
+
   return suffix === "ago"
     ? m.common_days_ago({ count: days })
     : m.common_days_from_now({ count: days });
@@ -79,11 +84,13 @@ export function formatIncidentDuration(incident: {
   }
 
   const openedAt = new Date(incident.openedAt);
+
   if (Number.isNaN(openedAt.getTime())) {
     return m.common_unknown();
   }
 
   const closedAt = incident.closedAt ? new Date(incident.closedAt) : new Date();
+
   if (Number.isNaN(closedAt.getTime())) {
     return m.common_unknown();
   }
@@ -93,17 +100,20 @@ export function formatIncidentDuration(incident: {
 
 function formatDurationSpan(value: number) {
   const totalSeconds = Math.max(0, Math.floor(value / 1000));
+
   if (totalSeconds < 60) {
     return m.common_seconds_short({ value: totalSeconds });
   }
 
   const totalMinutes = Math.floor(totalSeconds / 60);
+
   if (totalMinutes < 60) {
     return m.common_minutes_short({ value: totalMinutes });
   }
 
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+
   if (hours < 24) {
     return minutes > 0
       ? m.common_hours_minutes_short({ hours, minutes })
@@ -112,6 +122,7 @@ function formatDurationSpan(value: number) {
 
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
+
   return remainingHours > 0
     ? m.common_days_hours_short({ days, hours: remainingHours })
     : m.common_days_short({ value: days });
@@ -123,8 +134,10 @@ export function notificationSummary(
   if (destination.provider === "discord") {
     return destination.config.webhookUrl;
   }
+
   if (destination.provider === "telegram") {
     const config = destination.config;
+
     return config.messageThreadId
       ? m.notification_chat_thread({
           chatId: config.chatId,
@@ -132,7 +145,9 @@ export function notificationSummary(
         })
       : m.notification_chat({ chatId: config.chatId });
   }
+
   const config = destination.config;
+
   return config.headers && config.headers.length > 0
     ? `${config.url} (${m.common_count_headers({ count: config.headers.length })})`
     : config.url;
@@ -140,13 +155,16 @@ export function notificationSummary(
 
 export function groupHeartbeats(heartbeats: HeartbeatRecord[]) {
   const map = new Map<string, HeartbeatRecord[]>();
+
   for (const heartbeat of heartbeats) {
     const monitorHeartbeats = map.get(heartbeat.monitorId);
+
     if (monitorHeartbeats) {
       monitorHeartbeats.push(heartbeat);
     } else {
       map.set(heartbeat.monitorId, [heartbeat]);
     }
   }
+
   return map;
 }

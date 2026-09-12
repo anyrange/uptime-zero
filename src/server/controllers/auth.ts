@@ -49,6 +49,7 @@ export const authApi = new Hono<AppEnv>()
     const db = createDatabase(ctx.env.DB);
 
     const usersCount = await db.user.countUsers();
+
     if (usersCount > 0) {
       throw new HTTPException(409, { message: "Admin already exists" });
     }
@@ -64,6 +65,7 @@ export const authApi = new Hono<AppEnv>()
     }
 
     const user = await db.user.findUserByEmail(email);
+
     if (user) {
       await db.user.promoteUserToAdmin(user.id);
     }
@@ -123,6 +125,7 @@ export const authApi = new Hono<AppEnv>()
       const db = createDatabase(ctx.env.DB);
 
       const account = await db.user.updateAccountName(userId, name);
+
       if (!account) {
         throw new HTTPException(404, { message: "Account not found" });
       }

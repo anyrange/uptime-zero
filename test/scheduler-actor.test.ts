@@ -67,6 +67,7 @@ describe("scheduler actor service", () => {
   it("records due HTTP checks and reschedules from updated monitor state", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "http",
       lastCheckedAt: "2026-05-01T12:00:00.000Z",
@@ -100,6 +101,7 @@ describe("scheduler actor service", () => {
     );
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "http",
       lastStatus: "up",
@@ -142,6 +144,7 @@ describe("scheduler actor service", () => {
     );
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "http",
       lastStatus: "up",
@@ -178,6 +181,7 @@ describe("scheduler actor service", () => {
   it("skips not-due monitors and keeps their next alarm", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       lastCheckedAt: "2026-05-01T12:00:00.000Z",
       intervalSec: 60,
@@ -199,6 +203,7 @@ describe("scheduler actor service", () => {
   it("records push overdue heartbeats when due", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "push",
       lastStatus: "up",
@@ -227,6 +232,7 @@ describe("scheduler actor service", () => {
   it("records cron heartbeat monitor overdue after schedule plus grace", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "push",
       lastStatus: "up",
@@ -258,6 +264,7 @@ describe("scheduler actor service", () => {
   it("manual run bypasses due checks", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       lastCheckedAt: new Date().toISOString(),
       intervalSec: 60,
@@ -279,6 +286,7 @@ describe("scheduler actor service", () => {
   it("records push heartbeats and reschedules", async () => {
     const db = createDatabase(env.DB);
     const alarm = new FakeAlarm();
+
     const monitor = await seedMonitor({
       kind: "push",
       lastStatus: "down",
@@ -315,6 +323,7 @@ describe("scheduler actor service", () => {
       alarm,
       now,
     });
+
     const heartbeats = await getDrizzle(env.DB)
       .select()
       .from(schema.heartbeats);
@@ -443,6 +452,7 @@ class FakeAlarm {
 async function seedMonitor(payload: Partial<MonitorRecord> = {}) {
   const now = payload.createdAt ?? "2026-05-01T12:00:00.000Z";
   const kind = payload.kind ?? "http";
+
   const monitor = {
     id: payload.id ?? crypto.randomUUID(),
     name: payload.name ?? "API",
@@ -472,8 +482,10 @@ async function seedMonitor(payload: Partial<MonitorRecord> = {}) {
 
   const db = createDatabase(env.DB);
   const savedMonitor = await db.monitor.getById(monitor.id);
+
   if (!savedMonitor) {
     throw new Error("Failed to seed monitor");
   }
+
   return savedMonitor;
 }

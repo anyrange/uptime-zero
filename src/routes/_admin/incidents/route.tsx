@@ -50,14 +50,18 @@ const ALL_MONITORS_VALUE = "__all_monitors__";
 function IncidentsRoute() {
   const navigate = Route.useNavigate();
   const routeSearch = Route.useSearch();
+
   const search = {
     ...routeSearch,
     status: routeSearch.status ?? "all",
   };
+
   const [statusValue, setStatusValue] = useState(search.status);
+
   const [monitorValue, setMonitorValue] = useState(
     search.monitor ?? ALL_MONITORS_VALUE,
   );
+
   const [queryValue, setQueryValue] = useState(search.q ?? "");
   const dashboard = useDashboardQuery();
   const incidents = useIncidentsQuery(search);
@@ -101,6 +105,7 @@ function IncidentsRoute() {
   useEffect(() => {
     const normalizedQuery = queryValue.trim();
     const currentQuery = search.q ?? "";
+
     if (normalizedQuery === currentQuery) {
       return;
     }

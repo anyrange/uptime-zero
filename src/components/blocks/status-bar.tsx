@@ -76,6 +76,7 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
     };
 
     document.addEventListener("mousedown", handleOutsideClick);
+
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [interactionType, activeIndex]);
 
@@ -92,9 +93,12 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
       setActiveIndex((current) => {
         if (current === index) {
           setInteractionType(null);
+
           return null;
         }
+
         setInteractionType("pin");
+
         return index;
       });
     },
@@ -133,6 +137,7 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
   const handleBlur = useCallback((event: React.FocusEvent) => {
     const relatedTarget =
       event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+
     const isMovingToAnotherBar =
       relatedTarget &&
       relatedTarget.closest('[role="toolbar"]') === containerRef.current &&
@@ -160,36 +165,48 @@ function useStatusBar({ dataLength, isTouch }: UseStatusBarProps) {
           buttonRefs.current[newIndex]?.focus();
           break;
         }
+
         case "ArrowRight": {
           event.preventDefault();
           const newIndex = currentIndex < dataLength - 1 ? currentIndex + 1 : 0;
           buttonRefs.current[newIndex]?.focus();
           break;
         }
+
         case "ArrowUp": {
           event.preventDefault();
+
           const prevMonitor = containerRef.current?.closest(
             '[data-slot="status-component"]',
           )?.previousElementSibling;
+
           const prevBar = prevMonitor?.querySelector('[role="toolbar"]');
+
           const prevButtons =
             prevBar?.querySelectorAll<HTMLElement>('[role="button"]');
+
           const targetButton = prevButtons?.[currentIndex];
           targetButton?.focus();
           break;
         }
+
         case "ArrowDown": {
           event.preventDefault();
+
           const nextMonitor = containerRef.current?.closest(
             '[data-slot="status-component"]',
           )?.nextElementSibling;
+
           const nextBar = nextMonitor?.querySelector('[role="toolbar"]');
+
           const nextButtons =
             nextBar?.querySelectorAll<HTMLElement>('[role="button"]');
+
           const targetButton = nextButtons?.[currentIndex];
           targetButton?.focus();
           break;
         }
+
         case "Enter":
         case " ": {
           event.preventDefault();
@@ -237,6 +254,7 @@ export function StatusBar({
 }: StatusBarProps) {
   const labels = useStatusBlocksLabels();
   const isTouch = useMediaQuery("(hover: none)");
+
   const { activeIndex, interactionType, containerRef, handlers, setButtonRef } =
     useStatusBar({
       dataLength: data.length,
@@ -508,6 +526,7 @@ export function StatusBarEvent({
   isAggregated?: boolean;
 }) {
   const labels = useStatusBlocksLabels();
+
   if (!from) {
     return null;
   }
@@ -548,16 +567,20 @@ function formatStatusDuration({
   if (!from) {
     return null;
   }
+
   if (!to) {
     return labels.ongoing;
   }
 
   const duration = formatDistanceStrict(from, to);
+
   if (isAggregated) {
     return labels.durationAcross(duration);
   }
+
   if (duration === "0 seconds") {
     return null;
   }
+
   return duration;
 }

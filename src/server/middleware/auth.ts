@@ -10,6 +10,7 @@ export const requireSession = createMiddleware<AppEnv>(async (ctx, next) => {
   if (!ctx.get("sessionUserId")) {
     return ctx.redirect("/login");
   }
+
   await next();
 });
 
@@ -17,9 +18,11 @@ export const requireAdmin = createMiddleware<AppEnv>(async (ctx, next) => {
   if (!ctx.get("sessionUserId")) {
     return ctx.redirect("/login");
   }
+
   if (ctx.get("sessionUserRole") !== "admin") {
     throw new HTTPException(403, { message: "Admin access required" });
   }
+
   await next();
 });
 

@@ -23,6 +23,7 @@ export class StatusPageModel {
     const now = nowIso();
     const id = payload.id ?? crypto.randomUUID();
     const monitorIds = [...new Set(payload.monitorIds)];
+
     const existing = payload.id
       ? await this.db
           .select()
@@ -61,6 +62,7 @@ export class StatusPageModel {
     await this.db
       .delete(schema.statusPageMonitors)
       .where(eq(schema.statusPageMonitors.statusPageId, id));
+
     if (monitorIds.length > 0) {
       await this.db.insert(schema.statusPageMonitors).values(
         monitorIds.map((monitorId) => ({
@@ -77,14 +79,17 @@ export class StatusPageModel {
       .from(schema.statusPages)
       .where(eq(schema.statusPages.id, id))
       .get();
+
     if (!page) {
       return null;
     }
+
     const links = await this.db
       .select({ monitorId: schema.statusPageMonitors.monitorId })
       .from(schema.statusPageMonitors)
       .where(eq(schema.statusPageMonitors.statusPageId, id))
       .orderBy(sql`rowid`);
+
     return {
       page: mapStatusPageRecord(page),
       monitorIds: links.map((link) => link.monitorId),
@@ -96,11 +101,13 @@ export class StatusPageModel {
       .select()
       .from(schema.statusPages)
       .orderBy(asc(schema.statusPages.createdAt));
+
     return rows.map(mapStatusPageRecord);
   }
 
   async listLinks() {
     const rows = await this.db.select().from(schema.statusPageMonitors);
+
     return rows.map((link) => ({
       status_page_id: link.statusPageId,
       monitor_id: link.monitorId,
@@ -132,6 +139,7 @@ export class StatusPageModel {
         ),
       )
       .get();
+
     return page ? mapStatusPageRecord(page) : null;
   }
 
@@ -141,6 +149,7 @@ export class StatusPageModel {
       .from(schema.statusPageMonitors)
       .where(eq(schema.statusPageMonitors.statusPageId, statusPageId))
       .orderBy(sql`rowid`);
+
     return links.map((link) => link.monitorId);
   }
 }

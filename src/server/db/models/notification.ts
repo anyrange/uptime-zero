@@ -18,8 +18,10 @@ import {
 } from "@/server/services/notifications/config";
 
 export class NotificationDestinationValidationError extends Error {}
+
 type NotificationDestinationRow =
   typeof schema.notificationDestinations.$inferSelect;
+
 export type NotificationDestinationRecordRow = Pick<
   NotificationDestinationRow,
   "id" | "name" | "provider" | "configJson" | "createdAt" | "updatedAt"
@@ -47,6 +49,7 @@ export class NotificationModel {
       updatedAt: now,
     });
     await this.replaceDestinationMonitorBindings(id, dedupedMonitorIds);
+
     return this.getDetail(id);
   }
 
@@ -55,7 +58,9 @@ export class NotificationModel {
       .select()
       .from(schema.notificationDestinations)
       .orderBy(desc(schema.notificationDestinations.createdAt));
+
     const assignments = await this.listAssignments();
+
     return destinations.map((destination) =>
       mapNotificationDestinationListItem(destination, assignments),
     );
@@ -66,6 +71,7 @@ export class NotificationModel {
       .select()
       .from(schema.notificationDestinations)
       .orderBy(desc(schema.notificationDestinations.createdAt));
+
     return destinations.map(mapNotificationDestinationRecord);
   }
 
@@ -75,6 +81,7 @@ export class NotificationModel {
       .from(schema.notificationDestinations)
       .where(eq(schema.notificationDestinations.id, id))
       .get();
+
     return destination ? mapNotificationDestinationRecord(destination) : null;
   }
 
@@ -84,11 +91,13 @@ export class NotificationModel {
       .from(schema.notificationDestinations)
       .where(eq(schema.notificationDestinations.id, id))
       .get();
+
     if (!destination) {
       return null;
     }
 
     const assignments = await this.listAssignments([id]);
+
     return mapNotificationDestinationDetail(destination, assignments);
   }
 
@@ -102,6 +111,7 @@ export class NotificationModel {
     },
   ) {
     const existing = await this.getById(id);
+
     if (!existing) {
       return null;
     }
@@ -152,6 +162,7 @@ export class NotificationModel {
       .orderBy(
         asc(schema.monitorNotificationDestinations.notificationDestinationId),
       );
+
     return bindings.map((binding) => binding.notificationDestinationId);
   }
 
@@ -163,9 +174,11 @@ export class NotificationModel {
     await this.db
       .delete(schema.monitorNotificationDestinations)
       .where(eq(schema.monitorNotificationDestinations.monitorId, monitorId));
+
     if (dedupedIds.length === 0) {
       return;
     }
+
     await this.db.insert(schema.monitorNotificationDestinations).values(
       dedupedIds.map((notificationDestinationId) => ({
         monitorId,
@@ -249,6 +262,7 @@ export class NotificationModel {
       string,
       NotificationDestinationMonitorSummary[]
     >();
+
     for (const row of rows) {
       const current = assignments.get(row.destinationId) ?? [];
       current.push({
@@ -271,6 +285,7 @@ export class NotificationModel {
       .select({ id: schema.monitors.id })
       .from(schema.monitors)
       .where(inArray(schema.monitors.id, monitorIds));
+
     const existingIds = new Set(rows.map((row) => row.id));
     const missingIds = monitorIds.filter((id) => !existingIds.has(id));
 
@@ -316,6 +331,7 @@ export function mapNotificationDestinationRecord(
   row: NotificationDestinationRecordRow,
 ): NotificationDestinationRecord {
   const provider = readNotificationProvider(row.provider);
+
   const base = {
     id: row.id,
     name: row.name,
@@ -352,6 +368,7 @@ function mapNotificationDestinationListItem(
 ): NotificationDestinationListItem {
   const record = mapNotificationDestinationRecord(row);
   const assignedMonitors = assignments.get(row.id) ?? [];
+
   return {
     ...record,
     monitorCount: assignedMonitors.length,
@@ -365,6 +382,7 @@ function mapNotificationDestinationDetail(
 ): NotificationDestinationDetail {
   const record = mapNotificationDestinationRecord(row);
   const assignedMonitors = assignments.get(row.id) ?? [];
+
   return {
     ...record,
     monitorIds: assignedMonitors.map((monitor) => monitor.id),

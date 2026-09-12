@@ -8,5 +8,6 @@ export const Route = createFileRoute("/status/$slug")({
 
 function RouteComponent() {
   const { slug } = Route.useParams();
+
   return <PublicStatusPage slug={slug} />;
 }

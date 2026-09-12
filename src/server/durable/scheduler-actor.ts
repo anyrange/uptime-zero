@@ -14,6 +14,7 @@ import {
 } from "@/server/services/scheduler";
 
 const SCHEDULER_ACTOR_NAME = "installation";
+
 const ALARM_RECOVERY_DELAY_MS = 30_000;
 
 type SchedulerReason =
@@ -35,16 +36,19 @@ export class SchedulerActor extends DurableObject<Env> {
 
   async sync(reason: SchedulerReason = "sync") {
     const log = this.createLog("/do/scheduler/sync");
+
     try {
       const result = await syncScheduler(createDatabase(this.env.DB), {
         alarm: this.alarmAdapter(),
       });
+
       log.set({
         action: "scheduler_sync",
         reason,
         scheduler: result,
       });
       log.emit({ status: 200 });
+
       return result;
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));
@@ -55,13 +59,16 @@ export class SchedulerActor extends DurableObject<Env> {
 
   async runNow(monitorId: string, reason: SchedulerReason = "manual") {
     const log = this.createLog("/do/scheduler/run-now");
+
     try {
       const db = createDatabase(this.env.DB);
+
       const result = await this.withMonitorLock(monitorId, () =>
         runMonitorNowAndReschedule(db, monitorId, {
           alarm: this.alarmAdapter(),
         }),
       );
+
       log.set({
         action: "scheduler_run_now",
         reason,
@@ -69,6 +76,7 @@ export class SchedulerActor extends DurableObject<Env> {
         scheduler: result,
       });
       log.emit({ status: 200 });
+
       return result;
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));
@@ -82,13 +90,16 @@ export class SchedulerActor extends DurableObject<Env> {
     reason: SchedulerReason = "push",
   ) {
     const log = this.createLog("/do/scheduler/push-heartbeat");
+
     try {
       const db = createDatabase(this.env.DB);
+
       const result = await this.withMonitorLock(monitorId, () =>
         recordPushHeartbeatAndReschedule(db, monitorId, {
           alarm: this.alarmAdapter(),
         }),
       );
+
       log.set({
         action: "scheduler_push_heartbeat",
         reason,
@@ -96,6 +107,7 @@ export class SchedulerActor extends DurableObject<Env> {
         scheduler: result,
       });
       log.emit({ status: 200 });
+
       return result;
     } catch (error) {
       log.error(error instanceof Error ? error : new Error(String(error)));
@@ -106,27 +118,33 @@ export class SchedulerActor extends DurableObject<Env> {
 
   override async alarm() {
     const log = this.createLog("/do/scheduler/alarm");
+
     try {
       if (this.ctx.id.name !== SCHEDULER_ACTOR_NAME) {
         await getSchedulerActor(this.env).sync("scheduler-consolidation");
         await this.ctx.storage.deleteAlarm();
         log.set({ action: "scheduler_consolidation" });
         log.emit({ status: 200 });
+
         return;
       }
 
       const db = createDatabase(this.env.DB);
+
       const result = await runDueMonitorsAndReschedule(db, {
         alarm: this.alarmAdapter(),
         executeMonitor: (monitor) =>
           this.withMonitorLock(monitor.id, async () => {
             const currentMonitor = await db.monitor.getById(monitor.id);
+
             if (!currentMonitor || currentMonitor.active !== 1) {
               return;
             }
+
             await runMonitorCheck(db, currentMonitor);
           }),
       });
+
       log.set({
         action: "scheduler_alarm",
         scheduler: result,

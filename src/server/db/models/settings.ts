@@ -16,6 +16,7 @@ export class SettingsModel {
       .from(schema.appSettings)
       .where(eq(schema.appSettings.id, APP_SETTINGS_ID))
       .get();
+
     if (existing) {
       return mapAppSettingsRecord(existing);
     }
@@ -52,6 +53,7 @@ export class SettingsModel {
         updatedAt: now,
       })
       .where(eq(schema.appSettings.id, APP_SETTINGS_ID));
+
     return this.get();
   }
 

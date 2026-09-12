@@ -14,6 +14,7 @@ export function LiveTime({
   mode = "relative",
 }: LiveTimeProps) {
   const now = useNow(mode === "relative" ? 1000 : null);
+
   const label =
     mode === "relative"
       ? formatRelativeDateTime(value, now)
@@ -39,6 +40,7 @@ function useNow(intervalMs: number | null) {
     }
 
     const interval = window.setInterval(() => setNow(Date.now()), intervalMs);
+
     return () => window.clearInterval(interval);
   }, [intervalMs]);
 

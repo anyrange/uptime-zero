@@ -54,6 +54,7 @@ export function validateMonitorConfigForm(
   state: MonitorConfigFormState,
 ): MonitorConfigFormResult {
   const parsed = monitorConfigSchema.safeParse(state);
+
   if (!parsed.success) {
     return {
       ok: false,
@@ -73,15 +74,19 @@ function formatMonitorConfigFormError(error: {
   if (field === "name") {
     return m.validation_name_required();
   }
+
   if (field === "intervalSec") {
     return m.validation_interval_minimum();
   }
+
   if (field === "timeoutMs") {
     return issue?.message ?? m.validation_timeout_positive();
   }
+
   if (field === "retries") {
     return issue?.message ?? m.validation_retries_nonnegative();
   }
+
   if (
     field === "heartbeatCron" ||
     field === "heartbeatGraceSec" ||
@@ -89,9 +94,11 @@ function formatMonitorConfigFormError(error: {
   ) {
     return issue?.message ?? m.validation_heartbeat_schedule();
   }
+
   if (field === "notificationGraceSec") {
     return issue?.message ?? m.validation_notification_grace();
   }
+
   if (field === "notificationDestinationIds") {
     return issue?.message ?? m.validation_notification_destinations_maximum();
   }

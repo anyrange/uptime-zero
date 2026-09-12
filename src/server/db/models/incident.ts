@@ -16,6 +16,7 @@ import {
 const INCIDENTS_INDEX_LIMIT = 100;
 
 type IncidentRow = typeof schema.incidents.$inferSelect;
+
 type IncidentListRecordRow = Omit<
   IncidentListRecord,
   "status" | "monitorKind" | "monitorLastStatus"
@@ -30,6 +31,7 @@ export class IncidentModel {
 
   async list(filters: IncidentListFilters) {
     const queryText = filters.query?.trim().toLowerCase();
+
     const conditions = [
       filters.status === "open"
         ? eq(schema.incidents.status, "open")
@@ -81,6 +83,7 @@ export class IncidentModel {
       .select({ count: sql<number>`count(*)` })
       .from(schema.incidents)
       .where(eq(schema.incidents.status, "open"));
+
     return rows[0]?.count ?? 0;
   }
 
@@ -91,6 +94,7 @@ export class IncidentModel {
       .where(eq(schema.incidents.monitorId, monitorId))
       .orderBy(desc(schema.incidents.openedAt))
       .limit(limit);
+
     return rows.map(mapIncidentRecord);
   }
 
@@ -103,6 +107,7 @@ export class IncidentModel {
         desc(schema.incidents.openedAt),
       )
       .limit(limit);
+
     return rows.map(mapIncidentRecord);
   }
 
@@ -110,12 +115,14 @@ export class IncidentModel {
     if (monitorIds.length === 0) {
       return [];
     }
+
     const rows = await this.db
       .select()
       .from(schema.incidents)
       .where(inArray(schema.incidents.monitorId, monitorIds))
       .orderBy(desc(schema.incidents.openedAt))
       .limit(limit);
+
     return rows.map(mapIncidentRecord);
   }
 
@@ -142,6 +149,7 @@ export class IncidentModel {
     openedAt: string;
   }) {
     const existing = await this.getOpenForMonitor(payload.monitorId);
+
     if (existing) {
       return;
     }

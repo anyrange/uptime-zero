@@ -12,9 +12,11 @@ type SensitiveInputProps = Omit<ComponentProps<typeof Input>, "type">;
 
 export function SensitiveInput({ className, ...props }: SensitiveInputProps) {
   const [revealed, setRevealed] = useState(false);
+
   const label = revealed
     ? m.notification_hide_sensitive_field()
     : m.notification_show_sensitive_field();
+
   const Icon = revealed ? EyeOffIcon : EyeIcon;
 
   return (

@@ -42,6 +42,7 @@ export function AppCommand() {
   const navigate = useNavigate();
   const monitors = useMonitorListQuery();
   const statusPages = useStatusPagesQuery();
+
   const navigationItems = useMemo<CommandDestination[]>(
     () => [
       {
@@ -83,6 +84,7 @@ export function AppCommand() {
     ],
     [],
   );
+
   const actionItems = useMemo<CommandDestination[]>(
     () => [
       {

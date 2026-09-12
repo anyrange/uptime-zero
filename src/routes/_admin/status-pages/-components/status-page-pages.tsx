@@ -293,6 +293,7 @@ export function NewStatusPagePage() {
   const pages = useStatusPagesQuery();
   const create = useCreateStatusPageMutation();
   const navigate = useNavigate();
+
   return (
     <AppPage title={m.status_page_configuration()}>
       <AppPageHeader>
@@ -442,6 +443,7 @@ function StatusPageForm({
 }) {
   const [monitorSearch, setMonitorSearch] = useState("");
   const normalizedMonitorSearch = monitorSearch.trim().toLowerCase();
+
   const filteredMonitors = normalizedMonitorSearch
     ? monitors.filter((monitor) =>
         `${monitor.name} ${monitor.kind}`
@@ -598,6 +600,7 @@ function StatusPageForm({
               ) : (
                 filteredMonitors.map((monitor) => {
                   const checked = field.state.value.includes(monitor.id);
+
                   return (
                     <Item asChild key={monitor.id} size="sm" variant="outline">
                       <label>
@@ -609,11 +612,14 @@ function StatusPageForm({
                                 if (!checked) {
                                   field.pushValue(monitor.id);
                                 }
+
                                 return;
                               }
+
                               const index = field.state.value.indexOf(
                                 monitor.id,
                               );
+
                               if (index >= 0) {
                                 field.removeValue(index);
                               }

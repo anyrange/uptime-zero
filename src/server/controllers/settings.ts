@@ -114,19 +114,23 @@ export const settingsApi = new Hono<AppEnv>()
       const db = createDatabase(ctx.env.DB);
 
       const savedMonitors = [];
+
       for (const item of body.monitors) {
         const monitorConfig = monitorConfigObjectSchema.parse({
           ...item,
           intervalSec: Math.max(item.intervalSec, MIN_MONITOR_INTERVAL_SEC),
           notificationDestinationIds: [],
         });
+
         const savedMonitor = await db.monitor.createOrUpdate({
           ...parseMonitorConfigForStorage(monitorConfig),
           notificationDestinationIds: [],
         });
+
         if (!savedMonitor) {
           throw new HTTPException(500, { message: "Failed to import monitor" });
         }
+
         savedMonitors.push(savedMonitor);
       }
 

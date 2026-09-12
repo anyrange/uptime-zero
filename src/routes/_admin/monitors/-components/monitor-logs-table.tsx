@@ -112,6 +112,7 @@ function MonitorLogsPagination({
     total: pageData.total,
     resultCount: pageData.heartbeats.length,
   });
+
   const previousPage = pageData.page - 1;
   const nextPage = pageData.page + 1;
 

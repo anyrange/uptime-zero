@@ -20,6 +20,7 @@ async function setupAdminTestSession() {
     email: `admin-${crypto.randomUUID()}@example.com`,
     role: "admin",
   });
+
   await test.saveUser(user);
 
   const headers = await test.getAuthHeaders({
@@ -27,6 +28,7 @@ async function setupAdminTestSession() {
   });
 
   const cookie = headers.get("cookie");
+
   if (!cookie) {
     throw new Error("Failed to setup test auth session");
   }

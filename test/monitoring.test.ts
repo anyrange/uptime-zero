@@ -23,6 +23,7 @@ describe("monitoring helpers", () => {
         items: [{ status: "warm" }, { status: "ready" }],
       },
     };
+
     expect(readJsonPath(payload, "data.items[1].status")).toBe("ready");
   });
 

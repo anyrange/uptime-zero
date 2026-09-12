@@ -23,6 +23,7 @@ describe("maintenance retention", () => {
       heartbeatRetentionDays: 1,
       incidentRetentionDays: 1,
     });
+
     const monitor = await db.monitor.createOrUpdate({
       name: "HTTP",
       kind: "http",
@@ -38,15 +39,19 @@ describe("maintenance retention", () => {
       notificationGraceSec: 0,
       notificationDestinationIds: [],
     });
+
     if (!monitor) {
       throw new Error("Monitor creation should not fail");
     }
 
     const retentionCutoff = daysAgoIso(1);
+
     const tooOld = new Date(
       new Date(retentionCutoff).getTime() - 1000,
     ).toISOString();
+
     const atCutoff = retentionCutoff;
+
     const fresh = new Date(
       new Date(retentionCutoff).getTime() + 1000,
     ).toISOString();
@@ -61,6 +66,7 @@ describe("maintenance retention", () => {
       createdAt: tooOld,
       source: "poll" as const,
     };
+
     const cutOffHeartbeat = {
       id: crypto.randomUUID(),
       monitorId: monitor.id,
@@ -71,6 +77,7 @@ describe("maintenance retention", () => {
       createdAt: atCutoff,
       source: "system" as const,
     };
+
     const freshHeartbeat = {
       id: crypto.randomUUID(),
       monitorId: monitor.id,
@@ -96,6 +103,7 @@ describe("maintenance retention", () => {
       openedAt: tooOld,
       closedAt: tooOld,
     };
+
     const cutoffClosedIncident = {
       id: crypto.randomUUID(),
       monitorId: monitor.id,
@@ -106,6 +114,7 @@ describe("maintenance retention", () => {
       openedAt: tooOld,
       closedAt: atCutoff,
     };
+
     const openIncident = {
       id: crypto.randomUUID(),
       monitorId: monitor.id,
@@ -147,6 +156,7 @@ describe("maintenance retention", () => {
       createdAt: baseNow,
       updatedAt: baseNow,
     };
+
     const cutoffSession = {
       id: crypto.randomUUID(),
       userId,
@@ -157,6 +167,7 @@ describe("maintenance retention", () => {
       createdAt: baseNow,
       updatedAt: baseNow,
     };
+
     const freshSession = {
       id: crypto.randomUUID(),
       userId,
@@ -178,15 +189,18 @@ describe("maintenance retention", () => {
     const remainingHeartbeats = await db.drizzle
       .select()
       .from(schema.heartbeats);
+
     const heartbeatIds = new Set(remainingHeartbeats.map((row) => row.id));
     expect(heartbeatIds.has(oldHeartbeat.id)).toBe(false);
     expect(heartbeatIds.has(cutOffHeartbeat.id)).toBe(true);
     expect(heartbeatIds.has(freshHeartbeat.id)).toBe(true);
 
     const remainingIncidents = await db.drizzle.select().from(schema.incidents);
+
     const incidentStatuses = new Set(
       remainingIncidents.map((row) => row.status),
     );
+
     expect(incidentStatuses.has("open")).toBe(true);
     expect(incidentStatuses.has("closed")).toBe(true);
     const incidentIds = new Set(remainingIncidents.map((row) => row.id));
@@ -198,6 +212,7 @@ describe("maintenance retention", () => {
       .select()
       .from(schema.session)
       .where(eq(schema.session.userId, userId));
+
     expect(remainingSessions).toHaveLength(2);
     const sessionIds = new Set(remainingSessions.map((row) => row.id));
     expect(sessionIds.has(oldSession.id)).toBe(false);

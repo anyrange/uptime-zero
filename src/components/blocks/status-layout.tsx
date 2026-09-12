@@ -50,6 +50,7 @@ export function Status({
     </div>
   );
 }
+
 Status.displayName = "Status";
 
 /**
@@ -82,6 +83,7 @@ export function StatusBrand({
     <img src={src} alt={alt} className={cn("size-8", className)} {...props} />
   );
 }
+
 StatusBrand.displayName = "StatusBrand";
 
 /**
@@ -126,6 +128,7 @@ export function StatusHeader({
     </div>
   );
 }
+
 StatusHeader.displayName = "StatusHeader";
 
 /**
@@ -165,6 +168,7 @@ export function StatusTitle({
     </div>
   );
 }
+
 StatusTitle.displayName = "StatusTitle";
 
 /**
@@ -198,6 +202,7 @@ export function StatusDescription({
     </div>
   );
 }
+
 StatusDescription.displayName = "StatusDescription";
 
 /**
@@ -237,6 +242,7 @@ export function StatusContent({
     </div>
   );
 }
+
 StatusContent.displayName = "StatusContent";
 
 /**
@@ -271,4 +277,5 @@ export function StatusIcon({
     <UnifiedStatusIcon variant="default" className={className} {...props} />
   );
 }
+
 StatusIcon.displayName = "StatusIcon";

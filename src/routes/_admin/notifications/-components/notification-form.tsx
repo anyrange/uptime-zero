@@ -71,6 +71,7 @@ export function NotificationForm({
 }) {
   const [formState, setFormState] =
     useState<NotificationFormState>(defaultState);
+
   const allSelected =
     monitors.length > 0 && formState.monitorIds.length === monitors.length;
 
@@ -82,8 +83,10 @@ export function NotificationForm({
     event.preventDefault();
 
     const payload = buildNotificationPayload(formState);
+
     if (!payload) {
       onInvalid();
+
       return;
     }
 
@@ -99,6 +102,7 @@ export function NotificationForm({
             disabled={lockedProvider}
             onValueChange={(value) => {
               const provider = notificationProviderSchema.safeParse(value);
+
               if (provider.success) {
                 setFormState(emptyNotificationFormState(provider.data));
               }
@@ -320,6 +324,7 @@ export function NotificationForm({
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {monitors.map((monitor) => {
               const checked = formState.monitorIds.includes(monitor.id);
+
               return (
                 <Item asChild key={monitor.id} size="sm" variant="outline">
                   <label>
@@ -380,6 +385,7 @@ export function notificationFormStateFromDestination(
 ): NotificationFormState {
   if (destination.provider === "discord") {
     const config = destination.config;
+
     return {
       ...emptyNotificationFormState("discord"),
       name: destination.name,
@@ -390,6 +396,7 @@ export function notificationFormStateFromDestination(
 
   if (destination.provider === "webhook") {
     const config = destination.config;
+
     return {
       ...emptyNotificationFormState("webhook"),
       name: destination.name,
@@ -400,6 +407,7 @@ export function notificationFormStateFromDestination(
   }
 
   const config = destination.config;
+
   return {
     ...emptyNotificationFormState("telegram"),
     name: destination.name,
@@ -423,6 +431,7 @@ function buildNotificationPayload(
   state: NotificationFormState,
 ): NotificationPayload | null {
   const monitorIds = dedupeIds(state.monitorIds);
+
   if (!state.name.trim()) {
     return null;
   }
@@ -431,6 +440,7 @@ function buildNotificationPayload(
     if (!state.webhookUrl.trim()) {
       return null;
     }
+
     return {
       name: state.name.trim(),
       provider: "discord",
@@ -443,6 +453,7 @@ function buildNotificationPayload(
     if (!state.url.trim()) {
       return null;
     }
+
     return {
       name: state.name.trim(),
       provider: "webhook",

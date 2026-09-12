@@ -38,6 +38,7 @@ interface TelegramPayload {
   text: string;
   message_thread_id?: string;
 }
+
 const NOTIFICATION_CONCURRENCY = 2;
 
 export class NotificationDeliveryError extends Error {
@@ -83,15 +84,19 @@ export function buildTransitionNotificationText(
 ) {
   const stateLabel = status === "down" ? "Down" : "Up";
   const stateIcon = status === "down" ? "🔴" : "✅";
+
   const summary =
     status === "down" ? (error ?? "monitor check failed") : "recovered";
+
   const lines = [
     monitor.name,
     `[${monitor.kind}] [${stateIcon} ${stateLabel}] ${summary}`,
   ];
+
   if (monitor.target) {
     lines.push(monitor.target);
   }
+
   return lines.join("\n");
 }
 
@@ -125,6 +130,7 @@ export async function deliverNotificationDestination(
 ) {
   if (destination.provider === "discord") {
     const discordConfig = destination.config;
+
     const response = await fetchImpl(discordConfig.webhookUrl, {
       method: "POST",
       redirect: "error",
@@ -132,12 +138,15 @@ export async function deliverNotificationDestination(
       headers: notificationRequestHeaders(),
       body: JSON.stringify(buildDiscordPayload(destination, event)),
     });
+
     assertNotificationResponse(response, destination);
+
     return;
   }
 
   if (destination.provider === "webhook") {
     const webhookConfig = destination.config;
+
     const body =
       event.kind === "transition"
         ? buildTransitionNotificationPayload(
@@ -158,11 +167,14 @@ export async function deliverNotificationDestination(
       },
       body: JSON.stringify(body),
     });
+
     assertNotificationResponse(response, destination);
+
     return;
   }
 
   const telegramConfig = destination.config;
+
   const payload: TelegramPayload = {
     chat_id: telegramConfig.chatId,
     text:
@@ -175,6 +187,7 @@ export async function deliverNotificationDestination(
           )
         : buildTestNotificationText(event.destination, event.sentAt),
   };
+
   if (telegramConfig.messageThreadId) {
     payload.message_thread_id = telegramConfig.messageThreadId;
   }
@@ -189,6 +202,7 @@ export async function deliverNotificationDestination(
       body: JSON.stringify(payload),
     },
   );
+
   assertNotificationResponse(response, destination);
 }
 
@@ -211,6 +225,7 @@ export async function dispatchNotificationEvent(
     index += NOTIFICATION_CONCURRENCY
   ) {
     const batch = destinations.slice(index, index + NOTIFICATION_CONCURRENCY);
+
     const results = await Promise.allSettled(
       batch.map((destination) =>
         deliverNotificationDestination(destination, event, fetchImpl),
@@ -236,6 +251,7 @@ export async function dispatchNotificationEvent(
               : String(result.reason),
         }),
       );
+
       if (options.throwOnFailure) {
         throw result.reason;
       }
@@ -299,6 +315,7 @@ function buildDiscordPayload(
   }
 
   const isDown = event.status === "down";
+
   return {
     embeds: [
       {

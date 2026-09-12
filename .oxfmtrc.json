@@ -3,6 +3,7 @@
   "printWidth": 80,
   "ignorePatterns": [
     ".agents/**",
+    "tools/oxlint/anti-slop/**",
     ".wrangler/**",
     "dist/**",
     "node_modules/**",

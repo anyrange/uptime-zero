@@ -8,5 +8,6 @@ export const Route = createFileRoute("/_admin/monitors/$monitorId/edit")({
 
 function RouteComponent() {
   const { monitorId } = Route.useParams();
+
   return <EditMonitorPage monitorId={monitorId} />;
 }
