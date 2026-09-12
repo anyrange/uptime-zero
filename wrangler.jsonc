@@ -26,10 +26,10 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "uptime-zero",
       // Create your own D1 database with `pnpm wrangler d1 create uptime-zero`
       // and paste the returned database_id here before deploying.
       "database_id": "replace-with-your-d1-database-id",
+      "database_name": "uptime-zero",
       "migrations_dir": "src/server/db/migrations",
       "migrations_pattern": "src/server/db/migrations/*/migration.sql",
     },
