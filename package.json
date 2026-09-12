@@ -65,8 +65,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.40.0",
-    "@cloudflare/vitest-pool-workers": "^0.16.13",
+    "@cloudflare/vite-plugin": "^1.54.7",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@oxlint/plugins": "1.78.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
@@ -87,7 +87,7 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
-    "wrangler": "^4.128.0"
+    "wrangler": "^4.131.0"
   },
   "lint-staged": {
     "*": "oxfmt --no-error-on-unmatched-pattern"
