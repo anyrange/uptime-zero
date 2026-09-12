@@ -359,7 +359,7 @@ describe("scheduler actor service", () => {
       `WITH RECURSIVE checks(value) AS (
         VALUES(1)
         UNION ALL
-        SELECT value + 1 FROM checks WHERE value < 1001
+        SELECT value + 1 FROM checks WHERE value < 6001
       )
       INSERT INTO heartbeats (
         id, monitorId, status, statusCode, durationMs, error, createdAt, source
@@ -367,7 +367,7 @@ describe("scheduler actor service", () => {
       SELECT
         printf('metric-heartbeat-%04d', value),
         ?,
-        CASE WHEN value = 1001 THEN 'down' ELSE 'up' END,
+        CASE WHEN value = 6001 THEN 'down' ELSE 'up' END,
         200,
         10,
         NULL,
@@ -382,11 +382,11 @@ describe("scheduler actor service", () => {
       createDatabase(env.DB),
     ).getDetailData(monitor.id);
 
-    expect(detail?.heartbeats).toHaveLength(1000);
-    expect(detail?.metrics.requestCount).toBe(1001);
+    expect(detail?.heartbeats).toHaveLength(6000);
+    expect(detail?.metrics.requestCount).toBe(6001);
     expect(detail?.metrics.windows[0]).toMatchObject({
-      totalChecks: 1001,
-      upChecks: 1000,
+      totalChecks: 6001,
+      upChecks: 6000,
     });
   });
 

@@ -125,7 +125,6 @@ function MonitorOverviewContent({
         heartbeats={data.heartbeats}
         incidents={data.incidents}
         monitorKind={data.monitor.kind}
-        requestCount={data.metrics.requestCount}
       />
 
       <div className="flex flex-col gap-8">

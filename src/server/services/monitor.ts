@@ -12,7 +12,7 @@ import {
   clampMonitorLogsPage,
   MONITOR_LOGS_PAGE_SIZE,
 } from "@/lib/monitor/logs";
-import { daysAgoIso, parseDateMs } from "@/server/lib/dates";
+import { daysAgoIso, hoursAgoIso, parseDateMs } from "@/server/lib/dates";
 
 export class MonitorService {
   constructor(private readonly db: Database) {}
@@ -41,14 +41,17 @@ export class MonitorService {
       return null;
     }
 
+    const cutoff = hoursAgoIso(49);
+
     const {
       incidents,
-      heartbeats,
+      recentHeartbeats,
       heartbeatMetricCounts,
       notificationDestinations,
     } = await all({
       incidents: () => this.db.incident.listForMonitor(monitorId, 50),
-      heartbeats: () => this.db.monitor.listHeartbeats(monitorId, 1000),
+      recentHeartbeats: () =>
+        this.db.monitor.listHeartbeatsSince(monitorId, cutoff),
       heartbeatMetricCounts: () =>
         this.db.monitor.getHeartbeatMetricCounts(monitorId, {
           last7Days: daysAgoIso(7),
@@ -59,6 +62,11 @@ export class MonitorService {
         this.db.notification.getForMonitor(monitorId),
     });
 
+    const heartbeats =
+      recentHeartbeats.length > 0
+        ? recentHeartbeats
+        : await this.db.monitor.listHeartbeats(monitorId, 100);
+
     return {
       monitor,
       incidents,
@@ -67,6 +75,7 @@ export class MonitorService {
         heartbeats,
         incidents,
         heartbeatMetricCounts,
+        monitor.lastCheckedAt,
       ),
       notificationDestinations,
       notificationDestinationIds: notificationDestinations.map(
@@ -153,6 +162,7 @@ function computeMonitorDetailMetrics(
     requestCount: number;
     windows: Array<{ days: number; totalChecks: number; upChecks: number }>;
   },
+  monitorLastCheckedAt?: string | null,
 ) {
   const windows = counts.windows.map(({ days, totalChecks, upChecks }) => ({
     label: `Last ${days} days`,
@@ -184,7 +194,7 @@ function computeMonitorDetailMetrics(
     p95ResponseMs: percentile(successfulDurations, 0.95),
     p99ResponseMs: percentile(successfulDurations, 0.99),
     mttrMinutes: computeMttrMinutes(incidents),
-    lastCheckedAt: heartbeats[0]?.createdAt ?? null,
+    lastCheckedAt: monitorLastCheckedAt ?? heartbeats[0]?.createdAt ?? null,
   };
 }
 

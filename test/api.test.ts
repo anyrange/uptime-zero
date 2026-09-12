@@ -555,6 +555,69 @@ describe("monitor API", () => {
     expect(resumeResponse.status).toBe(200);
     await expect(resumeResponse.json()).resolves.toMatchObject({ active: 1 });
   });
+
+  it("returns heartbeats spanning the full 48-hour history instead of capping at 1000", async () => {
+    const cookie = await setupTestSession("admin");
+    const db = getDrizzle(env.DB);
+    const monitorId = crypto.randomUUID();
+
+    const now = new Date();
+    await db.insert(schema.monitors).values({
+      id: monitorId,
+      name: "High Frequency Monitor",
+      kind: "http",
+      target: "https://example.com/health",
+      intervalSec: 60,
+      timeoutMs: 10000,
+      retries: 0,
+      assertionsJson: "[]",
+      pushToken: null,
+      active: 1,
+      lastStatus: "up",
+      lastCheckedAt: now.toISOString(),
+      lastDurationMs: 50,
+      lastError: null,
+      createdAt: new Date(now.getTime() - 48 * 3600 * 1000).toISOString(),
+      updatedAt: now.toISOString(),
+    });
+
+    await env.DB.prepare(
+      `WITH RECURSIVE checks(value) AS (
+        VALUES(1)
+        UNION ALL
+        SELECT value + 1 FROM checks WHERE value < 1200
+      )
+      INSERT INTO heartbeats (
+        id, monitorId, status, statusCode, durationMs, error, createdAt, source
+      )
+      SELECT
+        printf('48h-heartbeat-%04d', value),
+        ?,
+        'up',
+        200,
+        10,
+        NULL,
+        strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || (value * 2) || ' minutes'),
+        'poll'
+      FROM checks`,
+    )
+      .bind(monitorId)
+      .run();
+
+    const detailResponse = await apiFetch(`/api/monitors/${monitorId}`, cookie);
+
+    expect(detailResponse.status).toBe(200);
+
+    const detail = z
+      .object({
+        heartbeats: z.array(
+          z.object({ id: z.string(), createdAt: z.string() }),
+        ),
+      })
+      .parse(await detailResponse.json());
+
+    expect(detail.heartbeats).toHaveLength(1200);
+  });
 });
 
 describe("status page API", () => {

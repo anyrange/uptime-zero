@@ -213,6 +213,22 @@ export class MonitorModel {
     return rows.map(mapHeartbeatRecord);
   }
 
+  async listHeartbeatsSince(monitorId: string, cutoff: string, limit = 6000) {
+    const rows = await this.db
+      .select()
+      .from(schema.heartbeats)
+      .where(
+        and(
+          eq(schema.heartbeats.monitorId, monitorId),
+          gte(schema.heartbeats.createdAt, cutoff),
+        ),
+      )
+      .orderBy(desc(schema.heartbeats.createdAt))
+      .limit(limit);
+
+    return rows.map(mapHeartbeatRecord);
+  }
+
   async listRecentHeartbeats(limit: number) {
     const rows = await this.db
       .select()

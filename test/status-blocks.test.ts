@@ -135,4 +135,17 @@ describe("status block history builders", () => {
       { id: 123, name: "Incident incident-123", type: "incident" },
     ]);
   });
+
+  it("populates all 48 hourly bars when heartbeats span across 48 hours", () => {
+    // Generate 1 heartbeat per hour for 48 hours
+    const heartbeats = Array.from({ length: 48 }, (_, i) =>
+      heartbeat(`hb-${i}`, "up", new Date(now.getTime() - i * 60 * 60 * 1000)),
+    );
+
+    const data = buildHourlyStatusBarData(heartbeats, [], 48);
+
+    expect(data).toHaveLength(48);
+    expect(data.every((item) => item.bar[0]?.status === "success")).toBe(true);
+    expect(data.some((item) => item.bar[0]?.status === "empty")).toBe(false);
+  });
 });

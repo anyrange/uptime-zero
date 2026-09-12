@@ -94,12 +94,10 @@ export function CheckHistory({
   heartbeats,
   incidents,
   monitorKind,
-  requestCount,
 }: {
   heartbeats: HeartbeatRecord[];
   incidents: IncidentRecord[];
   monitorKind: MonitorKind;
-  requestCount: number;
 }) {
   const charts = useMemo(
     () => deriveMonitorCharts({ heartbeats, incidents, monitorKind }),
@@ -110,6 +108,14 @@ export function CheckHistory({
     () => buildHourlyStatusBarData(heartbeats, incidents, 48),
     [heartbeats, incidents],
   );
+
+  const checkCount = useMemo(() => {
+    const cutoffMs = Date.now() - 48 * 60 * 60 * 1000;
+
+    return heartbeats.filter(
+      (heartbeat) => new Date(heartbeat.createdAt).getTime() >= cutoffMs,
+    ).length;
+  }, [heartbeats]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -128,7 +134,7 @@ export function CheckHistory({
           </div>
           <div className="text-right text-sm text-muted-foreground">
             <p>{m.monitor_latest_48_hours()}</p>
-            <p>{m.monitor_recorded_check_count({ count: requestCount })}</p>
+            <p>{m.monitor_recorded_check_count({ count: checkCount })}</p>
           </div>
         </div>
         <StatusBar data={statusBarData} />
