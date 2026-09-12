@@ -220,7 +220,27 @@ function publicStatusPageData({
     },
     monitors,
     incidents,
-    heartbeats,
+    history: [],
+    uptime: monitors.map((monitor) => {
+      const checks = heartbeats.filter(
+        (heartbeat) => heartbeat.monitorId === monitor.id,
+      );
+
+      const total = checks.length;
+      const up = checks.filter((heartbeat) => heartbeat.status === "up").length;
+
+      return {
+        monitorId: monitor.id,
+        total,
+        up,
+        dayTotal: total,
+        dayUp: up,
+        weekTotal: total,
+        weekUp: up,
+        monthTotal: total,
+        monthUp: up,
+      };
+    }),
     historyDays,
     status,
   };
@@ -253,7 +273,8 @@ function monitor(
     lastCheckedAt: null,
     lastDurationMs: null,
     lastError: null,
-    lastDownNotifiedAt: null,
+    revision: 0,
+    retryAt: null,
     createdAt: "2026-05-01T00:00:00.000Z",
     updatedAt: "2026-05-01T00:00:00.000Z",
     ...overrides,

@@ -40,7 +40,8 @@ export class NotificationModel {
     const id = crypto.randomUUID();
     const dedupedMonitorIds = dedupeIds(monitorIds);
     await this.validateMonitorIds(dedupedMonitorIds);
-    await this.db.insert(schema.notificationDestinations).values({
+
+    const save = this.db.insert(schema.notificationDestinations).values({
       id,
       name,
       provider,
@@ -48,7 +49,11 @@ export class NotificationModel {
       createdAt: now,
       updatedAt: now,
     });
-    await this.replaceDestinationMonitorBindings(id, dedupedMonitorIds);
+
+    await this.db.batch([
+      save,
+      ...this.destinationBindingWrites(id, dedupedMonitorIds),
+    ]);
 
     return this.getDetail(id);
   }
@@ -119,7 +124,7 @@ export class NotificationModel {
     const dedupedMonitorIds = dedupeIds(payload.monitorIds);
     await this.validateMonitorIds(dedupedMonitorIds);
 
-    await this.db
+    const save = this.db
       .update(schema.notificationDestinations)
       .set({
         name: payload.name,
@@ -132,7 +137,10 @@ export class NotificationModel {
       })
       .where(eq(schema.notificationDestinations.id, id));
 
-    await this.replaceDestinationMonitorBindings(id, dedupedMonitorIds);
+    await this.db.batch([
+      save,
+      ...this.destinationBindingWrites(id, dedupedMonitorIds),
+    ]);
 
     return this.getDetail(id);
   }
@@ -164,27 +172,6 @@ export class NotificationModel {
       );
 
     return bindings.map((binding) => binding.notificationDestinationId);
-  }
-
-  async replaceMonitorBindings(
-    monitorId: string,
-    notificationDestinationIds: string[],
-  ) {
-    const dedupedIds = dedupeIds(notificationDestinationIds);
-    await this.db
-      .delete(schema.monitorNotificationDestinations)
-      .where(eq(schema.monitorNotificationDestinations.monitorId, monitorId));
-
-    if (dedupedIds.length === 0) {
-      return;
-    }
-
-    await this.db.insert(schema.monitorNotificationDestinations).values(
-      dedupedIds.map((notificationDestinationId) => ({
-        monitorId,
-        notificationDestinationId,
-      })),
-    );
   }
 
   async listAssignableMonitors() {
@@ -296,12 +283,11 @@ export class NotificationModel {
     }
   }
 
-  private async replaceDestinationMonitorBindings(
+  private destinationBindingWrites(
     destinationId: string,
     monitorIds: string[],
   ) {
-    const dedupedIds = dedupeIds(monitorIds);
-    await this.db
+    const clear = this.db
       .delete(schema.monitorNotificationDestinations)
       .where(
         eq(
@@ -310,16 +296,14 @@ export class NotificationModel {
         ),
       );
 
-    if (dedupedIds.length === 0) {
-      return;
-    }
-
-    await this.db.insert(schema.monitorNotificationDestinations).values(
-      dedupedIds.map((monitorId) => ({
-        monitorId,
-        notificationDestinationId: destinationId,
-      })),
-    );
+    return [
+      clear,
+      ...monitorIds.map((monitorId) =>
+        this.db
+          .insert(schema.monitorNotificationDestinations)
+          .values({ monitorId, notificationDestinationId: destinationId }),
+      ),
+    ];
   }
 }
 

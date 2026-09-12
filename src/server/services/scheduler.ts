@@ -44,9 +44,22 @@ export async function runDueMonitorsAndReschedule(
   const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
   const activeMonitors = await db.monitor.listActive();
 
-  const dueMonitors = activeMonitors.filter(
-    (monitor) => isMonitorDue(monitor, currentTime).due,
-  );
+  const dueMonitors = activeMonitors
+    .filter((monitor) => {
+      try {
+        return isMonitorDue(monitor, currentTime).due;
+      } catch {
+        console.error({
+          message: "invalid monitor schedule",
+          monitorId: monitor.id,
+        });
+
+        return false;
+      }
+    })
+    .sort(
+      (left, right) => getMonitorNextDueAt(left) - getMonitorNextDueAt(right),
+    );
 
   const selectedMonitors = dueMonitors.slice(0, batchSize);
 
@@ -60,6 +73,13 @@ export async function runDueMonitorsAndReschedule(
 
   for (const [index, result] of checkResults.entries()) {
     if (result.status === "rejected") {
+      const monitor = selectedMonitors[index];
+
+      if (monitor)
+        await db.monitor.setRetryAt(
+          monitor.id,
+          (options.now ?? nowMs()) + FAILED_CHECK_RETRY_DELAY_MS,
+        );
       console.error(
         JSON.stringify({
           message: "monitor check failed before persistence completed",
@@ -75,10 +95,6 @@ export async function runDueMonitorsAndReschedule(
 
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
-    forceSoon: dueMonitors.length > selectedMonitors.length,
-    minimumDelayMs: checkResults.some((result) => result.status === "rejected")
-      ? FAILED_CHECK_RETRY_DELAY_MS
-      : MIN_RESCHEDULE_DELAY_MS,
   });
 
   return {
@@ -187,8 +203,6 @@ async function rescheduleFromActiveMonitors(
   alarm: SchedulerAlarmAdapter,
   options: {
     now: number;
-    forceSoon?: boolean;
-    minimumDelayMs?: number;
   },
 ) {
   const activeMonitors = await db.monitor.listActive();
@@ -199,14 +213,30 @@ async function rescheduleFromActiveMonitors(
     return null;
   }
 
-  const earliestDueAt = Math.min(...activeMonitors.map(getMonitorNextDueAt));
+  const dueTimes = activeMonitors.flatMap((monitor) => {
+    try {
+      return [getMonitorNextDueAt(monitor)];
+    } catch {
+      console.error({
+        message: "invalid monitor schedule",
+        monitorId: monitor.id,
+      });
 
-  const minimumNextAlarmAt =
-    options.now + (options.minimumDelayMs ?? MIN_RESCHEDULE_DELAY_MS);
+      return [];
+    }
+  });
 
-  const nextAlarmAt = options.forceSoon
-    ? minimumNextAlarmAt
-    : Math.max(minimumNextAlarmAt, earliestDueAt);
+  if (dueTimes.length === 0) {
+    await clearAlarm(alarm);
+
+    return null;
+  }
+
+  const earliestDueAt = Math.min(...dueTimes);
+
+  const minimumNextAlarmAt = options.now + MIN_RESCHEDULE_DELAY_MS;
+
+  const nextAlarmAt = Math.max(minimumNextAlarmAt, earliestDueAt);
 
   await setAlarmIfChanged(alarm, nextAlarmAt);
 

@@ -558,7 +558,9 @@ describe("monitor API", () => {
 });
 
 describe("status page API", () => {
-  it("dedupes linked monitors and returns public heartbeat history per monitor", async () => {
+  it("dedupes linked monitors and returns aggregated public history per monitor", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime("2026-05-02T12:00:00.000Z");
     const cookie = await setupTestSession("admin");
 
     const db = getDrizzle(env.DB);
@@ -668,27 +670,27 @@ describe("status page API", () => {
 
     const publicData = z
       .object({
-        heartbeats: z.array(
-          z.object({ monitorId: z.string(), createdAt: z.string() }),
+        history: z.array(
+          z.object({
+            monitorId: z.string(),
+            up: z.number(),
+            down: z.number(),
+            unknown: z.number(),
+          }),
         ),
+        uptime: z.array(z.object({ monitorId: z.string(), total: z.number() })),
       })
       .parse(await publicResponse.json());
 
-    const busyHeartbeats = publicData.heartbeats.filter(
-      (heartbeat) => heartbeat.monitorId === busyMonitorId,
-    );
-
-    const quietHeartbeats = publicData.heartbeats.filter(
-      (heartbeat) => heartbeat.monitorId === quietMonitorId,
-    );
-
-    expect(busyHeartbeats).toHaveLength(50);
-    expect(busyHeartbeats.map((heartbeat) => heartbeat.createdAt)).toEqual(
-      Array.from({ length: 50 }, (_, index) =>
-        new Date(Date.UTC(2026, 4, 1, 12, 49 - index, 0)).toISOString(),
-      ),
-    );
-    expect(quietHeartbeats).toHaveLength(1);
+    expect(
+      publicData.history.filter((row) => row.monitorId === busyMonitorId),
+    ).toHaveLength(1);
+    expect(
+      publicData.uptime.find((row) => row.monitorId === busyMonitorId)?.total,
+    ).toBe(50);
+    expect(
+      publicData.uptime.find((row) => row.monitorId === quietMonitorId)?.total,
+    ).toBe(1);
   });
 });
 

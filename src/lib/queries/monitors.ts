@@ -170,3 +170,17 @@ export function useResumeMonitorMutation(id: string) {
     },
   });
 }
+
+export function useRotatePushTokenMutation(id: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      parseResponse(
+        apiClient.monitors[":id"]["rotate-token"].$post({ param: { id } }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: privateKey("monitors") });
+    },
+  });
+}

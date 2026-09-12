@@ -11,18 +11,25 @@
   },
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 0.25,
+    "head_sampling_rate": 1,
     "logs": {
-      "head_sampling_rate": 0.25,
+      "head_sampling_rate": 1,
       "invocation_logs": false,
     },
     "traces": {
-      "head_sampling_rate": 0.25,
+      "head_sampling_rate": 1,
     },
   },
   "triggers": {
-    "crons": ["0 2 * * *"],
+    "crons": ["* * * * *", "0 2 * * *"],
   },
+  "ratelimits": [
+    {
+      "name": "AUTH_RATE_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 },
+    },
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -47,9 +54,11 @@
       "tag": "v3",
       "deleted_classes": ["MonitorActor"],
     },
+    { "tag": "v4", "new_sqlite_classes": ["NotificationActor"] },
   ],
   "durable_objects": {
     "bindings": [
+      { "name": "NOTIFICATION_ACTOR", "class_name": "NotificationActor" },
       {
         "name": "SCHEDULER_ACTOR",
         "class_name": "SchedulerActor",

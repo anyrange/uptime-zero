@@ -139,6 +139,7 @@ export async function deliverNotificationDestination(
       body: JSON.stringify(buildDiscordPayload(destination, event)),
     });
 
+    await response.body?.cancel();
     assertNotificationResponse(response, destination);
 
     return;
@@ -168,6 +169,7 @@ export async function deliverNotificationDestination(
       body: JSON.stringify(body),
     });
 
+    await response.body?.cancel();
     assertNotificationResponse(response, destination);
 
     return;
@@ -203,6 +205,7 @@ export async function deliverNotificationDestination(
     },
   );
 
+  await response.body?.cancel();
   assertNotificationResponse(response, destination);
 }
 

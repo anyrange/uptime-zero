@@ -113,18 +113,14 @@ export class UserModel {
   }
 
   async deleteUserAndWorkspaceData(userId: string) {
-    await this.db.delete(schema.monitorNotificationDestinations);
-    await this.db.delete(schema.notificationDestinations);
-    await this.db.delete(schema.statusPageMonitors);
-    await this.db.delete(schema.statusPages);
-    await this.db.delete(schema.incidents);
-    await this.db.delete(schema.heartbeats);
-    await this.db.delete(schema.monitors);
-    await this.db.delete(schema.appSettings);
-    await this.db.delete(schema.verification);
-    await this.deleteSessionsForUser(userId);
-    await this.deleteAccountsForUser(userId);
-    await this.deleteUser(userId);
+    await this.db.batch([
+      this.db.delete(schema.monitors),
+      this.db.delete(schema.notificationDestinations),
+      this.db.delete(schema.statusPages),
+      this.db.delete(schema.appSettings),
+      this.db.delete(schema.verification),
+      this.db.delete(schema.user).where(eq(schema.user.id, userId)),
+    ]);
   }
 
   deleteSessionsForUser(userId: string) {

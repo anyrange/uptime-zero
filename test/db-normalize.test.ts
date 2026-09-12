@@ -45,7 +45,8 @@ describe("database record mapping", () => {
       lastCheckedAt: null,
       lastDurationMs: null,
       lastError: null,
-      lastDownNotifiedAt: null,
+      revision: 0,
+      retryAt: null,
       createdAt: now,
       updatedAt: now,
     });

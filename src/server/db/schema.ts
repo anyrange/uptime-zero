@@ -1,23 +1,33 @@
+import { sql } from "drizzle-orm";
 import {
   index,
+  uniqueIndex,
   integer,
   primaryKey,
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
 
-export const user = sqliteTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: integer("emailVerified", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  image: text("image"),
-  role: text("role").default("user"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
-});
+export const user = sqliteTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    emailVerified: integer("emailVerified", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    image: text("image"),
+    role: text("role").default("user"),
+    createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_single_admin_idx")
+      .on(table.role)
+      .where(sql`${table.role} = 'admin'`),
+  ],
+);
 
 export const session = sqliteTable(
   "session",
@@ -94,7 +104,8 @@ export const monitors = sqliteTable("monitors", {
   lastCheckedAt: text("lastCheckedAt"),
   lastDurationMs: integer("lastDurationMs"),
   lastError: text("lastError"),
-  lastDownNotifiedAt: text("lastDownNotifiedAt"),
+  revision: integer("revision").notNull().default(0),
+  retryAt: integer("retryAt"),
   createdAt: text("createdAt").notNull(),
   updatedAt: text("updatedAt").notNull(),
 });
@@ -138,6 +149,7 @@ export const incidents = sqliteTable(
   },
   (table) => [
     index("incidents_status_opened_idx").on(table.status, table.openedAt),
+    index("incidents_monitor_opened_idx").on(table.monitorId, table.openedAt),
   ],
 );
 
@@ -209,3 +221,34 @@ export const appSettings = sqliteTable("appSettings", {
   incidentRetentionDays: integer("incidentRetentionDays").notNull().default(90),
   updatedAt: text("updatedAt").notNull(),
 });
+
+// Durable delivery intent is committed in the same D1 batch as the incident.
+export const notificationDeliveries = sqliteTable(
+  "notificationDeliveries",
+  {
+    id: text("id").primaryKey(),
+    incidentId: text("incidentId")
+      .notNull()
+      .references(() => incidents.id, { onDelete: "cascade" }),
+    destinationId: text("destinationId")
+      .notNull()
+      .references(() => notificationDestinations.id, { onDelete: "cascade" }),
+    monitorId: text("monitorId")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["up", "down"] }).notNull(),
+    checkedAt: text("checkedAt").notNull(),
+    error: text("error"),
+    dueAt: integer("dueAt").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    deliveredAt: text("deliveredAt"),
+  },
+  (table) => [
+    uniqueIndex("notification_delivery_event_idx").on(
+      table.incidentId,
+      table.destinationId,
+      table.status,
+    ),
+    index("notification_delivery_due_idx").on(table.deliveredAt, table.dueAt),
+  ],
+);

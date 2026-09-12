@@ -5,6 +5,7 @@ import type { Bindings } from "@/ctx";
 import type { SchedulerAlarmAdapter } from "@/server/services/scheduler";
 
 import { createDatabase } from "@/server/db";
+import { isMonitorDue } from "@/server/lib/monitoring";
 import {
   recordPushHeartbeatAndReschedule,
   runDueMonitorsAndReschedule,
@@ -42,6 +43,9 @@ export class SchedulerActor extends DurableObject<Env> {
         alarm: this.alarmAdapter(),
       });
 
+      this.ctx.waitUntil(
+        this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+      );
       log.set({
         action: "scheduler_sync",
         reason,
@@ -69,6 +73,9 @@ export class SchedulerActor extends DurableObject<Env> {
         }),
       );
 
+      this.ctx.waitUntil(
+        this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+      );
       log.set({
         action: "scheduler_run_now",
         reason,
@@ -100,6 +107,9 @@ export class SchedulerActor extends DurableObject<Env> {
         }),
       );
 
+      this.ctx.waitUntil(
+        this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+      );
       log.set({
         action: "scheduler_push_heartbeat",
         reason,
@@ -123,6 +133,9 @@ export class SchedulerActor extends DurableObject<Env> {
       if (this.ctx.id.name !== SCHEDULER_ACTOR_NAME) {
         await getSchedulerActor(this.env).sync("scheduler-consolidation");
         await this.ctx.storage.deleteAlarm();
+        this.ctx.waitUntil(
+          this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+        );
         log.set({ action: "scheduler_consolidation" });
         log.emit({ status: 200 });
 
@@ -137,7 +150,11 @@ export class SchedulerActor extends DurableObject<Env> {
           this.withMonitorLock(monitor.id, async () => {
             const currentMonitor = await db.monitor.getById(monitor.id);
 
-            if (!currentMonitor || currentMonitor.active !== 1) {
+            if (
+              !currentMonitor ||
+              currentMonitor.active !== 1 ||
+              !isMonitorDue(currentMonitor, Date.now()).due
+            ) {
               return;
             }
 
@@ -145,6 +162,9 @@ export class SchedulerActor extends DurableObject<Env> {
           }),
       });
 
+      this.ctx.waitUntil(
+        this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+      );
       log.set({
         action: "scheduler_alarm",
         scheduler: result,

@@ -12,6 +12,7 @@ type AuthEnv = {
 
 type AuthOptions = {
   baseURL?: string;
+  bootstrapAdmin?: boolean;
 };
 
 export function createAuth(env: AuthEnv, options: AuthOptions = {}) {
@@ -30,7 +31,7 @@ export function createAuth(env: AuthEnv, options: AuthOptions = {}) {
         role: {
           type: ["user", "admin"],
           required: false,
-          defaultValue: "user",
+          defaultValue: options.bootstrapAdmin ? "admin" : "user",
           input: false,
         },
       },

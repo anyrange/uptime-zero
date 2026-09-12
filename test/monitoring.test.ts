@@ -60,6 +60,7 @@ describe("monitoring helpers", () => {
     expect(
       getMonitorNextDueAt({
         kind: "http",
+        retryAt: null,
         lastCheckedAt: "2026-05-01T12:00:05.000Z",
         intervalSec: 60,
         timeoutMs: 5000,
@@ -74,6 +75,7 @@ describe("monitoring helpers", () => {
     expect(
       getMonitorNextDueAt({
         kind: "push",
+        retryAt: null,
         lastCheckedAt: "2026-05-01T12:00:05.000Z",
         intervalSec: 60,
         timeoutMs: 5000,
@@ -89,6 +91,7 @@ describe("monitoring helpers", () => {
   it("computes cron heartbeat due timestamps from the configured schedule and grace", () => {
     const monitor = {
       kind: "push" as const,
+      retryAt: null,
       lastCheckedAt: "2026-05-01T12:05:00.000Z",
       intervalSec: 60,
       timeoutMs: 5000,

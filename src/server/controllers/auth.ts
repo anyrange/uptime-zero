@@ -1,12 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import type { AppEnv } from "@/ctx";
 
 import { createDatabase } from "@/server/db";
-import { authFor } from "@/server/lib/auth";
+import { authFor, createAuth } from "@/server/lib/auth";
 import { requireApiPermission } from "@/server/middleware/permissions";
 
 const authCredentialsSchema = z.object({
@@ -22,7 +23,26 @@ const updateAccountPayloadSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(120),
 });
 
+const limitAuthRequests = createMiddleware<AppEnv>(async (ctx, next) => {
+  if (ctx.req.method === "POST") {
+    const { success } = await ctx.env.AUTH_RATE_LIMIT.limit({
+      key: ctx.req.header("cf-connecting-ip") ?? "local",
+    });
+
+    if (!success) {
+      ctx.header("Retry-After", "60");
+      throw new HTTPException(429, {
+        message: "Too many attempts. Try again shortly.",
+      });
+    }
+  }
+
+  await next();
+});
+
 export const authApi = new Hono<AppEnv>()
+  .use("/login", limitAuthRequests)
+  .use("/setup", limitAuthRequests)
   .get("/setup-state", async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 
@@ -54,20 +74,23 @@ export const authApi = new Hono<AppEnv>()
       throw new HTTPException(409, { message: "Admin already exists" });
     }
 
-    const response = await authFor(ctx).api.signUpEmail({
+    const response = await createAuth(ctx.env, {
+      baseURL: ctx.env.BETTER_AUTH_URL ?? new URL(ctx.req.url).origin,
+      bootstrapAdmin: true,
+    }).api.signUpEmail({
       body: { name, email, password },
       headers: ctx.req.raw.headers,
       asResponse: true,
     });
 
     if (!response.ok) {
-      throw new HTTPException(400, { message: await response.text() });
-    }
+      if ((await db.user.countUsers()) > 0) {
+        throw new HTTPException(409, { message: "Admin already exists" });
+      }
 
-    const user = await db.user.findUserByEmail(email);
-
-    if (user) {
-      await db.user.promoteUserToAdmin(user.id);
+      throw new HTTPException(400, {
+        message: "Unable to create administrator",
+      });
     }
 
     return jsonWithAuthCookies(response, { ok: true });

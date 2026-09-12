@@ -3,17 +3,14 @@ import type {
   HeartbeatRecord,
   MonitorCheckResult,
   MonitorRecord,
-  MonitorStatus,
 } from "@/types";
 
-import { MAX_MONITOR_NOTIFICATION_DESTINATIONS } from "@/lib/monitor/config";
 import { nowIso } from "@/server/lib/dates";
 import { runConfiguredMonitorCheck } from "@/server/lib/monitoring";
 import {
   getCronHeartbeatSchedule,
   getNextCronHeartbeatExpectedAt,
 } from "@/server/lib/monitoring-cron";
-import { dispatchNotificationEvent } from "@/server/services/notifications/delivery";
 
 export class MonitorLifecycle {
   constructor(private readonly db: Database) {}
@@ -61,126 +58,7 @@ export class MonitorLifecycle {
     source: HeartbeatRecord["source"],
     checkedAt = nowIso(),
   ) {
-    await this.db.monitor.insertHeartbeat(
-      monitor.id,
-      result,
-      source,
-      checkedAt,
-    );
-
-    await this.db.monitor.updateState(
-      monitor.id,
-      result.status,
-      checkedAt,
-      result.durationMs,
-      result.error,
-    );
-    await this.handleTransition(
-      monitor,
-      result.status,
-      checkedAt,
-      result.error,
-    );
-  }
-
-  private async handleTransition(
-    monitor: MonitorRecord,
-    nextStatus: MonitorStatus,
-    checkedAt: string,
-    error: string | null,
-  ) {
-    if (monitor.lastStatus === nextStatus) {
-      if (nextStatus === "down") {
-        await this.deliverDownNotificationAfterGrace(monitor, checkedAt, error);
-      }
-
-      return;
-    }
-
-    if (nextStatus === "down") {
-      await this.db.incident.openForMonitorIfMissing({
-        monitorId: monitor.id,
-        title: `${monitor.name} is down`,
-        body: error,
-        openedAt: checkedAt,
-      });
-
-      if (monitor.notificationGraceSec === 0) {
-        await this.deliverDownNotification(monitor, checkedAt, error);
-      }
-
-      return;
-    }
-
-    if (nextStatus === "up") {
-      await this.db.incident.closeOpenForMonitor(monitor.id, checkedAt);
-
-      if (monitor.lastDownNotifiedAt) {
-        await this.deliverMonitorNotifications(monitor, "up", checkedAt, null);
-      }
-
-      await this.db.monitor.clearDownNotificationDelivered(
-        monitor.id,
-        checkedAt,
-      );
-    }
-  }
-
-  private async deliverDownNotificationAfterGrace(
-    monitor: MonitorRecord,
-    checkedAt: string,
-    error: string | null,
-  ) {
-    if (monitor.lastDownNotifiedAt) return;
-
-    const incident = await this.db.incident.getOpenForMonitor(monitor.id);
-
-    if (!incident) return;
-
-    const downtimeMs = Date.parse(checkedAt) - Date.parse(incident.openedAt);
-
-    if (downtimeMs < monitor.notificationGraceSec * 1000) return;
-
-    await this.deliverDownNotification(monitor, checkedAt, error);
-  }
-
-  private async deliverDownNotification(
-    monitor: MonitorRecord,
-    checkedAt: string,
-    error: string | null,
-  ) {
-    const result = await this.deliverMonitorNotifications(
-      monitor,
-      "down",
-      checkedAt,
-      error,
-    );
-
-    if (result.delivered) {
-      await this.db.monitor.markDownNotificationDelivered(
-        monitor.id,
-        checkedAt,
-      );
-    }
-  }
-
-  private async deliverMonitorNotifications(
-    monitor: MonitorRecord,
-    status: "up" | "down",
-    checkedAt: string,
-    error: string | null,
-  ) {
-    const destinations = (
-      await this.db.notification.getForMonitor(monitor.id)
-    ).slice(0, MAX_MONITOR_NOTIFICATION_DESTINATIONS);
-
-    return dispatchNotificationEvent(destinations, {
-      kind: "transition",
-      monitor,
-      status,
-      checkedAt,
-      error,
-    });
+    await this.db.check.persist(monitor, result, source, checkedAt);
   }
 }
 

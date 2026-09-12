@@ -8,7 +8,7 @@ import type { AppEnv } from "@/ctx";
 
 import {
   MIN_MONITOR_INTERVAL_SEC,
-  monitorConfigObjectSchema,
+  monitorConfigSchema,
   parseMonitorConfigForStorage,
 } from "@/lib/monitor/config";
 import { createDatabase } from "@/server/db";
@@ -16,27 +16,19 @@ import { queueSchedulerSync } from "@/server/durable/scheduler-actor";
 import { requireApiPermission } from "@/server/middleware/permissions";
 
 const retentionInputSchema = z.object({
-  heartbeatRetentionDays: z.coerce.number().int().min(1),
-  incidentRetentionDays: z.coerce.number().int().min(1),
+  heartbeatRetentionDays: z.coerce.number().int().min(1).max(365),
+  incidentRetentionDays: z.coerce.number().int().min(1).max(365),
 });
 
-const monitorImportItemSchema = monitorConfigObjectSchema
-  .extend({
-    intervalSec: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .default(MIN_MONITOR_INTERVAL_SEC),
-  })
-  .omit({
-    notificationDestinationIds: true,
-  });
+const monitorImportItemSchema = monitorConfigSchema.safeExtend({
+  intervalSec: z.coerce.number().int().min(1).default(MIN_MONITOR_INTERVAL_SEC),
+});
 
 const monitorImportSchema = z.object({
   kind: z.literal("uptime-monitor-export"),
   version: z.literal(1),
   exportedAt: z.string(),
-  monitors: z.array(monitorImportItemSchema).min(1),
+  monitors: z.array(monitorImportItemSchema).min(1).max(100),
 });
 
 export const settingsApi = new Hono<AppEnv>()
@@ -116,13 +108,13 @@ export const settingsApi = new Hono<AppEnv>()
       const savedMonitors = [];
 
       for (const item of body.monitors) {
-        const monitorConfig = monitorConfigObjectSchema.parse({
+        const monitorConfig = monitorConfigSchema.parse({
           ...item,
           intervalSec: Math.max(item.intervalSec, MIN_MONITOR_INTERVAL_SEC),
           notificationDestinationIds: [],
         });
 
-        const savedMonitor = await db.monitor.createOrUpdate({
+        const savedMonitor = await db.monitor.create({
           ...parseMonitorConfigForStorage(monitorConfig),
           notificationDestinationIds: [],
         });

@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/d1";
 
+import { CheckModel } from "./models/check";
 import { IncidentModel } from "./models/incident";
 import { MaintenanceModel } from "./models/maintenance";
 import { MonitorModel } from "./models/monitor";
@@ -16,6 +17,7 @@ export function getDrizzle(db: D1Database) {
 export type DrizzleDatabase = ReturnType<typeof getDrizzle>;
 
 export class Database {
+  readonly check: CheckModel;
   readonly incident: IncidentModel;
   readonly maintenance: MaintenanceModel;
   readonly monitor: MonitorModel;
@@ -25,6 +27,7 @@ export class Database {
   readonly user: UserModel;
 
   constructor(readonly drizzle: DrizzleDatabase) {
+    this.check = new CheckModel(drizzle);
     this.incident = new IncidentModel(drizzle);
     this.maintenance = new MaintenanceModel(drizzle);
     this.monitor = new MonitorModel(drizzle);

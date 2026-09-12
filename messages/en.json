@@ -852,5 +852,8 @@
   "status_block_duration_in": "(in {duration})",
   "status_block_duration_earlier": "({duration} earlier)",
   "status_block_duration_for": "(for {duration})",
-  "status_block_duration_across": "{duration} across"
+  "status_block_duration_across": "{duration} across",
+  "monitor_rotate_token": "Rotate heartbeat token",
+  "monitor_rotate_token_description": "The current heartbeat URL will stop working. Update your job to use the new URL after rotating.",
+  "monitor_token_rotated": "Heartbeat token rotated."
 }

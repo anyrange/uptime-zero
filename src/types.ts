@@ -73,7 +73,8 @@ export interface MonitorRecord {
   lastCheckedAt: string | null;
   lastDurationMs: number | null;
   lastError: string | null;
-  lastDownNotifiedAt: string | null;
+  revision: number;
+  retryAt: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -325,9 +326,30 @@ export interface StatusPageDetailData {
 
 export interface PublicStatusPageData {
   page: StatusPageRecord;
-  monitors: MonitorRecord[];
+  monitors: Array<
+    Pick<MonitorRecord, "id" | "name" | "kind" | "lastStatus" | "updatedAt"> & {
+      target: string | null;
+    }
+  >;
   incidents: IncidentRecord[];
-  heartbeats: HeartbeatRecord[];
+  history: Array<{
+    monitorId: string;
+    day: string;
+    up: number;
+    down: number;
+    unknown: number;
+  }>;
+  uptime: Array<{
+    monitorId: string;
+    total: number;
+    up: number;
+    dayTotal: number;
+    dayUp: number;
+    weekTotal: number;
+    weekUp: number;
+    monthTotal: number;
+    monthUp: number;
+  }>;
   historyDays: number;
   status: MonitorStatus;
 }

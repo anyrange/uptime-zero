@@ -51,7 +51,7 @@ After an admin exists, setup redirects to the app.
 
 ## Notes
 
-- `pnpm run deploy` applies remote D1 migrations, builds the app, and deploys the generated Worker bundle.
+- `pnpm run deploy` builds the app, applies remote D1 migrations, and deploys the generated Worker bundle.
 - Wrangler D1 commands use the account selected by `wrangler.jsonc`; on multi-account logins, add `account_id` before creating or listing D1 databases.
 - Keep the D1 binding as `DB`. Wrangler may suggest a binding based on the database name, but the app expects `env.DB`.
 - `workers.dev` may be enabled by default if `workers_dev` is omitted from `wrangler.jsonc`.
@@ -75,3 +75,15 @@ pnpm run deploy
 ```
 
 If new migrations exist, `pnpm run deploy` applies them before deploying.
+
+## Monitoring reliability
+
+Checks use the installation scheduler's Durable Object alarm. A separate Durable Object delivers notifications from a D1 outbox, with per-destination exponential retries capped at one hour. Delivery is at least once: a provider may receive a duplicate if its request succeeds but the acknowledgement cannot be saved. Webhook receivers should deduplicate by monitor, status, and checkedAt.
+
+A one-minute Cron Trigger repairs missing scheduler and notification wakeups. The daily trigger cleans retained data. This design targets small self-hosted installations; checks run in batches of two, so large numbers of slow monitors can delay later checks. Public status responses aggregate checks in D1 and refresh every 30 seconds.
+
+## Upgrading from versions that exposed heartbeat tokens
+
+After deploying this update, rotate the token for each heartbeat monitor that appeared on a published status page. In the monitor settings, choose **Rotate heartbeat token**, then update the sending job with its new URL. Existing URLs are retained until you rotate them to avoid stopping jobs without their replacement URL being configured.
+
+The schema enforces one administrator per installation. If an earlier setup race created multiple administrators, resolve those accounts before applying the migration. The migration fails on duplicates rather than silently removing accounts.

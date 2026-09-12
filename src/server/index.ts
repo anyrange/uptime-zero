@@ -16,7 +16,11 @@ import {
   statusPagesApi,
 } from "@/server/controllers/status-pages";
 import { createDatabase } from "@/server/db";
-import { SchedulerActor } from "@/server/durable/scheduler-actor";
+import { NotificationActor } from "@/server/durable/notification-actor";
+import {
+  getSchedulerActor,
+  SchedulerActor,
+} from "@/server/durable/scheduler-actor";
 import { loadSession } from "@/server/middleware/auth";
 import { requireApiSession } from "@/server/middleware/guards";
 import { requireApiPermission } from "@/server/middleware/permissions";
@@ -58,7 +62,21 @@ const app = new Hono<AppEnv>();
 
 app.use("*", evlog());
 
-app.use("*", loadSession);
+app.use("*", async (ctx, next) => {
+  if (ctx.req.path.startsWith("/api/push/"))
+    ctx.get("log").set({ path: "/api/push/:token" });
+  await next();
+});
+
+app.use("/api/*", async (ctx, next) => {
+  if (
+    ctx.req.path.startsWith("/api/push/") ||
+    ctx.req.path.startsWith("/api/status/")
+  )
+    return next();
+
+  return loadSession(ctx, next);
+});
 
 app.onError((error, ctx) => {
   const status = error instanceof HTTPException ? error.status : 500;
@@ -77,13 +95,22 @@ registerPushRoutes(app);
 
 app.route("/api", api);
 
-export { SchedulerActor };
+export { SchedulerActor, NotificationActor };
 
 const worker: ExportedHandler<Env> = {
   fetch(request, env, executionCtx) {
     return app.fetch(request, env, executionCtx);
   },
   async scheduled(controller, env) {
+    if (controller.cron === "* * * * *") {
+      await Promise.all([
+        getSchedulerActor(env).sync("reconcile"),
+        env.NOTIFICATION_ACTOR.getByName("installation").sync(),
+      ]);
+
+      return;
+    }
+
     const db = createDatabase(env.DB);
     const maintenance = new MaintenanceService(db);
 

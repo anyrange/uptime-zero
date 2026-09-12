@@ -473,7 +473,8 @@ async function seedMonitor(payload: Partial<MonitorRecord> = {}) {
     lastCheckedAt: payload.lastCheckedAt ?? null,
     lastDurationMs: payload.lastDurationMs ?? null,
     lastError: payload.lastError ?? null,
-    lastDownNotifiedAt: payload.lastDownNotifiedAt ?? null,
+    revision: payload.revision ?? 0,
+    retryAt: payload.retryAt ?? null,
     createdAt: now,
     updatedAt: payload.updatedAt ?? now,
   } satisfies typeof schema.monitors.$inferInsert;

@@ -2,6 +2,10 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  monitorConfigSchema,
+  parseMonitorConfigForStorage,
+} from "@/lib/monitor/config";
 import { createDatabase } from "@/server/db";
 import * as schema from "@/server/db/schema";
 import { daysAgoIso } from "@/server/lib/dates";
@@ -24,21 +28,25 @@ describe("maintenance retention", () => {
       incidentRetentionDays: 1,
     });
 
-    const monitor = await db.monitor.createOrUpdate({
-      name: "HTTP",
-      kind: "http",
-      target: "https://example.com/health",
-      intervalSec: 60,
-      timeoutMs: 10_000,
-      retries: 0,
-      assertions: [],
-      active: 1,
-      heartbeatCron: null,
-      heartbeatGraceSec: null,
-      heartbeatTimezone: null,
-      notificationGraceSec: 0,
-      notificationDestinationIds: [],
-    });
+    const monitor = await db.monitor.create(
+      parseMonitorConfigForStorage(
+        monitorConfigSchema.parse({
+          name: "HTTP",
+          kind: "http",
+          target: "https://example.com/health",
+          intervalSec: 60,
+          timeoutMs: 10_000,
+          retries: 0,
+          assertions: [],
+          active: true,
+          heartbeatCron: null,
+          heartbeatGraceSec: null,
+          heartbeatTimezone: null,
+          notificationGraceSec: 0,
+          notificationDestinationIds: [],
+        }),
+      ),
+    );
 
     if (!monitor) {
       throw new Error("Monitor creation should not fail");

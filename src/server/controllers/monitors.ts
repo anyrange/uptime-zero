@@ -51,16 +51,16 @@ export const monitorsApi = new Hono<AppEnv>()
       });
       const db = createDatabase(ctx.env.DB);
 
-      const savedMonitor = await db.monitor.createOrUpdate(monitor);
+      const savedMonitor = await db.monitor.create(monitor);
 
       if (!savedMonitor) {
-        throw new HTTPException(500, { message: "Failed to save monitor" });
+        throw new HTTPException(404, { message: "Monitor not found" });
       }
 
-      if (savedMonitor.active === 1) {
+      if (savedMonitor.active === 1 && savedMonitor.kind !== "push") {
         await runMonitorNow(ctx.env, savedMonitor.id, "save");
       } else {
-        queueSchedulerSync(ctx, "monitor-pause");
+        queueSchedulerSync(ctx, "monitor-save");
       }
 
       return ctx.json(savedMonitor, 201);
@@ -155,13 +155,13 @@ export const monitorsApi = new Hono<AppEnv>()
 
       const db = createDatabase(ctx.env.DB);
 
-      const savedMonitor = await db.monitor.createOrUpdate({
-        ...monitor,
-        id: ctx.req.param("id"),
-      });
+      const savedMonitor = await db.monitor.update(
+        ctx.req.param("id"),
+        monitor,
+      );
 
       if (!savedMonitor) {
-        throw new HTTPException(500, { message: "Failed to save monitor" });
+        throw new HTTPException(404, { message: "Monitor not found" });
       }
 
       queueSchedulerForSavedMonitor(ctx, savedMonitor, "monitor-resume");
@@ -184,15 +184,28 @@ export const monitorsApi = new Hono<AppEnv>()
 
     return ctx.json({ ok: true });
   })
+  .post(
+    "/:id/rotate-token",
+    requireApiPermission("monitor.update"),
+    async (ctx) => {
+      const monitor = await createDatabase(ctx.env.DB).monitor.rotatePushToken(
+        ctx.req.param("id"),
+      );
+
+      if (!monitor)
+        throw new HTTPException(404, {
+          message: "Heartbeat monitor not found",
+        });
+
+      return ctx.json(monitor);
+    },
+  )
   .post("/:id/pause", requireApiPermission("monitor.pause"), async (ctx) => {
     const monitorId = ctx.req.param("id");
 
     const db = createDatabase(ctx.env.DB);
 
-    const savedMonitor = await db.monitor.createOrUpdate({
-      id: monitorId,
-      active: 0,
-    });
+    const savedMonitor = await db.monitor.setActive(monitorId, false);
 
     if (!savedMonitor) {
       throw new HTTPException(404, { message: "Monitor not found" });
@@ -207,10 +220,7 @@ export const monitorsApi = new Hono<AppEnv>()
 
     const db = createDatabase(ctx.env.DB);
 
-    const savedMonitor = await db.monitor.createOrUpdate({
-      id: monitorId,
-      active: 1,
-    });
+    const savedMonitor = await db.monitor.setActive(monitorId, true);
 
     if (!savedMonitor) {
       throw new HTTPException(404, { message: "Monitor not found" });

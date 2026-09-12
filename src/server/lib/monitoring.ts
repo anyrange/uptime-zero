@@ -116,9 +116,13 @@ export function isMonitorDue(
     | "heartbeatCron"
     | "heartbeatGraceSec"
     | "heartbeatTimezone"
+    | "retryAt"
   >,
   nowMs: number,
 ): DueCheck {
+  if (monitor.retryAt && nowMs < monitor.retryAt)
+    return { due: false, overdueMs: nowMs - monitor.retryAt };
+
   if (monitor.kind === "push") {
     if (monitor.heartbeatMode === "cron") {
       return isCronHeartbeatOverdue(monitor, nowMs);
@@ -154,8 +158,10 @@ export function getMonitorNextDueAt(
     | "heartbeatCron"
     | "heartbeatGraceSec"
     | "heartbeatTimezone"
+    | "retryAt"
   >,
 ): number {
+  if (monitor.retryAt) return monitor.retryAt;
   const baseline = parseDateMs(monitor.lastCheckedAt ?? monitor.createdAt);
 
   if (monitor.kind === "push" && monitor.heartbeatMode === "cron") {

@@ -22,12 +22,15 @@ export class SettingsModel {
     }
 
     const now = nowIso();
-    await this.db.insert(schema.appSettings).values({
-      id: APP_SETTINGS_ID,
-      heartbeatRetentionDays: 30,
-      incidentRetentionDays: 90,
-      updatedAt: now,
-    });
+    await this.db
+      .insert(schema.appSettings)
+      .values({
+        id: APP_SETTINGS_ID,
+        heartbeatRetentionDays: 30,
+        incidentRetentionDays: 90,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
 
     return mapAppSettingsRecord({
       id: APP_SETTINGS_ID,

@@ -23,7 +23,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply DB --local",
     "db:migrate-remote": "wrangler d1 migrations apply DB --remote",
-    "deploy": "pnpm run db:migrate-remote && wrangler deploy"
+    "deploy": "pnpm run build && pnpm run db:migrate-remote && wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -39,7 +39,6 @@
     "@tanstack/react-query-devtools": "^5.101.0",
     "@tanstack/react-router": "^1.170.15",
     "@tanstack/react-table": "^8.21.3",
-    "@uidotdev/usehooks": "^2.4.1",
     "better-all": "^0.0.7",
     "better-auth": "^1.6.14",
     "class-variance-authority": "^0.7.1",
@@ -51,9 +50,7 @@
     "drizzle-orm": "1.0.0-rc.4",
     "evlog": "^2.18.1",
     "hono": "^4.12.23",
-    "jotai": "^2.20.0",
     "kysely": "0.28.17",
-    "lodash.throttle": "^4.1.1",
     "lucide-react": "^1.17.0",
     "nanoid": "^5.1.11",
     "permix": "^4.1.0",
@@ -77,7 +74,6 @@
     "@tanstack/react-devtools": "^0.10.5",
     "@tanstack/react-router-devtools": "^1.167.0",
     "@tanstack/router-plugin": "^1.168.18",
-    "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^25.9.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

@@ -9,13 +9,8 @@ import type {
   PublicStatusPageData,
 } from "@/types";
 
-import { groupHeartbeats } from "@/lib/formatters";
 import { formatUptimePercent } from "@/lib/formatters";
-import {
-  buildDailyStatusBarData,
-  formatMonitorUptime,
-  monitorStatusToBlockStatus,
-} from "@/lib/status-blocks";
+import { monitorStatusToBlockStatus } from "@/lib/status-blocks";
 import { m } from "@/paraglide/messages.js";
 
 export interface PublicStatusPageMonitorView {
@@ -71,14 +66,12 @@ export function buildPublicStatusPageView(
     ? Math.max(1, data.historyDays)
     : 30;
 
-  const heartbeatMap = groupHeartbeats(data.heartbeats);
-
   const monitorMap = new Map(
     data.monitors.map((monitor) => [monitor.id, monitor]),
   );
 
   const monitors = data.monitors.map((monitor) => {
-    const heartbeats = heartbeatMap.get(monitor.id) ?? [];
+    const counts = data.uptime.find((row) => row.monitorId === monitor.id);
 
     return {
       id: monitor.id,
@@ -90,11 +83,14 @@ export function buildPublicStatusPageView(
           ? ""
           : monitor.kind === "push"
             ? m.status_page_push_monitor_meta()
-            : monitor.target,
-      uptime: formatMonitorUptime(heartbeats),
-      history: buildDailyStatusBarData(
-        heartbeats,
-        data.incidents.filter((incident) => incident.monitorId === monitor.id),
+            : (monitor.target ?? ""),
+      uptime: counts?.total
+        ? m.monitor_uptime_percent({
+            percent: formatUptimePercent((counts.up / counts.total) * 100),
+          })
+        : m.common_no_data(),
+      history: buildPublicHistory(
+        data.history.filter((row) => row.monitorId === monitor.id),
         historyDays,
       ),
     };
@@ -106,7 +102,7 @@ export function buildPublicStatusPageView(
     overallStatus: monitorStatusToBlockStatus(data.status),
     showHistory: data.page.showHistory === 1,
     updatedAt: latestUpdatedAt(data),
-    uptimeWindows: buildPublicUptimeWindows(data.heartbeats),
+    uptimeWindows: buildPublicUptimeWindows(data.uptime),
     monitors,
     monitorGroups: groupPublicMonitors(monitors),
     incidents: data.incidents.map((incident) => ({
@@ -136,33 +132,82 @@ export function buildPublicStatusPageView(
 }
 
 function buildPublicUptimeWindows(
-  heartbeats: PublicStatusPageData["heartbeats"],
+  rows: PublicStatusPageData["uptime"],
 ): PublicStatusPageUptimeWindow[] {
-  return [
-    { days: 1, label: m.status_page_uptime_last_24_hours() },
-    { days: 7, label: m.status_page_uptime_last_7_days() },
-    { days: 30, label: m.status_page_uptime_last_30_days() },
-    { days: 90, label: m.status_page_uptime_last_90_days() },
-  ].map((window) => {
-    const cutoff = Date.now() - window.days * 24 * 60 * 60 * 1000;
+  const windows = [
+    {
+      label: m.status_page_uptime_last_24_hours(),
+      total: "dayTotal",
+      up: "dayUp",
+    },
+    {
+      label: m.status_page_uptime_last_7_days(),
+      total: "weekTotal",
+      up: "weekUp",
+    },
+    {
+      label: m.status_page_uptime_last_30_days(),
+      total: "monthTotal",
+      up: "monthUp",
+    },
+    { label: m.status_page_uptime_last_90_days(), total: "total", up: "up" },
+  ] as const;
 
-    const relevant = heartbeats.filter((heartbeat) => {
-      const timestamp = new Date(heartbeat.createdAt).getTime();
-
-      return Number.isFinite(timestamp) && timestamp >= cutoff;
-    });
-
-    const upChecks = relevant.filter(
-      (heartbeat) => heartbeat.status === "up",
-    ).length;
-
-    const uptime = relevant.length
-      ? `${formatUptimePercent((upChecks / relevant.length) * 100)}%`
-      : "-";
+  return windows.map((window) => {
+    const total = rows.reduce((sum, row) => sum + row[window.total], 0);
+    const up = rows.reduce((sum, row) => sum + row[window.up], 0);
 
     return {
       label: window.label,
-      uptime,
+      uptime: total ? `${formatUptimePercent((up / total) * 100)}%` : "-",
+    };
+  });
+}
+
+function buildPublicHistory(
+  rows: PublicStatusPageData["history"],
+  days: number,
+): StatusBarData[] {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const byDay = new Map(rows.map((row) => [row.day, row]));
+
+  return Array.from({ length: days }, (_, index) => {
+    const day = new Date(
+      today.getTime() - (days - index - 1) * 86400000,
+    ).toISOString();
+
+    const row = byDay.get(day.slice(0, 10));
+    const total = row ? row.up + row.down + row.unknown : 0;
+
+    const counts = [
+      { status: "success" as const, value: row?.up ?? 0 },
+      { status: "error" as const, value: row?.down ?? 0 },
+      { status: "degraded" as const, value: row?.unknown ?? 0 },
+    ];
+
+    return {
+      day,
+      bar: total
+        ? counts.flatMap((item) =>
+            item.value > 0
+              ? [{ status: item.status, height: (item.value / total) * 100 }]
+              : [],
+          )
+        : [{ status: "empty", height: 100 }],
+      card: total
+        ? counts.flatMap((item) =>
+            item.value > 0
+              ? [
+                  {
+                    status: item.status,
+                    value: `${formatUptimePercent((item.value / total) * 100)}%`,
+                  },
+                ]
+              : [],
+          )
+        : [],
+      events: [],
     };
   });
 }

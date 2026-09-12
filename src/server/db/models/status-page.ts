@@ -24,53 +24,44 @@ export class StatusPageModel {
     const id = payload.id ?? crypto.randomUUID();
     const monitorIds = [...new Set(payload.monitorIds)];
 
-    const existing = payload.id
-      ? await this.db
-          .select()
-          .from(schema.statusPages)
-          .where(eq(schema.statusPages.id, payload.id))
-          .get()
-      : null;
+    const values = {
+      slug: payload.slug,
+      title: payload.title,
+      description: payload.description ?? null,
+      published: payload.published,
+      showHistory: payload.showHistory,
+      showTarget: payload.showTarget,
+      updatedAt: now,
+    };
 
-    if (existing) {
-      await this.db
-        .update(schema.statusPages)
-        .set({
-          slug: payload.slug,
-          title: payload.title,
-          description: payload.description ?? null,
-          published: payload.published,
-          showHistory: payload.showHistory,
-          showTarget: payload.showTarget,
-          updatedAt: now,
-        })
-        .where(eq(schema.statusPages.id, id));
-    } else {
-      await this.db.insert(schema.statusPages).values({
-        id,
-        slug: payload.slug,
-        title: payload.title,
-        description: payload.description ?? null,
-        published: payload.published,
-        showHistory: payload.showHistory,
-        showTarget: payload.showTarget,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+    const save = payload.id
+      ? this.db
+          .update(schema.statusPages)
+          .set(values)
+          .where(eq(schema.statusPages.id, id))
+      : this.db
+          .insert(schema.statusPages)
+          .values({ ...values, id, createdAt: now });
 
-    await this.db
+    const clear = this.db
       .delete(schema.statusPageMonitors)
       .where(eq(schema.statusPageMonitors.statusPageId, id));
 
-    if (monitorIds.length > 0) {
-      await this.db.insert(schema.statusPageMonitors).values(
-        monitorIds.map((monitorId) => ({
-          statusPageId: id,
-          monitorId,
-        })),
-      );
-    }
+    const links = monitorIds.map((monitorId) => ({
+      statusPageId: id,
+      monitorId,
+    }));
+
+    // One statement per link also stays below D1's bound-parameter limit.
+    await this.db.batch([
+      save,
+      clear,
+      ...links.map((link) =>
+        this.db.insert(schema.statusPageMonitors).values(link),
+      ),
+    ]);
+
+    return id;
   }
 
   async getById(id: string) {
