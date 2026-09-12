@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "110adf06-d4d7-43d9-87dd-59bf83265865",
-  "prevIds": [
-    "b2559518-2790-4ba8-8299-02f3d2c5ff86"
-  ],
+  "prevIds": ["b2559518-2790-4ba8-8299-02f3d2c5ff86"],
   "ddl": [
     {
       "name": "account",
@@ -1015,13 +1013,9 @@
       "table": "verification"
     },
     {
-      "columns": [
-        "userId"
-      ],
+      "columns": ["userId"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1030,13 +1024,9 @@
       "table": "account"
     },
     {
-      "columns": [
-        "monitorId"
-      ],
+      "columns": ["monitorId"],
       "tableTo": "monitors",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1045,13 +1035,9 @@
       "table": "heartbeats"
     },
     {
-      "columns": [
-        "monitorId"
-      ],
+      "columns": ["monitorId"],
       "tableTo": "monitors",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1060,13 +1046,9 @@
       "table": "incidents"
     },
     {
-      "columns": [
-        "monitorId"
-      ],
+      "columns": ["monitorId"],
       "tableTo": "monitors",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1075,13 +1057,9 @@
       "table": "monitorNotificationDestinations"
     },
     {
-      "columns": [
-        "notificationDestinationId"
-      ],
+      "columns": ["notificationDestinationId"],
       "tableTo": "notificationDestinations",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1090,13 +1068,9 @@
       "table": "monitorNotificationDestinations"
     },
     {
-      "columns": [
-        "userId"
-      ],
+      "columns": ["userId"],
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1105,13 +1079,9 @@
       "table": "session"
     },
     {
-      "columns": [
-        "statusPageId"
-      ],
+      "columns": ["statusPageId"],
       "tableTo": "statusPages",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1120,13 +1090,9 @@
       "table": "statusPageMonitors"
     },
     {
-      "columns": [
-        "monitorId"
-      ],
+      "columns": ["monitorId"],
       "tableTo": "monitors",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -1135,110 +1101,84 @@
       "table": "statusPageMonitors"
     },
     {
-      "columns": [
-        "monitorId",
-        "notificationDestinationId"
-      ],
+      "columns": ["monitorId", "notificationDestinationId"],
       "nameExplicit": false,
       "name": "monitorNotificationDestinations_pk",
       "entityType": "pks",
       "table": "monitorNotificationDestinations"
     },
     {
-      "columns": [
-        "statusPageId",
-        "monitorId"
-      ],
+      "columns": ["statusPageId", "monitorId"],
       "nameExplicit": false,
       "name": "statusPageMonitors_pk",
       "entityType": "pks",
       "table": "statusPageMonitors"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "account_pk",
       "table": "account",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "appSettings_pk",
       "table": "appSettings",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "heartbeats_pk",
       "table": "heartbeats",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "incidents_pk",
       "table": "incidents",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "monitors_pk",
       "table": "monitors",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "notificationDestinations_pk",
       "table": "notificationDestinations",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "session_pk",
       "table": "session",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "statusPages_pk",
       "table": "statusPages",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "user_pk",
       "table": "user",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "verification_pk",
       "table": "verification",
@@ -1359,36 +1299,28 @@
       "table": "session"
     },
     {
-      "columns": [
-        "pushToken"
-      ],
+      "columns": ["pushToken"],
       "nameExplicit": false,
       "name": "monitors_pushToken_unique",
       "entityType": "uniques",
       "table": "monitors"
     },
     {
-      "columns": [
-        "token"
-      ],
+      "columns": ["token"],
       "nameExplicit": false,
       "name": "session_token_unique",
       "entityType": "uniques",
       "table": "session"
     },
     {
-      "columns": [
-        "slug"
-      ],
+      "columns": ["slug"],
       "nameExplicit": false,
       "name": "statusPages_slug_unique",
       "entityType": "uniques",
       "table": "statusPages"
     },
     {
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nameExplicit": false,
       "name": "user_email_unique",
       "entityType": "uniques",

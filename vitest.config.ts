@@ -11,7 +11,7 @@ export default defineConfig({
     cloudflareTest(async () => {
       const migrationsPath = path.join(
         import.meta.dirname,
-        "drizzle/migrations",
+        "src/server/db/migrations",
       );
 
       const migrations = await readNestedD1Migrations(migrationsPath);
