@@ -101,6 +101,17 @@ export const monitorsApi = new Hono<AppEnv>()
       });
     },
   )
+  .get("/state/:id", async (ctx) => {
+    const monitor = await createDatabase(ctx.env.DB).monitor.getById(
+      ctx.req.param("id"),
+    );
+
+    if (!monitor) {
+      throw new HTTPException(404, { message: "Monitor not found" });
+    }
+
+    return ctx.json(monitor);
+  })
   .get("/:id", async (ctx) => {
     const db = createDatabase(ctx.env.DB);
 

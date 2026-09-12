@@ -1,10 +1,22 @@
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  sql,
+  sum,
+} from "drizzle-orm";
 
 import type { parseMonitorConfigForStorage } from "@/lib/monitor/config";
 import type { HeartbeatRecord, MonitorRecord } from "@/types";
 
 import { parseMonitorAssertions } from "@/lib/monitor/assertions";
 import { schema, type DrizzleDatabase } from "@/server/db";
+import { countWhere, sumWhere } from "@/server/db/expressions";
 import {
   readHeartbeatMode,
   readHeartbeatSource,
@@ -239,13 +251,37 @@ export class MonitorModel {
     return rows.map(mapHeartbeatRecord);
   }
 
-  async countHeartbeatsSince(cutoff: string) {
-    const rows = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.heartbeats)
-      .where(sql`${schema.heartbeats.createdAt} >= ${cutoff}`);
+  async getRecentHeartbeatCounts(cutoffs: { hour: string; day: string }) {
+    const [hourRow, dayRow] = await Promise.all([
+      this.db
+        .select({ count: count() })
+        .from(schema.heartbeats)
+        .where(gte(schema.heartbeats.createdAt, cutoffs.hour))
+        .get(),
+      this.db
+        .select({
+          count: sum(schema.heartbeatDaily.total).mapWith(Number),
+        })
+        .from(schema.heartbeatDaily)
+        .where(gte(schema.heartbeatDaily.day, cutoffs.day.slice(0, 10)))
+        .get(),
+    ]);
 
-    return rows[0]?.count ?? 0;
+    const lastDay =
+      dayRow?.count ??
+      (
+        await this.db
+          .select({ count: count() })
+          .from(schema.heartbeats)
+          .where(gte(schema.heartbeats.createdAt, cutoffs.day))
+          .get()
+      )?.count ??
+      0;
+
+    return {
+      lastHour: hourRow?.count ?? 0,
+      lastDay,
+    };
   }
 
   async listHeartbeatsForMonitors(
@@ -320,12 +356,19 @@ export class MonitorModel {
   }
 
   async countHeartbeats(monitorId: string) {
-    const [{ count }] = await this.db
-      .select({ count: sql<number>`count(*)` })
+    const [{ count: summaryCount }] = await this.db
+      .select({ count: sum(schema.heartbeatDaily.total).mapWith(Number) })
+      .from(schema.heartbeatDaily)
+      .where(eq(schema.heartbeatDaily.monitorId, monitorId));
+
+    if (summaryCount != null) return summaryCount;
+
+    const [raw] = await this.db
+      .select({ count: count() })
       .from(schema.heartbeats)
       .where(eq(schema.heartbeats.monitorId, monitorId));
 
-    return count ?? 0;
+    return raw?.count ?? 0;
   }
 
   async getHeartbeatMetricCounts(
@@ -334,16 +377,96 @@ export class MonitorModel {
   ) {
     const row = await this.db
       .select({
-        requestCount: sql<number>`count(*)`,
-        last7DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last7Days} then 1 else 0 end)`,
-        last7DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last7Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
-        last30DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last30Days} then 1 else 0 end)`,
-        last30DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last30Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
-        last365DaysTotal: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last365Days} then 1 else 0 end)`,
-        last365DaysUp: sql<number>`sum(case when ${schema.heartbeats.createdAt} >= ${cutoffs.last365Days} and ${schema.heartbeats.status} = 'up' then 1 else 0 end)`,
+        requestCount: sum(schema.heartbeatDaily.total).mapWith(Number),
+        last7DaysTotal: sumWhere(
+          schema.heartbeatDaily.total,
+          gte(schema.heartbeatDaily.day, cutoffs.last7Days.slice(0, 10)),
+        ),
+        last7DaysUp: sumWhere(
+          schema.heartbeatDaily.up,
+          gte(schema.heartbeatDaily.day, cutoffs.last7Days.slice(0, 10)),
+        ),
+        last30DaysTotal: sumWhere(
+          schema.heartbeatDaily.total,
+          gte(schema.heartbeatDaily.day, cutoffs.last30Days.slice(0, 10)),
+        ),
+        last30DaysUp: sumWhere(
+          schema.heartbeatDaily.up,
+          gte(schema.heartbeatDaily.day, cutoffs.last30Days.slice(0, 10)),
+        ),
+        last365DaysTotal: sum(schema.heartbeatDaily.total).mapWith(Number),
+        last365DaysUp: sum(schema.heartbeatDaily.up).mapWith(Number),
+      })
+      .from(schema.heartbeatDaily)
+      .where(
+        and(
+          eq(schema.heartbeatDaily.monitorId, monitorId),
+          gte(schema.heartbeatDaily.day, cutoffs.last365Days.slice(0, 10)),
+        ),
+      )
+      .get();
+
+    if (row?.requestCount == null) {
+      return this.getRawHeartbeatMetricCounts(monitorId, cutoffs);
+    }
+
+    return {
+      requestCount: row?.requestCount ?? 0,
+      windows: [
+        {
+          days: 7,
+          totalChecks: row?.last7DaysTotal ?? 0,
+          upChecks: row?.last7DaysUp ?? 0,
+        },
+        {
+          days: 30,
+          totalChecks: row?.last30DaysTotal ?? 0,
+          upChecks: row?.last30DaysUp ?? 0,
+        },
+        {
+          days: 365,
+          totalChecks: row?.last365DaysTotal ?? 0,
+          upChecks: row?.last365DaysUp ?? 0,
+        },
+      ],
+    };
+  }
+
+  private async getRawHeartbeatMetricCounts(
+    monitorId: string,
+    cutoffs: { last7Days: string; last30Days: string; last365Days: string },
+  ) {
+    const row = await this.db
+      .select({
+        requestCount: count(),
+        last7DaysTotal: countWhere(
+          gte(schema.heartbeats.createdAt, cutoffs.last7Days),
+        ),
+        last7DaysUp: countWhere(
+          and(
+            gte(schema.heartbeats.createdAt, cutoffs.last7Days),
+            eq(schema.heartbeats.status, "up"),
+          )!,
+        ),
+        last30DaysTotal: countWhere(
+          gte(schema.heartbeats.createdAt, cutoffs.last30Days),
+        ),
+        last30DaysUp: countWhere(
+          and(
+            gte(schema.heartbeats.createdAt, cutoffs.last30Days),
+            eq(schema.heartbeats.status, "up"),
+          )!,
+        ),
+        last365DaysTotal: count(),
+        last365DaysUp: countWhere(eq(schema.heartbeats.status, "up")),
       })
       .from(schema.heartbeats)
-      .where(eq(schema.heartbeats.monitorId, monitorId))
+      .where(
+        and(
+          eq(schema.heartbeats.monitorId, monitorId),
+          gte(schema.heartbeats.createdAt, cutoffs.last365Days),
+        ),
+      )
       .get();
 
     return {

@@ -114,11 +114,12 @@ export async function syncScheduler(
     now?: number;
   },
 ) {
+  const activeMonitors = await db.monitor.listActive();
+
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    activeMonitors,
   });
-
-  const activeMonitors = await db.monitor.listActive();
 
   return {
     active: activeMonitors.length,
@@ -142,11 +143,12 @@ export async function runMonitorNowAndReschedule(
     ran = true;
   }
 
+  const activeMonitors = await db.monitor.listActive();
+
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    activeMonitors,
   });
-
-  const activeMonitors = await db.monitor.listActive();
 
   return {
     ran,
@@ -173,11 +175,12 @@ export async function recordPushHeartbeatAndReschedule(
     ran = true;
   }
 
+  const activeMonitors = await db.monitor.listActive();
+
   const nextAlarmAt = await rescheduleFromActiveMonitors(db, options.alarm, {
     now: options.now ?? nowMs(),
+    activeMonitors,
   });
-
-  const activeMonitors = await db.monitor.listActive();
 
   return {
     ran,
@@ -203,9 +206,11 @@ async function rescheduleFromActiveMonitors(
   alarm: SchedulerAlarmAdapter,
   options: {
     now: number;
+    activeMonitors?: MonitorRecord[];
   },
 ) {
-  const activeMonitors = await db.monitor.listActive();
+  const activeMonitors =
+    options.activeMonitors ?? (await db.monitor.listActive());
 
   if (activeMonitors.length === 0) {
     await clearAlarm(alarm);

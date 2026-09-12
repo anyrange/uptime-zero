@@ -8,10 +8,11 @@ import { NotificationModel } from "./models/notification";
 import { SettingsModel } from "./models/settings";
 import { StatusPageModel } from "./models/status-page";
 import { UserModel } from "./models/user";
+import { relations } from "./relations";
 import * as schema from "./schema";
 
 export function getDrizzle(db: D1Database) {
-  return drizzle(db);
+  return drizzle(db, { relations });
 }
 
 export type DrizzleDatabase = ReturnType<typeof getDrizzle>;

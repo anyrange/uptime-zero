@@ -1,4 +1,13 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  gt,
+  isNotNull,
+  isNull,
+  notExists,
+  sql,
+} from "drizzle-orm";
 
 import type { DrizzleDatabase } from "@/server/db";
 import type {
@@ -32,8 +41,16 @@ export class CheckModel {
       .get();
 
     const incidentId = open?.id ?? crypto.randomUUID();
+
     // The receipt guards the whole batch against edits, pauses and deletion while a check was in flight.
-    const accepted = sql`exists (select 1 from ${schema.heartbeats} where ${schema.heartbeats.id} = ${heartbeatId})`;
+    const accepted = exists(
+      this.db
+        .select({ id: schema.heartbeats.id })
+        .from(schema.heartbeats)
+        .where(eq(schema.heartbeats.id, heartbeatId)),
+    );
+
+    const day = checkedAt.slice(0, 10);
 
     const heartbeat = this.db.insert(schema.heartbeats).select(
       this.db
@@ -70,6 +87,33 @@ export class CheckModel {
       })
       .where(and(eq(schema.monitors.id, monitor.id), accepted));
 
+    const daily = this.db
+      .insert(schema.heartbeatDaily)
+      .select(
+        this.db
+          .select({
+            monitorId: schema.monitors.id,
+            day: sql<string>`${day}`.as("day"),
+            total: sql<number>`1`.as("total"),
+            up: sql<number>`${result.status === "up" ? 1 : 0}`.as("up"),
+            down: sql<number>`${result.status === "down" ? 1 : 0}`.as("down"),
+            unknown: sql<number>`${result.status === "unknown" ? 1 : 0}`.as(
+              "unknown",
+            ),
+          })
+          .from(schema.monitors)
+          .where(and(eq(schema.monitors.id, monitor.id), accepted)),
+      )
+      .onConflictDoUpdate({
+        target: [schema.heartbeatDaily.monitorId, schema.heartbeatDaily.day],
+        set: {
+          total: sql`${schema.heartbeatDaily.total} + 1`,
+          up: sql`${schema.heartbeatDaily.up} + ${result.status === "up" ? 1 : 0}`,
+          down: sql`${schema.heartbeatDaily.down} + ${result.status === "down" ? 1 : 0}`,
+          unknown: sql`${schema.heartbeatDaily.unknown} + ${result.status === "unknown" ? 1 : 0}`,
+        },
+      });
+
     if (result.status === "down") {
       const incident = this.db.insert(schema.incidents).select(
         this.db
@@ -88,7 +132,12 @@ export class CheckModel {
             and(
               eq(schema.monitors.id, monitor.id),
               accepted,
-              sql`not exists (select 1 from ${schema.incidents} where ${schema.incidents.id} = ${incidentId})`,
+              notExists(
+                this.db
+                  .select({ id: schema.incidents.id })
+                  .from(schema.incidents)
+                  .where(eq(schema.incidents.id, incidentId)),
+              ),
             ),
           ),
       );
@@ -131,7 +180,7 @@ export class CheckModel {
         )
         .onConflictDoNothing();
 
-      await this.db.batch([heartbeat, state, incident, deliveries]);
+      await this.db.batch([heartbeat, state, daily, incident, deliveries]);
 
       return;
     }
@@ -161,7 +210,7 @@ export class CheckModel {
               and(
                 eq(schema.notificationDeliveries.incidentId, incidentId),
                 eq(schema.notificationDeliveries.status, "down"),
-                sql`${schema.notificationDeliveries.deliveredAt} is not null`,
+                isNotNull(schema.notificationDeliveries.deliveredAt),
                 accepted,
               ),
             ),
@@ -175,7 +224,7 @@ export class CheckModel {
             eq(schema.notificationDeliveries.incidentId, incidentId),
             eq(schema.notificationDeliveries.status, "down"),
             isNull(schema.notificationDeliveries.deliveredAt),
-            sql`${schema.notificationDeliveries.dueAt} > ${Date.parse(checkedAt)}`,
+            gt(schema.notificationDeliveries.dueAt, Date.parse(checkedAt)),
             eq(schema.notificationDeliveries.attempts, 0),
             accepted,
           ),
@@ -186,11 +235,18 @@ export class CheckModel {
         .set({ status: "closed", closedAt: checkedAt })
         .where(and(eq(schema.incidents.id, incidentId), accepted));
 
-      await this.db.batch([heartbeat, state, recovery, cancelPending, close]);
+      await this.db.batch([
+        heartbeat,
+        state,
+        daily,
+        recovery,
+        cancelPending,
+        close,
+      ]);
 
       return;
     }
 
-    await this.db.batch([heartbeat, state]);
+    await this.db.batch([heartbeat, state, daily]);
   }
 }

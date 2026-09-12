@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import type { AppEnv } from "@/ctx";
+import type { PublicStatusPageData } from "@/types";
 
 import { createDatabase } from "@/server/db";
 import { requireApiPermission } from "@/server/middleware/permissions";
@@ -105,12 +106,24 @@ export const statusPagesApi = new Hono<AppEnv>()
   });
 
 export const publicStatusApi = new Hono<AppEnv>().get("/:slug", async (ctx) => {
+  ctx.header(
+    "Cache-Control",
+    "public, max-age=15, s-maxage=30, stale-while-revalidate=30",
+  );
+
+  const cacheKey = new Request(ctx.req.url, { method: "GET" });
+  const cache = await caches.open("public-status");
+  const cached = await cache.match(cacheKey);
+
+  if (cached) return ctx.json(await cached.json<PublicStatusPageData>());
+
   const db = createDatabase(ctx.env.DB);
 
   const data = await getPublicStatus(db, ctx.req.param("slug"));
 
   if (!data) throw new HTTPException(404, { message: "Status page not found" });
-  ctx.header("Cache-Control", "no-store");
+  const response = ctx.json(data);
+  ctx.executionCtx.waitUntil(cache.put(cacheKey, response.clone()));
 
-  return ctx.json(data);
+  return response;
 });

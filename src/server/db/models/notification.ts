@@ -192,27 +192,19 @@ export class NotificationModel {
   }
 
   async getForMonitor(monitorId: string) {
-    const rows = await this.db
-      .select({
-        id: schema.notificationDestinations.id,
-        name: schema.notificationDestinations.name,
-        provider: schema.notificationDestinations.provider,
-        configJson: schema.notificationDestinations.configJson,
-        createdAt: schema.notificationDestinations.createdAt,
-        updatedAt: schema.notificationDestinations.updatedAt,
-      })
-      .from(schema.monitorNotificationDestinations)
-      .innerJoin(
-        schema.notificationDestinations,
-        eq(
-          schema.notificationDestinations.id,
-          schema.monitorNotificationDestinations.notificationDestinationId,
-        ),
-      )
-      .where(eq(schema.monitorNotificationDestinations.monitorId, monitorId))
-      .orderBy(asc(schema.notificationDestinations.createdAt));
+    const monitor = await this.db.query.monitors.findFirst({
+      where: { id: monitorId },
+      columns: { id: true },
+      with: {
+        notificationDestinations: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
 
-    return rows.map(mapNotificationDestinationRecord);
+    return (monitor?.notificationDestinations ?? []).map(
+      mapNotificationDestinationRecord,
+    );
   }
 
   private async listAssignments(destinationIds?: string[]) {

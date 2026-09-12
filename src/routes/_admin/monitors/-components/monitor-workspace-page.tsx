@@ -14,6 +14,7 @@ import type { MonitorDetailData, MonitorRecord } from "@/types";
 import { Error } from "@/components/error";
 import { AppPage } from "@/components/page";
 import { Separator } from "@/components/ui/separator";
+import { useMonitorStateQuery } from "@/lib/queries/monitors";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
@@ -28,6 +29,9 @@ export function MonitorWorkspacePage({
   currentTab: "overview" | "logs" | "incidents" | "settings";
   children: (data: MonitorDetailData) => ReactNode;
 }) {
+  const monitorId = detail.data?.monitor.id ?? "";
+  const state = useMonitorStateQuery(monitorId);
+
   if (detail.status === "pending") {
     return <MonitorDetailSkeleton />;
   }
@@ -36,7 +40,16 @@ export function MonitorWorkspacePage({
     return <Error message={detail.error.message} />;
   }
 
-  const { monitor } = detail.data;
+  const monitor = state.data ?? detail.data.monitor;
+
+  const data = {
+    ...detail.data,
+    monitor,
+    metrics: {
+      ...detail.data.metrics,
+      lastCheckedAt: monitor.lastCheckedAt,
+    },
+  };
 
   return (
     <AppPage title={monitor.name}>
@@ -128,7 +141,7 @@ export function MonitorWorkspacePage({
             <Separator />
           </div>
         </div>
-        {children(detail.data)}
+        {children(data)}
       </div>
     </AppPage>
   );

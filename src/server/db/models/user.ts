@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { schema, type DrizzleDatabase } from "@/server/db";
 
@@ -6,9 +6,7 @@ export class UserModel {
   constructor(private readonly db: DrizzleDatabase) {}
 
   async getSetupState(appName?: string) {
-    const rows = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.user);
+    const rows = await this.db.select({ count: count() }).from(schema.user);
 
     return {
       hasAdmin: (rows[0]?.count ?? 0) > 0,
@@ -17,9 +15,7 @@ export class UserModel {
   }
 
   async countUsers() {
-    const rows = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.user);
+    const rows = await this.db.select({ count: count() }).from(schema.user);
 
     return rows[0]?.count ?? 0;
   }
@@ -50,38 +46,36 @@ export class UserModel {
   }
 
   async getAccount(userId: string) {
-    const user = await this.db
-      .select()
-      .from(schema.user)
-      .where(eq(schema.user.id, userId))
-      .get();
+    const result = await this.db.query.user.findFirst({
+      where: { id: userId },
+      with: {
+        accounts: {
+          columns: {
+            id: true,
+            providerId: true,
+            accountId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        sessions: {
+          columns: {
+            id: true,
+            expiresAt: true,
+            ipAddress: true,
+            userAgent: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
 
-    if (!user) {
+    if (!result) {
       return null;
     }
 
-    const accounts = await this.db
-      .select({
-        id: schema.account.id,
-        providerId: schema.account.providerId,
-        accountId: schema.account.accountId,
-        createdAt: schema.account.createdAt,
-        updatedAt: schema.account.updatedAt,
-      })
-      .from(schema.account)
-      .where(eq(schema.account.userId, userId));
-
-    const sessions = await this.db
-      .select({
-        id: schema.session.id,
-        expiresAt: schema.session.expiresAt,
-        ipAddress: schema.session.ipAddress,
-        userAgent: schema.session.userAgent,
-        createdAt: schema.session.createdAt,
-        updatedAt: schema.session.updatedAt,
-      })
-      .from(schema.session)
-      .where(eq(schema.session.userId, userId));
+    const { accounts, sessions, ...user } = result;
 
     return {
       user: {

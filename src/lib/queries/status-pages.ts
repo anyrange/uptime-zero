@@ -31,8 +31,8 @@ export function useStatusPageQuery(id: string) {
 export function usePublicStatusPageQuery(slug: string) {
   return useQuery({
     queryKey: ["public-status", slug],
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: "always",
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: () =>
       parseResponse(apiClient.status[":slug"].$get({ param: { slug } })),
   });

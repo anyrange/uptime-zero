@@ -14,6 +14,23 @@ import {
 } from "@/lib/monitor/logs";
 import { daysAgoIso, hoursAgoIso, parseDateMs } from "@/server/lib/dates";
 
+type CachedMetrics = {
+  expiresAt: number;
+  data: Awaited<ReturnType<Database["monitor"]["getHeartbeatMetricCounts"]>>;
+};
+
+const metricCountsCache = new Map<string, CachedMetrics>();
+
+const METRICS_CACHE_TTL_MS = 60_000;
+
+export function clearMetricCountsCache(monitorId?: string) {
+  if (monitorId) {
+    metricCountsCache.delete(monitorId);
+  } else {
+    metricCountsCache.clear();
+  }
+}
+
 export class MonitorService {
   constructor(private readonly db: Database) {}
 
@@ -52,12 +69,30 @@ export class MonitorService {
       incidents: () => this.db.incident.listForMonitor(monitorId, 50),
       recentHeartbeats: () =>
         this.db.monitor.listHeartbeatsSince(monitorId, cutoff),
-      heartbeatMetricCounts: () =>
-        this.db.monitor.getHeartbeatMetricCounts(monitorId, {
-          last7Days: daysAgoIso(7),
-          last30Days: daysAgoIso(30),
-          last365Days: daysAgoIso(365),
-        }),
+      heartbeatMetricCounts: async () => {
+        const cached = metricCountsCache.get(monitorId);
+        const now = Date.now();
+
+        if (cached && cached.expiresAt > now) {
+          return cached.data;
+        }
+
+        const fresh = await this.db.monitor.getHeartbeatMetricCounts(
+          monitorId,
+          {
+            last7Days: daysAgoIso(6),
+            last30Days: daysAgoIso(29),
+            last365Days: daysAgoIso(364),
+          },
+        );
+
+        metricCountsCache.set(monitorId, {
+          expiresAt: now + METRICS_CACHE_TTL_MS,
+          data: fresh,
+        });
+
+        return fresh;
+      },
       notificationDestinations: () =>
         this.db.notification.getForMonitor(monitorId),
     });

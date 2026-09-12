@@ -17,26 +17,53 @@ const incidentFiltersSchema = z.object({
 
 const RECENT_DASHBOARD_HEARTBEAT_LIMIT = 10;
 
+const DASHBOARD_COUNTS_CACHE_TTL_MS = 60_000;
+
+let cachedDashboardCounts: {
+  expiresAt: number;
+  lastHour: number;
+  lastDay: number;
+} | null = null;
+
 export const dashboardApi = new Hono<AppEnv>()
   .get("/", async (ctx) => {
     const db = createDatabase(ctx.env.DB);
+    const now = Date.now();
+
+    const getHeartbeatCounts = async () => {
+      if (cachedDashboardCounts && cachedDashboardCounts.expiresAt > now) {
+        return {
+          lastHour: cachedDashboardCounts.lastHour,
+          lastDay: cachedDashboardCounts.lastDay,
+        };
+      }
+
+      const { lastHour, lastDay } = await db.monitor.getRecentHeartbeatCounts({
+        hour: hoursAgoIso(1),
+        day: daysAgoIso(0),
+      });
+
+      cachedDashboardCounts = {
+        expiresAt: now + DASHBOARD_COUNTS_CACHE_TTL_MS,
+        lastHour,
+        lastDay,
+      };
+
+      return { lastHour, lastDay };
+    };
 
     const {
       monitors,
       incidents,
       openIncidentCount,
-      heartbeatCountLastHour,
-      heartbeatCountLastDay,
+      heartbeatCounts,
       heartbeats,
       statusPages,
     } = await all({
       monitors: () => db.monitor.listAll(),
       incidents: () => db.incident.listRecent(12),
       openIncidentCount: () => db.incident.countOpen(),
-      heartbeatCountLastHour: () =>
-        db.monitor.countHeartbeatsSince(hoursAgoIso(1)),
-      heartbeatCountLastDay: () =>
-        db.monitor.countHeartbeatsSince(daysAgoIso(1)),
+      heartbeatCounts: getHeartbeatCounts,
       heartbeats: () =>
         db.monitor.listRecentHeartbeats(RECENT_DASHBOARD_HEARTBEAT_LIMIT),
       statusPages: () => db.statusPage.list(),
@@ -55,10 +82,7 @@ export const dashboardApi = new Hono<AppEnv>()
       monitors,
       incidents,
       openIncidentCount,
-      heartbeatCounts: {
-        lastHour: heartbeatCountLastHour,
-        lastDay: heartbeatCountLastDay,
-      },
+      heartbeatCounts,
       heartbeats,
       statusPages,
       counts,

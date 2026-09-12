@@ -18,6 +18,8 @@ const SCHEDULER_ACTOR_NAME = "installation";
 
 const ALARM_RECOVERY_DELAY_MS = 30_000;
 
+const HEARTBEAT_ROLLUP_BACKFILLED_KEY = "heartbeat-rollup-backfilled-v1";
+
 type SchedulerReason =
   | "alarm"
   | "dashboard-manual"
@@ -39,7 +41,10 @@ export class SchedulerActor extends DurableObject<Env> {
     const log = this.createLog("/do/scheduler/sync");
 
     try {
-      const result = await syncScheduler(createDatabase(this.env.DB), {
+      const db = createDatabase(this.env.DB);
+      await this.ensureHeartbeatRollupBackfill(db);
+
+      const result = await syncScheduler(db, {
         alarm: this.alarmAdapter(),
       });
 
@@ -66,6 +71,7 @@ export class SchedulerActor extends DurableObject<Env> {
 
     try {
       const db = createDatabase(this.env.DB);
+      await this.ensureHeartbeatRollupBackfill(db);
 
       const result = await this.withMonitorLock(monitorId, () =>
         runMonitorNowAndReschedule(db, monitorId, {
@@ -100,6 +106,7 @@ export class SchedulerActor extends DurableObject<Env> {
 
     try {
       const db = createDatabase(this.env.DB);
+      await this.ensureHeartbeatRollupBackfill(db);
 
       const result = await this.withMonitorLock(monitorId, () =>
         recordPushHeartbeatAndReschedule(db, monitorId, {
@@ -143,6 +150,7 @@ export class SchedulerActor extends DurableObject<Env> {
       }
 
       const db = createDatabase(this.env.DB);
+      await this.ensureHeartbeatRollupBackfill(db);
 
       const result = await runDueMonitorsAndReschedule(db, {
         alarm: this.alarmAdapter(),
@@ -183,6 +191,17 @@ export class SchedulerActor extends DurableObject<Env> {
       setAlarm: (timestamp) => this.ctx.storage.setAlarm(timestamp),
       deleteAlarm: () => this.ctx.storage.deleteAlarm(),
     };
+  }
+
+  private async ensureHeartbeatRollupBackfill(
+    db: ReturnType<typeof createDatabase>,
+  ) {
+    if (await this.ctx.storage.get<boolean>(HEARTBEAT_ROLLUP_BACKFILLED_KEY)) {
+      return;
+    }
+
+    await db.maintenance.backfillHeartbeatDaily();
+    await this.ctx.storage.put(HEARTBEAT_ROLLUP_BACKFILLED_KEY, true);
   }
 
   private async withMonitorLock<T>(

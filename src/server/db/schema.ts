@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   index,
   uniqueIndex,
@@ -25,7 +25,7 @@ export const user = sqliteTable(
   (table) => [
     uniqueIndex("user_single_admin_idx")
       .on(table.role)
-      .where(sql`${table.role} = 'admin'`),
+      .where(eq(table.role, "admin")),
   ],
 );
 
@@ -43,7 +43,10 @@ export const session = sqliteTable(
     createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
   },
-  (table) => [index("session_user_idx").on(table.userId)],
+  (table) => [
+    index("session_user_idx").on(table.userId),
+    index("session_expires_idx").on(table.expiresAt),
+  ],
 );
 
 export const account = sqliteTable(
@@ -84,31 +87,35 @@ export const verification = sqliteTable("verification", {
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull(),
 });
 
-export const monitors = sqliteTable("monitors", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  kind: text("kind").notNull(),
-  target: text("target").notNull(),
-  intervalSec: integer("intervalSec").notNull(),
-  timeoutMs: integer("timeoutMs").notNull(),
-  retries: integer("retries").notNull(),
-  assertionsJson: text("assertionsJson"),
-  heartbeatMode: text("heartbeatMode").notNull().default("interval"),
-  heartbeatCron: text("heartbeatCron"),
-  heartbeatGraceSec: integer("heartbeatGraceSec"),
-  heartbeatTimezone: text("heartbeatTimezone"),
-  notificationGraceSec: integer("notificationGraceSec").notNull().default(0),
-  pushToken: text("pushToken").unique(),
-  active: integer("active").notNull().default(1),
-  lastStatus: text("lastStatus").notNull().default("unknown"),
-  lastCheckedAt: text("lastCheckedAt"),
-  lastDurationMs: integer("lastDurationMs"),
-  lastError: text("lastError"),
-  revision: integer("revision").notNull().default(0),
-  retryAt: integer("retryAt"),
-  createdAt: text("createdAt").notNull(),
-  updatedAt: text("updatedAt").notNull(),
-});
+export const monitors = sqliteTable(
+  "monitors",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    kind: text("kind").notNull(),
+    target: text("target").notNull(),
+    intervalSec: integer("intervalSec").notNull(),
+    timeoutMs: integer("timeoutMs").notNull(),
+    retries: integer("retries").notNull(),
+    assertionsJson: text("assertionsJson"),
+    heartbeatMode: text("heartbeatMode").notNull().default("interval"),
+    heartbeatCron: text("heartbeatCron"),
+    heartbeatGraceSec: integer("heartbeatGraceSec"),
+    heartbeatTimezone: text("heartbeatTimezone"),
+    notificationGraceSec: integer("notificationGraceSec").notNull().default(0),
+    pushToken: text("pushToken").unique(),
+    active: integer("active").notNull().default(1),
+    lastStatus: text("lastStatus").notNull().default("unknown"),
+    lastCheckedAt: text("lastCheckedAt"),
+    lastDurationMs: integer("lastDurationMs"),
+    lastError: text("lastError"),
+    revision: integer("revision").notNull().default(0),
+    retryAt: integer("retryAt"),
+    createdAt: text("createdAt").notNull(),
+    updatedAt: text("updatedAt").notNull(),
+  },
+  (table) => [index("monitors_active_idx").on(table.active)],
+);
 
 export const heartbeats = sqliteTable(
   "heartbeats",
@@ -130,7 +137,25 @@ export const heartbeats = sqliteTable(
       table.monitorId,
       table.createdAt,
     ),
+    index("heartbeats_status_created_idx").on(table.status, table.createdAt),
   ],
+);
+
+// Daily rollups keep long-range availability queries bounded while raw
+// heartbeats remain available for recent charts and logs.
+export const heartbeatDaily = sqliteTable(
+  "heartbeatDaily",
+  {
+    monitorId: text("monitorId")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    total: integer("total").notNull(),
+    up: integer("up").notNull(),
+    down: integer("down").notNull(),
+    unknown: integer("unknown").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.monitorId, table.day] })],
 );
 
 export const incidents = sqliteTable(
@@ -150,6 +175,8 @@ export const incidents = sqliteTable(
   (table) => [
     index("incidents_status_opened_idx").on(table.status, table.openedAt),
     index("incidents_monitor_opened_idx").on(table.monitorId, table.openedAt),
+    index("incidents_monitor_status_idx").on(table.monitorId, table.status),
+    index("incidents_status_closed_idx").on(table.status, table.closedAt),
   ],
 );
 

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import type {
   IncidentListFilters,
@@ -80,7 +80,7 @@ export class IncidentModel {
 
   async countOpen() {
     const rows = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: count() })
       .from(schema.incidents)
       .where(eq(schema.incidents.status, "open"));
 
@@ -99,14 +99,22 @@ export class IncidentModel {
   }
 
   async listRecent(limit: number) {
-    const rows = await this.db
-      .select()
-      .from(schema.incidents)
-      .orderBy(
-        sql`CASE ${schema.incidents.status} WHEN 'open' THEN 0 ELSE 1 END`,
-        desc(schema.incidents.openedAt),
-      )
-      .limit(limit);
+    const [open, closed] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.incidents)
+        .where(eq(schema.incidents.status, "open"))
+        .orderBy(desc(schema.incidents.openedAt))
+        .limit(limit),
+      this.db
+        .select()
+        .from(schema.incidents)
+        .where(eq(schema.incidents.status, "closed"))
+        .orderBy(desc(schema.incidents.openedAt))
+        .limit(limit),
+    ]);
+
+    const rows = [...open, ...closed].slice(0, limit);
 
     return rows.map(mapIncidentRecord);
   }

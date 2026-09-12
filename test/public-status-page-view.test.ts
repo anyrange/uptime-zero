@@ -48,7 +48,7 @@ describe("public status page view model", () => {
       showHistory: true,
     });
     expect(view.uptimeWindows[0]).toMatchObject({
-      label: "Last 24 hours",
+      label: "Today",
       uptime: "50%",
     });
     expect(view.monitorGroups.map((group) => group.title)).toEqual([

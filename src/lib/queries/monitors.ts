@@ -15,7 +15,7 @@ export function useMonitorListQuery() {
     queryKey: privateKey("monitors"),
     queryFn: () => parseResponse(apiClient.monitors.$get()),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
-    refetchOnWindowFocus: "always",
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -24,8 +24,17 @@ export function useMonitorQuery(id: string) {
     queryKey: privateKey("monitors", id),
     queryFn: () =>
       parseResponse(apiClient.monitors[":id"].$get({ param: { id } })),
+  });
+}
+
+export function useMonitorStateQuery(id: string) {
+  return useQuery({
+    queryKey: privateKey("monitors", id, "state"),
+    enabled: id.length > 0,
+    queryFn: () =>
+      parseResponse(apiClient.monitors.state[":id"].$get({ param: { id } })),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
-    refetchOnWindowFocus: "always",
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -39,8 +48,6 @@ export function useMonitorLogsQuery(id: string, page: number) {
           query: { page: String(page) },
         }),
       ),
-    refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
-    refetchOnWindowFocus: "always",
   });
 }
 

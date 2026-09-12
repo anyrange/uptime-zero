@@ -100,6 +100,17 @@ describe("maintenance retention", () => {
     await db.drizzle
       .insert(schema.heartbeats)
       .values([oldHeartbeat, cutOffHeartbeat, freshHeartbeat]);
+    await db.maintenance.backfillHeartbeatDaily();
+
+    const rollups = await db.drizzle
+      .select()
+      .from(schema.heartbeatDaily)
+      .where(eq(schema.heartbeatDaily.monitorId, monitor.id));
+
+    expect(rollups).toHaveLength(2);
+    expect(rollups.reduce((total, row) => total + row.total, 0)).toBe(3);
+    expect(rollups.reduce((total, row) => total + row.up, 0)).toBe(2);
+    expect(rollups.reduce((total, row) => total + row.down, 0)).toBe(1);
 
     const oldClosedIncident = {
       id: crypto.randomUUID(),

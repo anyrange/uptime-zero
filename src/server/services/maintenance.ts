@@ -10,6 +10,7 @@ export class MaintenanceService {
     await this.db.maintenance.deleteHeartbeatsBefore(
       daysAgoIso(settings.heartbeatRetentionDays),
     );
+    await this.db.maintenance.deleteHeartbeatDailyBefore(daysAgoIso(366));
     await this.db.maintenance.deleteClosedIncidentsBefore(
       daysAgoIso(settings.incidentRetentionDays),
     );
