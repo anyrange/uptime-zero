@@ -216,7 +216,7 @@ function LatencySummaryChart({ charts }: { charts: MonitorChartData }) {
           axisLine={false}
           dataKey="timestamp"
           domain={["dataMin", "dataMax"]}
-          minTickGap={36}
+          minTickGap={64}
           tickFormatter={formatChartTick}
           tickLine={false}
           type="number"
@@ -231,7 +231,12 @@ function LatencySummaryChart({ charts }: { charts: MonitorChartData }) {
         <ChartTooltip
           content={
             <ChartTooltipContent
-              labelFormatter={(value) => formatChartTooltipTime(value)}
+              labelFormatter={(_, payload) =>
+                formatChartTooltipTime(payload[0]?.payload?.timestamp)
+              }
+              valueFormatter={(value) =>
+                m.common_ms({ value: Number(value).toLocaleString() })
+              }
             />
           }
         />
@@ -265,7 +270,8 @@ function LatencySummaryChart({ charts }: { charts: MonitorChartData }) {
           dot={false}
           isAnimationActive={false}
           stroke="var(--color-avg)"
-          strokeWidth={1.5}
+          strokeDasharray="5 4"
+          strokeWidth={2}
           type="monotone"
         />
       </LineChart>
@@ -487,8 +493,10 @@ function formatChartTick(value: number | string) {
   }
 
   return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    month: "short",
   }).format(new Date(timestamp));
 }
 
@@ -503,7 +511,7 @@ function formatChartTooltipTime(
 
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
-    timeStyle: "short",
+    timeStyle: "medium",
   }).format(new Date(timestamp));
 }
 
