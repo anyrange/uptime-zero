@@ -1,4 +1,4 @@
-import type { EvlogVariables } from "evlog/hono";
+import type { HonoLogLayerVariables } from "@loglayer/hono";
 
 import type { SchedulerActor } from "@/server/durable/scheduler-actor";
 
@@ -17,5 +17,5 @@ export type Variables = {
 
 export type AppEnv = {
   Bindings: Bindings;
-  Variables: Variables & EvlogVariables["Variables"];
+  Variables: Variables & HonoLogLayerVariables;
 };

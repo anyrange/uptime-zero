@@ -2,6 +2,7 @@ import type { Database } from "@/server/db";
 import type { MonitorRecord } from "@/types";
 
 import { nowMs } from "@/server/lib/dates";
+import { logger } from "@/server/lib/logger";
 import { getMonitorNextDueAt, isMonitorDue } from "@/server/lib/monitoring";
 import { MonitorLifecycle } from "@/server/services/monitor-lifecycle";
 
@@ -49,10 +50,9 @@ export async function runDueMonitorsAndReschedule(
       try {
         return isMonitorDue(monitor, currentTime).due;
       } catch {
-        console.error({
-          message: "invalid monitor schedule",
-          monitorId: monitor.id,
-        });
+        logger
+          .withMetadata({ monitorId: monitor.id })
+          .error("invalid monitor schedule");
 
         return false;
       }
@@ -80,16 +80,10 @@ export async function runDueMonitorsAndReschedule(
           monitor.id,
           (options.now ?? nowMs()) + FAILED_CHECK_RETRY_DELAY_MS,
         );
-      console.error(
-        JSON.stringify({
-          message: "monitor check failed before persistence completed",
-          monitorId: selectedMonitors[index]?.id,
-          error:
-            result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason),
-        }),
-      );
+      logger
+        .withError(result.reason)
+        .withMetadata({ monitorId: selectedMonitors[index]?.id })
+        .error("monitor check failed before persistence completed");
     }
   }
 
@@ -222,10 +216,9 @@ async function rescheduleFromActiveMonitors(
     try {
       return [getMonitorNextDueAt(monitor)];
     } catch {
-      console.error({
-        message: "invalid monitor schedule",
-        monitorId: monitor.id,
-      });
+      logger
+        .withMetadata({ monitorId: monitor.id })
+        .error("invalid monitor schedule");
 
       return [];
     }

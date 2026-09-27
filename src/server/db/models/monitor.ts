@@ -24,6 +24,7 @@ import {
   readMonitorStatus,
 } from "@/server/db/values";
 import { nowIso } from "@/server/lib/dates";
+import { logger } from "@/server/lib/logger";
 
 type MonitorRow = typeof schema.monitors.$inferSelect;
 
@@ -101,10 +102,9 @@ export class MonitorModel {
       try {
         return [mapMonitorRecord(row)];
       } catch {
-        console.error({
-          message: "invalid monitor configuration",
-          monitorId: row.id,
-        });
+        logger
+          .withMetadata({ monitorId: row.id })
+          .error("invalid monitor configuration");
 
         return [];
       }

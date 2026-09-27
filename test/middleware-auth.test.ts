@@ -20,9 +20,9 @@ type SessionVars = {
   sessionUserImage: string | null;
 };
 
-type TestLog = { set: ReturnType<typeof vi.fn> };
+type TestLogger = { withContext: ReturnType<typeof vi.fn> };
 
-type ContextValue = SessionVars[keyof SessionVars] | TestLog | null;
+type ContextValue = SessionVars[keyof SessionVars] | TestLogger | null;
 
 type Context = Parameters<typeof requireSession>[0] & {
   req: {
@@ -33,7 +33,7 @@ type Context = Parameters<typeof requireSession>[0] & {
   };
   env: { DB: Record<string, never> };
   redirect: (location: string) => Response;
-  get: (key: keyof SessionVars | "log") => ContextValue;
+  get: (key: keyof SessionVars | "logger") => ContextValue;
   set: (
     key: keyof SessionVars,
     value: SessionVars[keyof SessionVars] | null,
@@ -44,7 +44,7 @@ type TestContext = {
   ctx: Context;
   next: Mock<() => Promise<void>>;
   values: Map<string, unknown>;
-  log: TestLog;
+  logger: TestLogger;
 };
 
 async function createAuthSession(role: "admin" | "user") {
@@ -85,7 +85,7 @@ function createContext(
     ...Object.entries(seed),
   ]);
 
-  const log = { set: vi.fn() };
+  const logger = { withContext: vi.fn() };
 
   // SAFETY: The test double implements the middleware-visible subset of Hono's context.
   const ctx = {
@@ -103,9 +103,9 @@ function createContext(
         status: 302,
         headers: { Location: location },
       }),
-    get: (key: keyof SessionVars | "log") => {
-      if (key === "log") {
-        return log;
+    get: (key: keyof SessionVars | "logger") => {
+      if (key === "logger") {
+        return logger;
       }
 
       if (!values.has(key)) {
@@ -126,7 +126,7 @@ function createContext(
     ctx,
     next: vi.fn<() => Promise<void>>(async () => {}),
     values,
-    log,
+    logger,
   };
 }
 
@@ -149,7 +149,7 @@ describe("loadSession", () => {
   it("hydrates context from an authenticated session", async () => {
     const { cookie, userId, name, email } = await createAuthSession("admin");
 
-    const { ctx, next, values, log } = createContext(
+    const { ctx, next, values, logger } = createContext(
       {},
       new Headers({ cookie }),
     );
@@ -160,7 +160,7 @@ describe("loadSession", () => {
     expect(values.get("sessionUserName")).toBe(name);
     expect(values.get("sessionUserRole")).toBe("admin");
     expect(values.get("sessionUserEmail")).toBe(email);
-    expect(log.set).toHaveBeenCalledWith({
+    expect(logger.withContext).toHaveBeenCalledWith({
       session: {
         userId,
       },
@@ -169,7 +169,7 @@ describe("loadSession", () => {
   });
 
   it("clears context when no session exists", async () => {
-    const { ctx, next, values, log } = createContext();
+    const { ctx, next, values, logger } = createContext();
 
     await runMiddleware(loadSession, ctx, next);
 
@@ -178,7 +178,7 @@ describe("loadSession", () => {
     expect(values.get("sessionUserEmail")).toBeNull();
     expect(values.get("sessionUserImage")).toBeNull();
     expect(values.get("sessionUserRole")).toBeNull();
-    expect(log.set).not.toHaveBeenCalled();
+    expect(logger.withContext).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
   });
 });

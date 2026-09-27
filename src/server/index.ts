@@ -1,5 +1,4 @@
-import { evlog } from "evlog/hono";
-import { initWorkersLogger } from "evlog/workers";
+import { honoLogLayer } from "@loglayer/hono";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 
@@ -11,6 +10,7 @@ import {
   getSchedulerActor,
   SchedulerActor,
 } from "@/server/durable/scheduler-actor";
+import { logger } from "@/server/lib/logger";
 import { loadSession } from "@/server/middleware/auth";
 import { requireApiSession } from "@/server/middleware/guards";
 import { requireApiPermission } from "@/server/middleware/permissions";
@@ -22,17 +22,6 @@ import { pushApi } from "@/server/routes/push";
 import { settingsApi } from "@/server/routes/settings";
 import { publicStatusApi, statusPagesApi } from "@/server/routes/status-pages";
 import { MaintenanceService } from "@/server/services/maintenance";
-
-initWorkersLogger({
-  env: { service: "uptime-worker" },
-  sampling: {
-    rates: {
-      info: 25,
-      warn: 100,
-      error: 100,
-    },
-  },
-});
 
 // Registration order is the access boundary: public routes respond before the
 // session middleware runs, and `/auth` needs a loaded but optional session.
@@ -59,7 +48,17 @@ export const api = new Hono<AppEnv>()
 
 export type ApiType = typeof api;
 
-const app = new Hono<AppEnv>().use(evlog()).route("/api", api);
+const app = new Hono<AppEnv>()
+  .use(
+    honoLogLayer({
+      instance: logger,
+      requestId: (request) =>
+        request.headers.get("cf-ray") ?? crypto.randomUUID(),
+      // One line per request; handlers enrich it through `logger.withContext`.
+      autoLogging: { request: false, ignore: [/^\/api\/push\//] },
+    }),
+  )
+  .route("/api", api);
 
 app.onError((error, ctx) => {
   const status = error instanceof HTTPException ? error.status : 500;
@@ -67,9 +66,7 @@ app.onError((error, ctx) => {
   const message =
     error instanceof HTTPException ? error.message : "Internal server error";
 
-  ctx
-    .get("log")
-    .error(error instanceof Error ? error : new Error(String(error)));
+  ctx.get("logger").withError(error).error("request failed");
 
   return ctx.json({ error: message }, status);
 });
@@ -94,10 +91,12 @@ const worker: ExportedHandler<Env> = {
     const maintenance = new MaintenanceService(db);
 
     await maintenance.cleanupRetention();
-    console.info("maintenance cleanup completed", {
-      cron: controller.cron,
-      scheduledTime: controller.scheduledTime,
-    });
+    logger
+      .withMetadata({
+        cron: controller.cron,
+        scheduledTime: controller.scheduledTime,
+      })
+      .info("maintenance cleanup completed");
   },
 };
 

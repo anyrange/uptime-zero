@@ -41,7 +41,7 @@ export const monitorsApi = new Hono<AppEnv>()
     async (ctx) => {
       const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
 
-      ctx.get("log").set({
+      ctx.get("logger").withContext({
         action: "monitor_create",
         monitor: {
           kind: monitor.kind,
@@ -80,7 +80,7 @@ export const monitorsApi = new Hono<AppEnv>()
       }
 
       const result = await runConfiguredMonitorCheck(monitor);
-      ctx.get("log").set({
+      ctx.get("logger").withContext({
         action: "monitor_test",
         monitor: {
           kind: monitor.kind,
@@ -154,7 +154,7 @@ export const monitorsApi = new Hono<AppEnv>()
     async (ctx) => {
       const monitor = parseMonitorConfigForStorage(ctx.req.valid("json"));
 
-      ctx.get("log").set({
+      ctx.get("logger").withContext({
         action: "monitor_update",
         monitor: {
           id: ctx.req.param("id"),
@@ -182,7 +182,7 @@ export const monitorsApi = new Hono<AppEnv>()
   )
   .delete("/:id", requireApiPermission("monitor.delete"), async (ctx) => {
     const monitorId = ctx.req.param("id");
-    ctx.get("log").set({
+    ctx.get("logger").withContext({
       action: "monitor_delete",
       monitor: { id: monitorId },
     });

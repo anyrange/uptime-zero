@@ -3,6 +3,7 @@ import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
 import type { Database } from "@/server/db";
 
 import { schema } from "@/server/db";
+import { logger } from "@/server/lib/logger";
 import { deliverNotificationDestination } from "@/server/services/notifications/delivery";
 
 export async function deliverPendingNotifications(
@@ -102,12 +103,10 @@ export async function deliverPendingNotifications(
               Math.min(3600000, 30000 * 2 ** Math.min(attempts - 1, 7)),
           })
           .where(eq(schema.notificationDeliveries.id, delivery.id));
-        console.error({
-          message: "notification delivery will retry",
-          deliveryId: delivery.id,
-          attempts,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger
+          .withError(error)
+          .withMetadata({ deliveryId: delivery.id, attempts })
+          .warn("notification delivery will retry");
       }
     }),
   );

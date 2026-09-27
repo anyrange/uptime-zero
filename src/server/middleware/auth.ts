@@ -42,7 +42,7 @@ export const loadSession = createMiddleware<AppEnv>(async (ctx, next) => {
   );
 
   if (session?.user.id) {
-    ctx.get("log").set({
+    ctx.get("logger").withContext({
       session: {
         userId: session.user.id,
       },

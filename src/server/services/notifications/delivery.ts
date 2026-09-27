@@ -4,6 +4,7 @@ import type {
   NotificationHeader,
 } from "@/types";
 
+import { logger } from "@/server/lib/logger";
 import { parseNotificationHeaders } from "@/server/services/notifications/config";
 
 export type MonitorTransitionNotification = {
@@ -243,17 +244,13 @@ export async function dispatchNotificationEvent(
 
       failed += 1;
       const destination = batch[resultIndex];
-      console.error(
-        JSON.stringify({
-          message: "notification delivery failed",
+      logger
+        .withError(result.reason)
+        .withMetadata({
           destinationId: destination?.id,
           provider: destination?.provider,
-          error:
-            result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason),
-        }),
-      );
+        })
+        .error("notification delivery failed");
 
       if (options.throwOnFailure) {
         throw result.reason;

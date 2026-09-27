@@ -1,10 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
-import { createRequestLogger } from "evlog";
 
 import type { Bindings } from "@/ctx";
 import type { SchedulerAlarmAdapter } from "@/server/services/scheduler";
 
 import { createDatabase } from "@/server/db";
+import { logger } from "@/server/lib/logger";
 import { isMonitorDue } from "@/server/lib/monitoring";
 import {
   recordPushHeartbeatAndReschedule,
@@ -38,8 +38,6 @@ export class SchedulerActor extends DurableObject<Env> {
   private readonly monitorRuns = new Map<string, Promise<unknown>>();
 
   async sync(reason: SchedulerReason = "sync") {
-    const log = this.createLog("/do/scheduler/sync");
-
     try {
       const db = createDatabase(this.env.DB);
       await this.ensureHeartbeatRollupBackfill(db);
@@ -51,24 +49,21 @@ export class SchedulerActor extends DurableObject<Env> {
       this.ctx.waitUntil(
         this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
       );
-      log.set({
-        action: "scheduler_sync",
-        reason,
-        scheduler: result,
-      });
-      log.emit({ status: 200 });
+      logger
+        .withMetadata({ reason, scheduler: result })
+        .info("scheduler synced");
 
       return result;
     } catch (error) {
-      log.error(error instanceof Error ? error : new Error(String(error)));
-      log.emit({ status: 500 });
+      logger
+        .withError(error)
+        .withMetadata({ reason })
+        .error("scheduler sync failed");
       throw error;
     }
   }
 
   async runNow(monitorId: string, reason: SchedulerReason = "manual") {
-    const log = this.createLog("/do/scheduler/run-now");
-
     try {
       const db = createDatabase(this.env.DB);
       await this.ensureHeartbeatRollupBackfill(db);
@@ -82,18 +77,16 @@ export class SchedulerActor extends DurableObject<Env> {
       this.ctx.waitUntil(
         this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
       );
-      log.set({
-        action: "scheduler_run_now",
-        reason,
-        monitor: { id: monitorId },
-        scheduler: result,
-      });
-      log.emit({ status: 200 });
+      logger
+        .withMetadata({ reason, monitorId, scheduler: result })
+        .info("monitor run now completed");
 
       return result;
     } catch (error) {
-      log.error(error instanceof Error ? error : new Error(String(error)));
-      log.emit({ status: 500 });
+      logger
+        .withError(error)
+        .withMetadata({ reason, monitorId })
+        .error("monitor run now failed");
       throw error;
     }
   }
@@ -102,8 +95,6 @@ export class SchedulerActor extends DurableObject<Env> {
     monitorId: string,
     reason: SchedulerReason = "push",
   ) {
-    const log = this.createLog("/do/scheduler/push-heartbeat");
-
     try {
       const db = createDatabase(this.env.DB);
       await this.ensureHeartbeatRollupBackfill(db);
@@ -117,25 +108,21 @@ export class SchedulerActor extends DurableObject<Env> {
       this.ctx.waitUntil(
         this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
       );
-      log.set({
-        action: "scheduler_push_heartbeat",
-        reason,
-        monitor: { id: monitorId },
-        scheduler: result,
-      });
-      log.emit({ status: 200 });
+      logger
+        .withMetadata({ reason, monitorId, scheduler: result })
+        .info("push heartbeat rescheduled");
 
       return result;
     } catch (error) {
-      log.error(error instanceof Error ? error : new Error(String(error)));
-      log.emit({ status: 500 });
+      logger
+        .withError(error)
+        .withMetadata({ reason, monitorId })
+        .error("push heartbeat reschedule failed");
       throw error;
     }
   }
 
   override async alarm() {
-    const log = this.createLog("/do/scheduler/alarm");
-
     try {
       if (this.ctx.id.name !== SCHEDULER_ACTOR_NAME) {
         await getSchedulerActor(this.env).sync("scheduler-consolidation");
@@ -143,8 +130,7 @@ export class SchedulerActor extends DurableObject<Env> {
         this.ctx.waitUntil(
           this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
         );
-        log.set({ action: "scheduler_consolidation" });
-        log.emit({ status: 200 });
+        logger.info("scheduler consolidated");
 
         return;
       }
@@ -173,14 +159,9 @@ export class SchedulerActor extends DurableObject<Env> {
       this.ctx.waitUntil(
         this.env.NOTIFICATION_ACTOR.getByName("installation").sync(),
       );
-      log.set({
-        action: "scheduler_alarm",
-        scheduler: result,
-      });
-      log.emit({ status: 200 });
+      logger.withMetadata({ scheduler: result }).info("scheduler alarm ran");
     } catch (error) {
-      log.error(error instanceof Error ? error : new Error(String(error)));
-      log.emit({ status: 500 });
+      logger.withError(error).error("scheduler alarm failed");
       await this.ctx.storage.setAlarm(Date.now() + ALARM_RECOVERY_DELAY_MS);
     }
   }
@@ -219,13 +200,6 @@ export class SchedulerActor extends DurableObject<Env> {
         this.monitorRuns.delete(monitorId);
       }
     }
-  }
-
-  private createLog(path: string) {
-    return createRequestLogger({
-      method: "RPC",
-      path,
-    });
   }
 }
 
