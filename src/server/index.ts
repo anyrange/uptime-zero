@@ -5,16 +5,6 @@ import { HTTPException } from "hono/http-exception";
 
 import type { AppEnv } from "@/ctx";
 
-import { authApi } from "@/server/controllers/auth";
-import { dashboardApi } from "@/server/controllers/dashboard";
-import { monitorsApi } from "@/server/controllers/monitors";
-import { notificationsApi } from "@/server/controllers/notifications";
-import { registerPushRoutes } from "@/server/controllers/push";
-import { settingsApi } from "@/server/controllers/settings";
-import {
-  publicStatusApi,
-  statusPagesApi,
-} from "@/server/controllers/status-pages";
 import { createDatabase } from "@/server/db";
 import { NotificationActor } from "@/server/durable/notification-actor";
 import {
@@ -24,6 +14,13 @@ import {
 import { loadSession } from "@/server/middleware/auth";
 import { requireApiSession } from "@/server/middleware/guards";
 import { requireApiPermission } from "@/server/middleware/permissions";
+import { authApi } from "@/server/routes/auth";
+import { dashboardApi } from "@/server/routes/dashboard";
+import { monitorsApi } from "@/server/routes/monitors";
+import { notificationsApi } from "@/server/routes/notifications";
+import { pushApi } from "@/server/routes/push";
+import { settingsApi } from "@/server/routes/settings";
+import { publicStatusApi, statusPagesApi } from "@/server/routes/status-pages";
 import { MaintenanceService } from "@/server/services/maintenance";
 
 initWorkersLogger({
@@ -37,10 +34,14 @@ initWorkersLogger({
   },
 });
 
+// Registration order is the access boundary: public routes respond before the
+// session middleware runs, and `/auth` needs a loaded but optional session.
 export const api = new Hono<AppEnv>()
-  .route("/auth", authApi)
   .route("/status", publicStatusApi)
-  .use("*", requireApiSession)
+  .route("/push", pushApi)
+  .use(loadSession)
+  .route("/auth", authApi)
+  .use(requireApiSession)
   .use("/dashboard", requireApiPermission("monitor.read"))
   .route("/dashboard", dashboardApi)
   .use("/monitors", requireApiPermission("monitor.read"))
@@ -58,25 +59,7 @@ export const api = new Hono<AppEnv>()
 
 export type ApiType = typeof api;
 
-const app = new Hono<AppEnv>();
-
-app.use("*", evlog());
-
-app.use("*", async (ctx, next) => {
-  if (ctx.req.path.startsWith("/api/push/"))
-    ctx.get("log").set({ path: "/api/push/:token" });
-  await next();
-});
-
-app.use("/api/*", async (ctx, next) => {
-  if (
-    ctx.req.path.startsWith("/api/push/") ||
-    ctx.req.path.startsWith("/api/status/")
-  )
-    return next();
-
-  return loadSession(ctx, next);
-});
+const app = new Hono<AppEnv>().use(evlog()).route("/api", api);
 
 app.onError((error, ctx) => {
   const status = error instanceof HTTPException ? error.status : 500;
@@ -90,10 +73,6 @@ app.onError((error, ctx) => {
 
   return ctx.json({ error: message }, status);
 });
-
-registerPushRoutes(app);
-
-app.route("/api", api);
 
 export { SchedulerActor, NotificationActor };
 

@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
@@ -93,7 +93,9 @@ export const authApi = new Hono<AppEnv>()
       });
     }
 
-    return jsonWithAuthCookies(response, { ok: true });
+    forwardAuthCookies(ctx, response);
+
+    return ctx.json({ ok: true });
   })
   .post("/login", zValidator("json", authCredentialsSchema), async (ctx) => {
     const { email, password } = ctx.req.valid("json");
@@ -108,7 +110,9 @@ export const authApi = new Hono<AppEnv>()
       throw new HTTPException(401, { message: "Invalid credentials" });
     }
 
-    return jsonWithAuthCookies(response, { ok: true });
+    forwardAuthCookies(ctx, response);
+
+    return ctx.json({ ok: true });
   })
   .post("/logout", async (ctx) => {
     const response = await authFor(ctx).api.signOut({
@@ -116,7 +120,9 @@ export const authApi = new Hono<AppEnv>()
       asResponse: true,
     });
 
-    return jsonWithAuthCookies(response, { ok: true });
+    forwardAuthCookies(ctx, response);
+
+    return ctx.json({ ok: true });
   })
   .get("/account", async (ctx) => {
     const userId = ctx.get("sessionUserId");
@@ -173,12 +179,10 @@ export const authApi = new Hono<AppEnv>()
     },
   );
 
-function jsonWithAuthCookies(source: Response, body: { ok: boolean }) {
-  const headers = new Headers(source.headers);
-  headers.set("content-type", "application/json; charset=utf-8");
-
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers,
-  });
+// Better Auth answers with its own Response; forward only its session cookies so
+// handlers can still return `ctx.json` and keep RPC response types.
+function forwardAuthCookies(ctx: Context<AppEnv>, source: Response) {
+  for (const cookie of source.headers.getSetCookie()) {
+    ctx.header("set-cookie", cookie, { append: true });
+  }
 }
