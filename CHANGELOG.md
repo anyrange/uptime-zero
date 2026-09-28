@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.16.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.15.0...uptime-zero-v0.16.0) (2026-09-28)
+
+
+### Features
+
+* update latency chart ([f671d69](https://github.com/anyrange/uptime-zero/commit/f671d69c8e1fabda3f839b6d374dd5c8cb2fdab5))
+
+
+### Bug Fixes
+
+* **monitors:** load full 48-hour heartbeat history for overview ([2308546](https://github.com/anyrange/uptime-zero/commit/23085460a8eb7e04e511116ffee65e780647ebb4))
+* **server:** always use pino's browser build for logging ([3f7de21](https://github.com/anyrange/uptime-zero/commit/3f7de2100961f5d3422d633620c65f3238ca9dca))
+
+
+### Miscellaneous Chores
+
+* change wrangler config ([da2a29c](https://github.com/anyrange/uptime-zero/commit/da2a29c9953e9d526193e5183abcb7a438dac150))
+* install and use anti-slop ([4515e49](https://github.com/anyrange/uptime-zero/commit/4515e498d1a2eeea7b288cbc0c75088716a16971))
+* update packages ([bc704c6](https://github.com/anyrange/uptime-zero/commit/bc704c616b6a67fa0288d5562c13e2edaaa2b707))
+
+
+### Code Refactoring
+
+* **db:** move Drizzle migrations into server database directory ([44d131c](https://github.com/anyrange/uptime-zero/commit/44d131c5b9318694d483ea77803200c87286e847))
+* optimize sql queries ([b020db1](https://github.com/anyrange/uptime-zero/commit/b020db108f312263710c65d65983b0f6966f48bf))
+* **server:** align Hono routes with best practices ([d7c9302](https://github.com/anyrange/uptime-zero/commit/d7c9302977dfe6baefc95ebeef70396e3ad79eb9))
+* **server:** replace evlog with LogLayer and pino ([8712cb7](https://github.com/anyrange/uptime-zero/commit/8712cb72b7f9730308abe7eed63b7b73a6e43569))
+* update server composition ([40417e0](https://github.com/anyrange/uptime-zero/commit/40417e022f880d310c234e2386b4e3130d84c657))
+* **web:** load route data through suspense queries ([e7c9bcc](https://github.com/anyrange/uptime-zero/commit/e7c9bccae50ecd65e3713de50dc881ce19bcb322))
+
 ## [0.15.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.14.0...uptime-zero-v0.15.0) (2026-09-02)
 
 
