@@ -1,11 +1,12 @@
 import { PinoTransport } from "@loglayer/transport-pino";
 import { LogLayer } from "loglayer";
-import pino from "pino";
+import pino from "pino/browser.js";
 import { serializeError } from "serialize-error";
 
-// Workers bundles resolve pino's browser build, which writes each entry as an
-// object through the matching `console[level]` method; Workers Logs indexes
-// those fields and severities without a stdout stream.
+// Import pino's browser build explicitly: it writes each entry as an object
+// through the matching `console[level]` method, which Workers Logs indexes by
+// field and severity. The Node entry would write numeric-level JSON to stdout,
+// and bundlers disagree on which entry a Worker gets.
 const pinoLogger = pino({
   browser: {
     asObject: true,
