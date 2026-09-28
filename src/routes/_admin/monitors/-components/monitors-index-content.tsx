@@ -68,7 +68,7 @@ import {
 } from "@/lib/queries/settings";
 import { m } from "@/paraglide/messages.js";
 
-import { displayMonitorTarget } from "../-components/monitor-workspace-page";
+import { displayMonitorTarget } from "../-components/monitor-workspace";
 
 export function MonitorsIndexContent({
   monitors,
@@ -652,7 +652,7 @@ function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
           <DropdownMenuItem asChild>
             <Link
               params={{ monitorId: monitor.id }}
-              to="/monitors/$monitorId/edit"
+              to="/monitors/$monitorId/settings"
             >
               <Pencil className="size-4" />
               {m.common_edit()}

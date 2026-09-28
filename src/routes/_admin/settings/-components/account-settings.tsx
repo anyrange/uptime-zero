@@ -1,11 +1,9 @@
 import { useForm } from "@tanstack/react-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
-import type { AccountData } from "@/types";
-
-import { Error } from "@/components/error";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { firstFieldError } from "@/lib/form-errors";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  useAccountQuery,
+  accountQueryOptions,
   useDeleteAccountMutation,
   useUpdateAccountMutation,
 } from "@/lib/queries/auth";
@@ -36,25 +34,13 @@ import {
   SettingsRowDescription,
   SettingsRowLabel,
 } from "./settings-layout";
-import { SettingsSkeleton } from "./settings-skeleton";
 
 const accountSchema = z.object({
   name: z.string().trim().min(1, m.validation_name_required()).max(120),
 });
 
 export function AccountSettings() {
-  const account = useAccountQuery();
-
-  if (account.status === "pending") return <SettingsSkeleton />;
-
-  if (account.status === "error") {
-    return <Error message={account.error.message} />;
-  }
-
-  return <AccountSettingsContent data={account.data} />;
-}
-
-function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
+  const { data } = useSuspenseQuery(accountQueryOptions());
   const update = useUpdateAccountMutation();
   const remove = useDeleteAccountMutation();
   const { check, isReady } = usePermissions();
@@ -268,8 +254,6 @@ function AccountSettingsContent({ data }: { data: AccountSettingsData }) {
     </div>
   );
 }
-
-type AccountSettingsData = AccountData;
 
 function providerName(providerId: string) {
   return providerId === "credential"

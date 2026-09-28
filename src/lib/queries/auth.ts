@@ -2,9 +2,9 @@ import {
   type QueryClient,
   queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
@@ -16,19 +16,11 @@ export function setupStateQueryOptions() {
   });
 }
 
-export function useSetupStateQuery() {
-  return useQuery(setupStateQueryOptions());
-}
-
 export function sessionQueryOptions() {
   return queryOptions({
     queryKey: ["auth", "session"],
     queryFn: () => parseResponse(apiClient.auth.session.$get()),
   });
-}
-
-export function useSessionQuery() {
-  return useQuery(sessionQueryOptions());
 }
 
 export function accountQueryOptions() {
@@ -38,10 +30,6 @@ export function accountQueryOptions() {
   });
 }
 
-export function useAccountQuery() {
-  return useQuery(accountQueryOptions());
-}
-
 export function useSetupMutation() {
   const queryClient = useQueryClient();
 
@@ -49,7 +37,7 @@ export function useSetupMutation() {
     mutationFn: (payload: { name: string; email: string; password: string }) =>
       parseResponse(apiClient.auth.setup.$post({ json: payload })),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await refetchAuthQueries(queryClient);
     },
   });
 }
@@ -61,18 +49,25 @@ export function useLoginMutation() {
     mutationFn: (payload: { email: string; password: string }) =>
       parseResponse(apiClient.auth.login.$post({ json: payload })),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await refetchAuthQueries(queryClient);
     },
   });
 }
 
 export function useLogoutMutation() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: () => parseResponse(apiClient.auth.logout.$post()),
     onSuccess: async () => {
-      await invalidateSignedOutQueries(queryClient);
+      // Clear the session first so `/login` accepts the visit, and drop private
+      // data only after the admin routes reading it through suspense unmount.
+      queryClient.setQueryData(sessionQueryOptions().queryKey, { user: null });
+      await router.navigate({ replace: true, to: "/login" });
+      await queryClient.cancelQueries({ queryKey: privateKey() });
+      queryClient.removeQueries({ queryKey: privateKey() });
+      queryClient.removeQueries({ queryKey: accountQueryOptions().queryKey });
     },
   });
 }
@@ -90,19 +85,17 @@ export function useUpdateAccountMutation() {
 }
 
 export function useDeleteAccountMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    // Callers reload into setup, which discards every cached query.
     mutationFn: () => parseResponse(apiClient.auth.account.$delete()),
-    onSuccess: async () => {
-      await invalidateSignedOutQueries(queryClient);
-    },
   });
 }
 
-async function invalidateSignedOutQueries(queryClient: QueryClient) {
-  await queryClient.cancelQueries({ queryKey: privateKey() });
-  queryClient.removeQueries({ queryKey: privateKey() });
-  queryClient.removeQueries({ queryKey: ["auth", "account"] });
-  queryClient.setQueryData(sessionQueryOptions().queryKey, { user: null });
+// Route guards read the session through `ensureQueryData`, which returns cached
+// data even when invalidated, so signing in refetches inactive auth queries too.
+async function refetchAuthQueries(queryClient: QueryClient) {
+  await queryClient.invalidateQueries({
+    queryKey: ["auth"],
+    refetchType: "all",
+  });
 }

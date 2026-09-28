@@ -1,4 +1,5 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
@@ -25,8 +26,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { useMonitorListQuery } from "@/lib/queries/monitors";
-import { useStatusPagesQuery } from "@/lib/queries/status-pages";
+import { dashboardQueryOptions } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 type CommandDestination = {
@@ -40,8 +40,9 @@ type CommandDestination = {
 export function AppCommand() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const monitors = useMonitorListQuery();
-  const statusPages = useStatusPagesQuery();
+  // The admin layout loads the dashboard, which already lists every monitor and
+  // status page the palette links to.
+  const { data: dashboard } = useSuspenseQuery(dashboardQueryOptions());
 
   const navigationItems = useMemo<CommandDestination[]>(
     () => [
@@ -172,11 +173,11 @@ export function AppCommand() {
                 />
               ))}
             </CommandGroup>
-            {monitors.data?.monitors.length ? (
+            {dashboard.monitors.length ? (
               <>
                 <CommandSeparator />
                 <CommandGroup heading={m.command_group_monitors()}>
-                  {monitors.data.monitors.map((monitor) => (
+                  {dashboard.monitors.map((monitor) => (
                     <CommandItem
                       key={monitor.id}
                       keywords={[monitor.name, monitor.target, monitor.kind]}
@@ -195,11 +196,11 @@ export function AppCommand() {
                 </CommandGroup>
               </>
             ) : null}
-            {statusPages.data?.pages.length ? (
+            {dashboard.statusPages.length ? (
               <>
                 <CommandSeparator />
                 <CommandGroup heading={m.command_group_status_pages()}>
-                  {statusPages.data.pages.map((page) => (
+                  {dashboard.statusPages.map((page) => (
                     <CommandItem
                       key={page.id}
                       keywords={[page.title, page.slug]}

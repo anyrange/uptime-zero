@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type ColumnDef,
@@ -10,7 +11,6 @@ import { z } from "zod";
 import type { IncidentListRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
-import { Error } from "@/components/error";
 import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
 import {
@@ -29,7 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDateTime } from "@/lib/formatters";
-import { useDashboardQuery, useIncidentsQuery } from "@/lib/queries/dashboard";
+import {
+  dashboardQueryOptions,
+  incidentsQueryOptions,
+} from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 import { IncidentsSkeleton } from "./-components/incidents-skeleton";
@@ -41,20 +44,23 @@ const incidentsSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_admin/incidents")({
-  component: IncidentsRoute,
   validateSearch: incidentsSearchSchema,
+  loaderDeps: ({ search }) => ({
+    ...search,
+    status: search.status ?? "all",
+  }),
+  loader: async ({ context, deps }) => {
+    await context.queryClient.ensureQueryData(incidentsQueryOptions(deps));
+  },
+  pendingComponent: IncidentsSkeleton,
+  component: IncidentsRoute,
 });
 
 const ALL_MONITORS_VALUE = "__all_monitors__";
 
 function IncidentsRoute() {
   const navigate = Route.useNavigate();
-  const routeSearch = Route.useSearch();
-
-  const search = {
-    ...routeSearch,
-    status: routeSearch.status ?? "all",
-  };
+  const search = Route.useLoaderDeps();
 
   const [statusValue, setStatusValue] = useState(search.status);
 
@@ -63,8 +69,8 @@ function IncidentsRoute() {
   );
 
   const [queryValue, setQueryValue] = useState(search.q ?? "");
-  const dashboard = useDashboardQuery();
-  const incidents = useIncidentsQuery(search);
+  const { data: dashboard } = useSuspenseQuery(dashboardQueryOptions());
+  const { data: incidents } = useSuspenseQuery(incidentsQueryOptions(search));
 
   useEffect(() => {
     setStatusValue(search.status);
@@ -158,7 +164,7 @@ function IncidentsRoute() {
             <SelectItem value={ALL_MONITORS_VALUE}>
               {m.incident_all_monitors()}
             </SelectItem>
-            {dashboard.data?.monitors.map((monitor) => (
+            {dashboard.monitors.map((monitor) => (
               <SelectItem key={monitor.id} value={monitor.id}>
                 {monitor.name}
               </SelectItem>
@@ -172,13 +178,7 @@ function IncidentsRoute() {
           value={queryValue}
         />
       </div>
-      {incidents.status === "pending" ? <IncidentsSkeleton /> : null}
-      {incidents.status === "error" ? (
-        <Error message={incidents.error.message} />
-      ) : null}
-      {incidents.status === "success" ? (
-        <IncidentsTable incidents={incidents.data} />
-      ) : null}
+      <IncidentsTable incidents={incidents} />
     </AppPage>
   );
 }

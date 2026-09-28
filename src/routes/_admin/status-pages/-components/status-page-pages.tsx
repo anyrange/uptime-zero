@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   type ColumnDef,
@@ -14,7 +15,6 @@ import type { StatusPagePayload } from "@/lib/queries/status-pages";
 import type { MonitorRecord, StatusPageRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
-import { Error } from "@/components/error";
 import {
   AppPage,
   AppPageActions,
@@ -61,16 +61,11 @@ import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   useCreateStatusPageMutation,
   useDeleteStatusPageMutation,
-  useStatusPageQuery,
-  useStatusPagesQuery,
+  statusPageQueryOptions,
+  statusPagesQueryOptions,
   useUpdateStatusPageMutation,
 } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
-
-import {
-  StatusPageFormSkeleton,
-  StatusPagesSkeleton,
-} from "./status-pages-skeleton";
 
 const statusPageSchema = z.object({
   title: z.string().trim().min(1, m.status_page_title_required()),
@@ -83,9 +78,9 @@ const statusPageSchema = z.object({
 });
 
 export function StatusPagesPage() {
-  const pages = useStatusPagesQuery();
+  const { data: pages } = useSuspenseQuery(statusPagesQueryOptions());
   const monitorCount = new Map<string, number>();
-  pages.data?.links.forEach((link) => {
+  pages.links.forEach((link) => {
     monitorCount.set(
       link.status_page_id,
       (monitorCount.get(link.status_page_id) ?? 0) + 1,
@@ -105,22 +100,16 @@ export function StatusPagesPage() {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {pages.status === "pending" ? <StatusPagesSkeleton /> : null}
-      {pages.status === "error" ? (
-        <Error message={pages.error.message} />
-      ) : null}
-      {pages.status === "success" ? (
-        pages.data.pages.length === 0 ? (
-          <Empty>{m.status_page_none_configured()}</Empty>
-        ) : (
-          <StatusPagesTable
-            pages={pages.data.pages.map((page) => ({
-              page,
-              monitorCount: monitorCount.get(page.id) ?? 0,
-            }))}
-          />
-        )
-      ) : null}
+      {pages.pages.length === 0 ? (
+        <Empty>{m.status_page_none_configured()}</Empty>
+      ) : (
+        <StatusPagesTable
+          pages={pages.pages.map((page) => ({
+            page,
+            monitorCount: monitorCount.get(page.id) ?? 0,
+          }))}
+        />
+      )}
     </AppPage>
   );
 }
@@ -290,7 +279,7 @@ function StatusPageRowActions({ page }: { page: StatusPageRecord }) {
 }
 
 export function NewStatusPagePage() {
-  const pages = useStatusPagesQuery();
+  const { data: pages } = useSuspenseQuery(statusPagesQueryOptions());
   const create = useCreateStatusPageMutation();
   const navigate = useNavigate();
 
@@ -309,28 +298,22 @@ export function NewStatusPagePage() {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {pages.status === "pending" ? <StatusPageFormSkeleton /> : null}
-      {pages.status === "error" ? (
-        <Error message={pages.error.message} />
-      ) : null}
-      {pages.status === "success" ? (
-        <StatusPageConfigLayout>
-          <StatusPageForm
-            monitors={pages.data.monitors}
-            onSubmit={async (payload) => {
-              await create.mutateAsync(payload);
-              await navigate({ to: "/status-pages" });
-            }}
-            pending={create.isPending}
-          />
-        </StatusPageConfigLayout>
-      ) : null}
+      <StatusPageConfigLayout>
+        <StatusPageForm
+          monitors={pages.monitors}
+          onSubmit={async (payload) => {
+            await create.mutateAsync(payload);
+            await navigate({ to: "/status-pages" });
+          }}
+          pending={create.isPending}
+        />
+      </StatusPageConfigLayout>
     </AppPage>
   );
 }
 
 export function EditStatusPagePage({ pageId }: { pageId: string }) {
-  const page = useStatusPageQuery(pageId);
+  const { data: page } = useSuspenseQuery(statusPageQueryOptions(pageId));
   const update = useUpdateStatusPageMutation(pageId);
   const remove = useDeleteStatusPageMutation(pageId);
   const navigate = useNavigate();
@@ -342,19 +325,11 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
   const deleteError = remove.error?.message ?? null;
 
   return (
-    <AppPage
-      title={
-        page.data
-          ? m.status_page_edit_named({ title: page.data.page.title })
-          : m.status_page_edit()
-      }
-    >
+    <AppPage title={m.status_page_edit_named({ title: page.page.title })}>
       <AppPageHeader>
         <AppPageHeaderContent>
           <AppPageLabel>
-            {page.data
-              ? m.status_page_edit_named({ title: page.data.page.title })
-              : m.status_page_edit()}
+            {m.status_page_edit_named({ title: page.page.title })}
           </AppPageLabel>
           <AppPageSubtitle>
             {m.status_page_settings_description()}
@@ -366,56 +341,48 @@ export function EditStatusPagePage({ pageId }: { pageId: string }) {
           </Button>
         </AppPageActions>
       </AppPageHeader>
-      {page.status === "pending" ? <StatusPageFormSkeleton /> : null}
-      {page.status === "error" ? <Error message={page.error.message} /> : null}
-      {page.status === "success" ? (
-        <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
-          <StatusPageConfigLayout>
-            <StatusPageForm
-              deletePending={remove.isPending}
-              deleteError={deleteError}
-              monitors={page.data.monitors}
-              onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
-              onSubmit={async (payload) => {
-                await update.mutateAsync(payload);
+      <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
+        <StatusPageConfigLayout>
+          <StatusPageForm
+            deletePending={remove.isPending}
+            deleteError={deleteError}
+            monitors={page.monitors}
+            onDelete={canDelete ? () => setConfirmOpen(true) : undefined}
+            onSubmit={async (payload) => {
+              await update.mutateAsync(payload);
+              await navigate({ to: "/status-pages" });
+            }}
+            page={page.page}
+            pending={update.isPending}
+            selectedMonitorIds={page.monitorIds}
+            submitError={submitError}
+          />
+        </StatusPageConfigLayout>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{m.status_page_delete_title()}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {m.status_page_delete_description({
+                title: page.page.title,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>
+              {m.common_cancel()}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remove.isPending}
+              onClick={async () => {
+                await remove.mutateAsync();
                 await navigate({ to: "/status-pages" });
               }}
-              page={page.data.page}
-              pending={update.isPending}
-              selectedMonitorIds={page.data.monitorIds}
-              submitError={submitError}
-            />
-          </StatusPageConfigLayout>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {m.status_page_delete_title()}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {m.status_page_delete_description({
-                  title: page.data.page.title,
-                })}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={remove.isPending}>
-                {m.common_cancel()}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={remove.isPending}
-                onClick={async () => {
-                  await remove.mutateAsync();
-                  await navigate({ to: "/status-pages" });
-                }}
-              >
-                {remove.isPending
-                  ? m.status_page_deleting()
-                  : m.common_delete()}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : null}
+            >
+              {remove.isPending ? m.status_page_deleting() : m.common_delete()}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppPage>
   );
 }

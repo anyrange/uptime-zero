@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { all } from "better-all";
 
 import type { MonitorPayload } from "@/lib/monitor/config";
@@ -10,8 +14,8 @@ export type { MonitorPayload } from "@/lib/monitor/config";
 
 export const MONITOR_LIST_POLL_INTERVAL_MS = 30_000;
 
-export function useMonitorListQuery() {
-  return useQuery({
+export function monitorListQueryOptions() {
+  return queryOptions({
     queryKey: privateKey("monitors"),
     queryFn: () => parseResponse(apiClient.monitors.$get()),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
@@ -19,18 +23,17 @@ export function useMonitorListQuery() {
   });
 }
 
-export function useMonitorQuery(id: string) {
-  return useQuery({
+export function monitorQueryOptions(id: string) {
+  return queryOptions({
     queryKey: privateKey("monitors", id),
     queryFn: () =>
       parseResponse(apiClient.monitors[":id"].$get({ param: { id } })),
   });
 }
 
-export function useMonitorStateQuery(id: string) {
-  return useQuery({
+export function monitorStateQueryOptions(id: string) {
+  return queryOptions({
     queryKey: privateKey("monitors", id, "state"),
-    enabled: id.length > 0,
     queryFn: () =>
       parseResponse(apiClient.monitors.state[":id"].$get({ param: { id } })),
     refetchInterval: MONITOR_LIST_POLL_INTERVAL_MS,
@@ -38,8 +41,8 @@ export function useMonitorStateQuery(id: string) {
   });
 }
 
-export function useMonitorLogsQuery(id: string, page: number) {
-  return useQuery({
+export function monitorLogsQueryOptions(id: string, page: number) {
+  return queryOptions({
     queryKey: privateKey("monitors", id, "logs", page),
     queryFn: () =>
       parseResponse(

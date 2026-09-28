@@ -567,7 +567,6 @@
   "status_page_open_actions": "Open actions for {title}",
   "status_page_deleting": "Deleting...",
   "status_page_new": "New status page",
-  "status_page_edit": "Edit status page",
   "status_page_edit_named": "Edit {title}",
   "status_page_configuration": "Status page configuration",
   "status_page_configuration_description": "Create a compact public status page with only the fields the app supports today.",

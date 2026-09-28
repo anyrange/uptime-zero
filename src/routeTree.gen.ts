@@ -13,21 +13,22 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/_admin/route'
 import { Route as StatusSlugRouteImport } from './routes/status/$slug'
-import { Route as AdminStatusPagesRouteRouteImport } from './routes/_admin/status-pages/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/_admin/settings/route'
 import { Route as AdminNotificationsRouteRouteImport } from './routes/_admin/notifications/route'
-import { Route as AdminMonitorsRouteRouteImport } from './routes/_admin/monitors/route'
 import { Route as AdminIncidentsRouteRouteImport } from './routes/_admin/incidents/route'
 import { Route as AdminIndexRouteRouteImport } from './routes/_admin/index/route'
+import { Route as AdminStatusPagesIndexRouteImport } from './routes/_admin/status-pages/index'
+import { Route as AdminSettingsIndexRouteImport } from './routes/_admin/settings/index'
+import { Route as AdminMonitorsIndexRouteImport } from './routes/_admin/monitors/index'
 import { Route as AdminStatusPagesNewRouteImport } from './routes/_admin/status-pages/new'
 import { Route as AdminSettingsSectionRouteImport } from './routes/_admin/settings/$section'
 import { Route as AdminMonitorsNewRouteImport } from './routes/_admin/monitors/new'
 import { Route as AdminMonitorsMonitorIdRouteRouteImport } from './routes/_admin/monitors/$monitorId/route'
+import { Route as AdminMonitorsMonitorIdIndexRouteImport } from './routes/_admin/monitors/$monitorId/index'
 import { Route as AdminStatusPagesPageIdEditRouteImport } from './routes/_admin/status-pages/$pageId/edit'
 import { Route as AdminMonitorsMonitorIdSettingsRouteImport } from './routes/_admin/monitors/$monitorId/settings'
 import { Route as AdminMonitorsMonitorIdLogsRouteImport } from './routes/_admin/monitors/$monitorId/logs'
 import { Route as AdminMonitorsMonitorIdIncidentsRouteImport } from './routes/_admin/monitors/$monitorId/incidents'
-import { Route as AdminMonitorsMonitorIdEditRouteImport } from './routes/_admin/monitors/$monitorId/edit'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -48,11 +49,6 @@ const StatusSlugRoute = StatusSlugRouteImport.update({
   path: '/status/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminStatusPagesRouteRoute = AdminStatusPagesRouteRouteImport.update({
-  id: '/status-pages',
-  path: '/status-pages',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
 const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -61,11 +57,6 @@ const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
 const AdminNotificationsRouteRoute = AdminNotificationsRouteRouteImport.update({
   id: '/notifications',
   path: '/notifications',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminMonitorsRouteRoute = AdminMonitorsRouteRouteImport.update({
-  id: '/monitors',
-  path: '/monitors',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminIncidentsRouteRoute = AdminIncidentsRouteRouteImport.update({
@@ -78,10 +69,25 @@ const AdminIndexRouteRoute = AdminIndexRouteRouteImport.update({
   path: '',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminStatusPagesIndexRoute = AdminStatusPagesIndexRouteImport.update({
+  id: '/status-pages/',
+  path: '/status-pages/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
+const AdminMonitorsIndexRoute = AdminMonitorsIndexRouteImport.update({
+  id: '/monitors/',
+  path: '/monitors/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminStatusPagesNewRoute = AdminStatusPagesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminStatusPagesRouteRoute,
+  id: '/status-pages/new',
+  path: '/status-pages/new',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminSettingsSectionRoute = AdminSettingsSectionRouteImport.update({
   id: '/$section',
@@ -89,21 +95,27 @@ const AdminSettingsSectionRoute = AdminSettingsSectionRouteImport.update({
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
 const AdminMonitorsNewRoute = AdminMonitorsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminMonitorsRouteRoute,
+  id: '/monitors/new',
+  path: '/monitors/new',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminMonitorsMonitorIdRouteRoute =
   AdminMonitorsMonitorIdRouteRouteImport.update({
-    id: '/$monitorId',
-    path: '/$monitorId',
-    getParentRoute: () => AdminMonitorsRouteRoute,
+    id: '/monitors/$monitorId',
+    path: '/monitors/$monitorId',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminMonitorsMonitorIdIndexRoute =
+  AdminMonitorsMonitorIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
   } as any)
 const AdminStatusPagesPageIdEditRoute =
   AdminStatusPagesPageIdEditRouteImport.update({
-    id: '/$pageId/edit',
-    path: '/$pageId/edit',
-    getParentRoute: () => AdminStatusPagesRouteRoute,
+    id: '/status-pages/$pageId/edit',
+    path: '/status-pages/$pageId/edit',
+    getParentRoute: () => AdminRouteRoute,
   } as any)
 const AdminMonitorsMonitorIdSettingsRoute =
   AdminMonitorsMonitorIdSettingsRouteImport.update({
@@ -123,52 +135,46 @@ const AdminMonitorsMonitorIdIncidentsRoute =
     path: '/incidents',
     getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
   } as any)
-const AdminMonitorsMonitorIdEditRoute =
-  AdminMonitorsMonitorIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRouteRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/incidents': typeof AdminIncidentsRouteRoute
-  '/monitors': typeof AdminMonitorsRouteRouteWithChildren
   '/notifications': typeof AdminNotificationsRouteRoute
   '/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/status-pages': typeof AdminStatusPagesRouteRouteWithChildren
   '/status/$slug': typeof StatusSlugRoute
   '/monitors/$monitorId': typeof AdminMonitorsMonitorIdRouteRouteWithChildren
   '/monitors/new': typeof AdminMonitorsNewRoute
   '/settings/$section': typeof AdminSettingsSectionRoute
   '/status-pages/new': typeof AdminStatusPagesNewRoute
-  '/monitors/$monitorId/edit': typeof AdminMonitorsMonitorIdEditRoute
+  '/monitors/': typeof AdminMonitorsIndexRoute
+  '/settings/': typeof AdminSettingsIndexRoute
+  '/status-pages/': typeof AdminStatusPagesIndexRoute
   '/monitors/$monitorId/incidents': typeof AdminMonitorsMonitorIdIncidentsRoute
   '/monitors/$monitorId/logs': typeof AdminMonitorsMonitorIdLogsRoute
   '/monitors/$monitorId/settings': typeof AdminMonitorsMonitorIdSettingsRoute
   '/status-pages/$pageId/edit': typeof AdminStatusPagesPageIdEditRoute
+  '/monitors/$monitorId/': typeof AdminMonitorsMonitorIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AdminIndexRouteRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/incidents': typeof AdminIncidentsRouteRoute
-  '/monitors': typeof AdminMonitorsRouteRouteWithChildren
   '/notifications': typeof AdminNotificationsRouteRoute
-  '/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/status-pages': typeof AdminStatusPagesRouteRouteWithChildren
   '/status/$slug': typeof StatusSlugRoute
-  '/monitors/$monitorId': typeof AdminMonitorsMonitorIdRouteRouteWithChildren
   '/monitors/new': typeof AdminMonitorsNewRoute
   '/settings/$section': typeof AdminSettingsSectionRoute
   '/status-pages/new': typeof AdminStatusPagesNewRoute
-  '/monitors/$monitorId/edit': typeof AdminMonitorsMonitorIdEditRoute
+  '/monitors': typeof AdminMonitorsIndexRoute
+  '/settings': typeof AdminSettingsIndexRoute
+  '/status-pages': typeof AdminStatusPagesIndexRoute
   '/monitors/$monitorId/incidents': typeof AdminMonitorsMonitorIdIncidentsRoute
   '/monitors/$monitorId/logs': typeof AdminMonitorsMonitorIdLogsRoute
   '/monitors/$monitorId/settings': typeof AdminMonitorsMonitorIdSettingsRoute
   '/status-pages/$pageId/edit': typeof AdminStatusPagesPageIdEditRoute
+  '/monitors/$monitorId': typeof AdminMonitorsMonitorIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -177,20 +183,21 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_admin/': typeof AdminIndexRouteRoute
   '/_admin/incidents': typeof AdminIncidentsRouteRoute
-  '/_admin/monitors': typeof AdminMonitorsRouteRouteWithChildren
   '/_admin/notifications': typeof AdminNotificationsRouteRoute
   '/_admin/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/_admin/status-pages': typeof AdminStatusPagesRouteRouteWithChildren
   '/status/$slug': typeof StatusSlugRoute
   '/_admin/monitors/$monitorId': typeof AdminMonitorsMonitorIdRouteRouteWithChildren
   '/_admin/monitors/new': typeof AdminMonitorsNewRoute
   '/_admin/settings/$section': typeof AdminSettingsSectionRoute
   '/_admin/status-pages/new': typeof AdminStatusPagesNewRoute
-  '/_admin/monitors/$monitorId/edit': typeof AdminMonitorsMonitorIdEditRoute
+  '/_admin/monitors/': typeof AdminMonitorsIndexRoute
+  '/_admin/settings/': typeof AdminSettingsIndexRoute
+  '/_admin/status-pages/': typeof AdminStatusPagesIndexRoute
   '/_admin/monitors/$monitorId/incidents': typeof AdminMonitorsMonitorIdIncidentsRoute
   '/_admin/monitors/$monitorId/logs': typeof AdminMonitorsMonitorIdLogsRoute
   '/_admin/monitors/$monitorId/settings': typeof AdminMonitorsMonitorIdSettingsRoute
   '/_admin/status-pages/$pageId/edit': typeof AdminStatusPagesPageIdEditRoute
+  '/_admin/monitors/$monitorId/': typeof AdminMonitorsMonitorIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -199,40 +206,40 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/incidents'
-    | '/monitors'
     | '/notifications'
     | '/settings'
-    | '/status-pages'
     | '/status/$slug'
     | '/monitors/$monitorId'
     | '/monitors/new'
     | '/settings/$section'
     | '/status-pages/new'
-    | '/monitors/$monitorId/edit'
+    | '/monitors/'
+    | '/settings/'
+    | '/status-pages/'
     | '/monitors/$monitorId/incidents'
     | '/monitors/$monitorId/logs'
     | '/monitors/$monitorId/settings'
     | '/status-pages/$pageId/edit'
+    | '/monitors/$monitorId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/setup'
     | '/incidents'
-    | '/monitors'
     | '/notifications'
-    | '/settings'
-    | '/status-pages'
     | '/status/$slug'
-    | '/monitors/$monitorId'
     | '/monitors/new'
     | '/settings/$section'
     | '/status-pages/new'
-    | '/monitors/$monitorId/edit'
+    | '/monitors'
+    | '/settings'
+    | '/status-pages'
     | '/monitors/$monitorId/incidents'
     | '/monitors/$monitorId/logs'
     | '/monitors/$monitorId/settings'
     | '/status-pages/$pageId/edit'
+    | '/monitors/$monitorId'
   id:
     | '__root__'
     | '/_admin'
@@ -240,20 +247,21 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_admin/'
     | '/_admin/incidents'
-    | '/_admin/monitors'
     | '/_admin/notifications'
     | '/_admin/settings'
-    | '/_admin/status-pages'
     | '/status/$slug'
     | '/_admin/monitors/$monitorId'
     | '/_admin/monitors/new'
     | '/_admin/settings/$section'
     | '/_admin/status-pages/new'
-    | '/_admin/monitors/$monitorId/edit'
+    | '/_admin/monitors/'
+    | '/_admin/settings/'
+    | '/_admin/status-pages/'
     | '/_admin/monitors/$monitorId/incidents'
     | '/_admin/monitors/$monitorId/logs'
     | '/_admin/monitors/$monitorId/settings'
     | '/_admin/status-pages/$pageId/edit'
+    | '/_admin/monitors/$monitorId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -293,13 +301,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatusSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin/status-pages': {
-      id: '/_admin/status-pages'
-      path: '/status-pages'
-      fullPath: '/status-pages'
-      preLoaderRoute: typeof AdminStatusPagesRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
     '/_admin/settings': {
       id: '/_admin/settings'
       path: '/settings'
@@ -312,13 +313,6 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AdminNotificationsRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_admin/monitors': {
-      id: '/_admin/monitors'
-      path: '/monitors'
-      fullPath: '/monitors'
-      preLoaderRoute: typeof AdminMonitorsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/_admin/incidents': {
@@ -335,12 +329,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_admin/status-pages/': {
+      id: '/_admin/status-pages/'
+      path: '/status-pages'
+      fullPath: '/status-pages/'
+      preLoaderRoute: typeof AdminStatusPagesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_admin/settings/': {
+      id: '/_admin/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AdminSettingsIndexRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/_admin/monitors/': {
+      id: '/_admin/monitors/'
+      path: '/monitors'
+      fullPath: '/monitors/'
+      preLoaderRoute: typeof AdminMonitorsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_admin/status-pages/new': {
       id: '/_admin/status-pages/new'
-      path: '/new'
+      path: '/status-pages/new'
       fullPath: '/status-pages/new'
       preLoaderRoute: typeof AdminStatusPagesNewRouteImport
-      parentRoute: typeof AdminStatusPagesRouteRoute
+      parentRoute: typeof AdminRouteRoute
     }
     '/_admin/settings/$section': {
       id: '/_admin/settings/$section'
@@ -351,24 +366,31 @@ declare module '@tanstack/react-router' {
     }
     '/_admin/monitors/new': {
       id: '/_admin/monitors/new'
-      path: '/new'
+      path: '/monitors/new'
       fullPath: '/monitors/new'
       preLoaderRoute: typeof AdminMonitorsNewRouteImport
-      parentRoute: typeof AdminMonitorsRouteRoute
+      parentRoute: typeof AdminRouteRoute
     }
     '/_admin/monitors/$monitorId': {
       id: '/_admin/monitors/$monitorId'
-      path: '/$monitorId'
+      path: '/monitors/$monitorId'
       fullPath: '/monitors/$monitorId'
       preLoaderRoute: typeof AdminMonitorsMonitorIdRouteRouteImport
-      parentRoute: typeof AdminMonitorsRouteRoute
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_admin/monitors/$monitorId/': {
+      id: '/_admin/monitors/$monitorId/'
+      path: '/'
+      fullPath: '/monitors/$monitorId/'
+      preLoaderRoute: typeof AdminMonitorsMonitorIdIndexRouteImport
+      parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
     }
     '/_admin/status-pages/$pageId/edit': {
       id: '/_admin/status-pages/$pageId/edit'
-      path: '/$pageId/edit'
+      path: '/status-pages/$pageId/edit'
       fullPath: '/status-pages/$pageId/edit'
       preLoaderRoute: typeof AdminStatusPagesPageIdEditRouteImport
-      parentRoute: typeof AdminStatusPagesRouteRoute
+      parentRoute: typeof AdminRouteRoute
     }
     '/_admin/monitors/$monitorId/settings': {
       id: '/_admin/monitors/$monitorId/settings'
@@ -391,29 +413,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMonitorsMonitorIdIncidentsRouteImport
       parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
     }
-    '/_admin/monitors/$monitorId/edit': {
-      id: '/_admin/monitors/$monitorId/edit'
-      path: '/edit'
-      fullPath: '/monitors/$monitorId/edit'
-      preLoaderRoute: typeof AdminMonitorsMonitorIdEditRouteImport
-      parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
-    }
   }
 }
 
+interface AdminSettingsRouteRouteChildren {
+  AdminSettingsSectionRoute: typeof AdminSettingsSectionRoute
+  AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
+}
+
+const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
+  AdminSettingsSectionRoute: AdminSettingsSectionRoute,
+  AdminSettingsIndexRoute: AdminSettingsIndexRoute,
+}
+
+const AdminSettingsRouteRouteWithChildren =
+  AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
+
 interface AdminMonitorsMonitorIdRouteRouteChildren {
-  AdminMonitorsMonitorIdEditRoute: typeof AdminMonitorsMonitorIdEditRoute
   AdminMonitorsMonitorIdIncidentsRoute: typeof AdminMonitorsMonitorIdIncidentsRoute
   AdminMonitorsMonitorIdLogsRoute: typeof AdminMonitorsMonitorIdLogsRoute
   AdminMonitorsMonitorIdSettingsRoute: typeof AdminMonitorsMonitorIdSettingsRoute
+  AdminMonitorsMonitorIdIndexRoute: typeof AdminMonitorsMonitorIdIndexRoute
 }
 
 const AdminMonitorsMonitorIdRouteRouteChildren: AdminMonitorsMonitorIdRouteRouteChildren =
   {
-    AdminMonitorsMonitorIdEditRoute: AdminMonitorsMonitorIdEditRoute,
     AdminMonitorsMonitorIdIncidentsRoute: AdminMonitorsMonitorIdIncidentsRoute,
     AdminMonitorsMonitorIdLogsRoute: AdminMonitorsMonitorIdLogsRoute,
     AdminMonitorsMonitorIdSettingsRoute: AdminMonitorsMonitorIdSettingsRoute,
+    AdminMonitorsMonitorIdIndexRoute: AdminMonitorsMonitorIdIndexRoute,
   }
 
 const AdminMonitorsMonitorIdRouteRouteWithChildren =
@@ -421,62 +449,31 @@ const AdminMonitorsMonitorIdRouteRouteWithChildren =
     AdminMonitorsMonitorIdRouteRouteChildren,
   )
 
-interface AdminMonitorsRouteRouteChildren {
-  AdminMonitorsMonitorIdRouteRoute: typeof AdminMonitorsMonitorIdRouteRouteWithChildren
-  AdminMonitorsNewRoute: typeof AdminMonitorsNewRoute
-}
-
-const AdminMonitorsRouteRouteChildren: AdminMonitorsRouteRouteChildren = {
-  AdminMonitorsMonitorIdRouteRoute:
-    AdminMonitorsMonitorIdRouteRouteWithChildren,
-  AdminMonitorsNewRoute: AdminMonitorsNewRoute,
-}
-
-const AdminMonitorsRouteRouteWithChildren =
-  AdminMonitorsRouteRoute._addFileChildren(AdminMonitorsRouteRouteChildren)
-
-interface AdminSettingsRouteRouteChildren {
-  AdminSettingsSectionRoute: typeof AdminSettingsSectionRoute
-}
-
-const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
-  AdminSettingsSectionRoute: AdminSettingsSectionRoute,
-}
-
-const AdminSettingsRouteRouteWithChildren =
-  AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
-
-interface AdminStatusPagesRouteRouteChildren {
-  AdminStatusPagesNewRoute: typeof AdminStatusPagesNewRoute
-  AdminStatusPagesPageIdEditRoute: typeof AdminStatusPagesPageIdEditRoute
-}
-
-const AdminStatusPagesRouteRouteChildren: AdminStatusPagesRouteRouteChildren = {
-  AdminStatusPagesNewRoute: AdminStatusPagesNewRoute,
-  AdminStatusPagesPageIdEditRoute: AdminStatusPagesPageIdEditRoute,
-}
-
-const AdminStatusPagesRouteRouteWithChildren =
-  AdminStatusPagesRouteRoute._addFileChildren(
-    AdminStatusPagesRouteRouteChildren,
-  )
-
 interface AdminRouteRouteChildren {
   AdminIndexRouteRoute: typeof AdminIndexRouteRoute
   AdminIncidentsRouteRoute: typeof AdminIncidentsRouteRoute
-  AdminMonitorsRouteRoute: typeof AdminMonitorsRouteRouteWithChildren
   AdminNotificationsRouteRoute: typeof AdminNotificationsRouteRoute
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
-  AdminStatusPagesRouteRoute: typeof AdminStatusPagesRouteRouteWithChildren
+  AdminMonitorsMonitorIdRouteRoute: typeof AdminMonitorsMonitorIdRouteRouteWithChildren
+  AdminMonitorsNewRoute: typeof AdminMonitorsNewRoute
+  AdminStatusPagesNewRoute: typeof AdminStatusPagesNewRoute
+  AdminMonitorsIndexRoute: typeof AdminMonitorsIndexRoute
+  AdminStatusPagesIndexRoute: typeof AdminStatusPagesIndexRoute
+  AdminStatusPagesPageIdEditRoute: typeof AdminStatusPagesPageIdEditRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminIndexRouteRoute: AdminIndexRouteRoute,
   AdminIncidentsRouteRoute: AdminIncidentsRouteRoute,
-  AdminMonitorsRouteRoute: AdminMonitorsRouteRouteWithChildren,
   AdminNotificationsRouteRoute: AdminNotificationsRouteRoute,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
-  AdminStatusPagesRouteRoute: AdminStatusPagesRouteRouteWithChildren,
+  AdminMonitorsMonitorIdRouteRoute:
+    AdminMonitorsMonitorIdRouteRouteWithChildren,
+  AdminMonitorsNewRoute: AdminMonitorsNewRoute,
+  AdminStatusPagesNewRoute: AdminStatusPagesNewRoute,
+  AdminMonitorsIndexRoute: AdminMonitorsIndexRoute,
+  AdminStatusPagesIndexRoute: AdminStatusPagesIndexRoute,
+  AdminStatusPagesPageIdEditRoute: AdminStatusPagesPageIdEditRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

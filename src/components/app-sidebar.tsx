@@ -1,7 +1,7 @@
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { Link, useRouter } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   Bell,
   ClipboardList,
@@ -44,18 +44,16 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { appVersion } from "@/lib/build-info";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useLogoutMutation, useSessionQuery } from "@/lib/queries/auth";
-import { useDashboardQuery } from "@/lib/queries/dashboard";
+import { sessionQueryOptions, useLogoutMutation } from "@/lib/queries/auth";
+import { dashboardQueryOptions } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 export function AppSidebar() {
-  const router = useRouter();
-  const session = useSessionQuery();
+  const { data: session } = useSuspenseQuery(sessionQueryOptions());
   const logout = useLogoutMutation();
-  const dashboard = useDashboardQuery();
+  const { data: dashboard } = useSuspenseQuery(dashboardQueryOptions());
   const { check, isReady } = usePermissions();
 
   return (
@@ -177,11 +175,10 @@ export function AppSidebar() {
           canAdd={isReady && check("statusPage.create")}
           emptyLabel={m.nav_no_status_pages()}
           label={m.nav_status_pages_count({
-            count: dashboard.data?.statusPages.length ?? 0,
+            count: dashboard.statusPages.length,
           })}
-          loading={dashboard.status === "pending"}
         >
-          {dashboard.data?.statusPages.map((page) => (
+          {dashboard.statusPages.map((page) => (
             <SidebarMenuItem key={page.id}>
               <SidebarMenuButton asChild tooltip={page.title}>
                 <Link
@@ -204,11 +201,10 @@ export function AppSidebar() {
           canAdd={isReady && check("monitor.create")}
           emptyLabel={m.nav_no_monitors()}
           label={m.nav_monitors_count({
-            count: dashboard.data?.monitors.length ?? 0,
+            count: dashboard.monitors.length,
           })}
-          loading={dashboard.status === "pending"}
         >
-          {dashboard.data?.monitors.map((monitor) => {
+          {dashboard.monitors.map((monitor) => {
             const status =
               monitor.active === 1 ? monitor.lastStatus : "unknown";
 
@@ -241,14 +237,8 @@ export function AppSidebar() {
       <SidebarFooter>
         <SessionFooter
           isLoggingOut={logout.isPending}
-          onLogout={() =>
-            logout.mutate(undefined, {
-              onSuccess: async () => {
-                await router.navigate({ replace: true, to: "/login" });
-              },
-            })
-          }
-          session={session}
+          onLogout={() => logout.mutate()}
+          user={session.user}
         />
       </SidebarFooter>
       <SidebarRail />
@@ -262,7 +252,6 @@ function SidebarResourceGroup({
   addTo,
   canAdd,
   emptyLabel,
-  loading,
   children,
 }: {
   label: string;
@@ -270,7 +259,6 @@ function SidebarResourceGroup({
   addTo: "/monitors/new" | "/status-pages/new";
   canAdd: boolean;
   emptyLabel: string;
-  loading: boolean;
   children: ReactNode;
 }) {
   const hasItems = Array.isArray(children)
@@ -296,12 +284,7 @@ function SidebarResourceGroup({
         ) : null}
       </div>
       <SidebarGroupContent>
-        {loading ? (
-          <div className="flex flex-col gap-2 px-2 py-1">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 w-36" />
-          </div>
-        ) : hasItems ? (
+        {hasItems ? (
           <ScrollArea className="max-h-56">
             <SidebarMenu>{children}</SidebarMenu>
           </ScrollArea>
@@ -332,34 +315,17 @@ function getMonitorStatusClass(status: MonitorStatus) {
 }
 
 function SessionFooter({
-  session,
+  user,
   onLogout,
   isLoggingOut,
 }: {
-  session: UseQueryResult<SessionData, Error>;
+  user: SessionData["user"];
   onLogout: () => void;
   isLoggingOut: boolean;
 }) {
   const { isMobile } = useSidebar();
 
-  if (session.status === "pending") {
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <div className="flex items-center gap-2 px-2 py-2">
-            <Skeleton className="size-8 rounded-lg" />
-            <div className="min-w-0 flex-1">
-              <Skeleton className="h-4 w-18" />
-              <Skeleton className="mt-1 h-3 w-24" />
-            </div>
-          </div>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    );
-  }
-
-  if (session.status === "success" && session.data.user) {
-    const { user } = session.data;
+  if (user) {
     const name = user.name?.trim();
     const primaryLabel = name || m.auth_signed_in();
 

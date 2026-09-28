@@ -1,23 +1,38 @@
 import type { ReactNode } from "react";
 
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { all } from "better-all";
 import { z } from "zod";
 
-import { Error as AppError } from "@/components/error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { firstFieldError } from "@/lib/form-errors";
 import {
+  sessionQueryOptions,
+  setupStateQueryOptions,
   useLoginMutation,
-  useSessionQuery,
-  useSetupStateQuery,
 } from "@/lib/queries/auth";
 import { m } from "@/paraglide/messages.js";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: async ({ context: { queryClient } }) => {
+    const { setup, session } = await all({
+      setup: () => queryClient.ensureQueryData(setupStateQueryOptions()),
+      session: () => queryClient.ensureQueryData(sessionQueryOptions()),
+    });
+
+    if (!setup.hasAdmin) {
+      throw redirect({ to: "/setup" });
+    }
+
+    if (session.user) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: LoginRoute,
 });
 
@@ -27,8 +42,8 @@ const loginSchema = z.object({
 });
 
 function LoginRoute() {
-  const setup = useSetupStateQuery();
-  const session = useSessionQuery();
+  const { data: setup } = useSuspenseQuery(setupStateQueryOptions());
+  const navigate = Route.useNavigate();
   const mutation = useLoginMutation();
 
   const form = useForm({
@@ -41,45 +56,14 @@ function LoginRoute() {
     },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value);
+      await navigate({ to: "/" });
     },
   });
-
-  if (setup.status === "pending" || session.status === "pending") {
-    return (
-      <AuthFrame>
-        <LoginSkeleton />
-      </AuthFrame>
-    );
-  }
-
-  if (setup.status === "error") {
-    return (
-      <AuthFrame>
-        <AppError message={setup.error.message} />
-      </AuthFrame>
-    );
-  }
-
-  if (session.status === "error") {
-    return (
-      <AuthFrame>
-        <AppError message={session.error.message} />
-      </AuthFrame>
-    );
-  }
-
-  if (!setup.data.hasAdmin) {
-    return <Navigate to="/setup" />;
-  }
-
-  if (session.data.user) {
-    return <Navigate to="/" />;
-  }
 
   return (
     <AuthFrame>
       <AuthFrameHeader>
-        <AuthFrameEyebrow>{setup.data.appName}</AuthFrameEyebrow>
+        <AuthFrameEyebrow>{setup.appName}</AuthFrameEyebrow>
         <AuthFrameTitle>{m.auth_sign_in()}</AuthFrameTitle>
       </AuthFrameHeader>
       <AuthFrameBody>
@@ -200,18 +184,3 @@ function AuthFrameBody({ children }: { children: ReactNode }) {
 function AuthCard({ children }: { children: ReactNode }) {
   return <Card className="px-6 py-6">{children}</Card>;
 }
-
-function LoginSkeleton() {
-  return (
-    <Card className="px-6 py-6">
-      <div className="grid gap-4">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-9 w-28" />
-      </div>
-    </Card>
-  );
-}
-
-import { firstFieldError } from "@/lib/form-errors";

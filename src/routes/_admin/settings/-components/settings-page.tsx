@@ -1,19 +1,17 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Archive, Bell, Database, Globe2, Settings2, User } from "lucide-react";
 import { z } from "zod";
 
 import type { SettingsData } from "@/types";
 
-import { Error } from "@/components/error";
-import { AppPage } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { notificationSummary } from "@/lib/formatters";
 import {
+  notificationsQueryOptions,
   providerLabel,
-  useNotificationsQuery,
 } from "@/lib/queries/notifications";
-import { useSettingsQuery } from "@/lib/queries/settings";
-import { cn } from "@/lib/utils";
+import { settingsQueryOptions } from "@/lib/queries/settings";
 import { m } from "@/paraglide/messages.js";
 
 import { AccountSettings } from "./account-settings";
@@ -27,7 +25,6 @@ import {
   SettingsRowDescription,
   SettingsRowLabel,
 } from "./settings-layout";
-import { SettingsSkeleton } from "./settings-skeleton";
 
 const sections = [
   "general",
@@ -38,73 +35,52 @@ const sections = [
   "retention",
 ] as const;
 
-type SettingsSection = (typeof sections)[number];
+export const settingsSectionSchema = z.enum(sections);
 
-export function SettingsPage() {
-  const params = z
-    .object({ section: z.string().optional() })
-    .safeParse(useParams({ strict: false }));
+export type SettingsSection = z.infer<typeof settingsSectionSchema>;
 
-  const parsedSection = z
-    .enum(sections)
-    .safeParse(params.success ? params.data.section : undefined);
+export function SettingsNavigation() {
+  return (
+    <nav aria-label={m.settings_sections()} className="grid gap-1">
+      {sections.map((item) => {
+        const Icon = sectionIcon(item);
 
-  const section: SettingsSection = parsedSection.success
-    ? parsedSection.data
-    : "general";
+        return (
+          <Link
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[status=active]:bg-accent data-[status=active]:text-foreground"
+            key={item}
+            params={{ section: item }}
+            to="/settings/$section"
+          >
+            <Icon className="size-4" />
+            {sectionLabel(item)}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
-  const settings = useSettingsQuery();
+export function SettingsSectionPage({ section }: { section: SettingsSection }) {
+  const { data } = useSuspenseQuery(settingsQueryOptions());
 
   return (
-    <AppPage title={m.settings_title()}>
-      {settings.status === "pending" ? <SettingsSkeleton /> : null}
-      {settings.status === "error" ? (
-        <Error message={settings.error.message} />
-      ) : null}
-      {settings.status === "success" ? (
-        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="lg:pt-1">
-            <nav aria-label={m.settings_sections()} className="grid gap-1">
-              {sections.map((item) => {
-                const Icon = sectionIcon(item);
-                const active = item === section;
-
-                return (
-                  <Link
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                      active && "bg-accent text-foreground",
-                    )}
-                    key={item}
-                    params={{ section: item }}
-                    to="/settings/$section"
-                  >
-                    <Icon className="size-4" />
-                    {sectionLabel(item)}
-                  </Link>
-                );
-              })}
-            </nav>
-          </aside>
-          <div className="flex flex-col gap-5">
-            <SettingsSectionHeader section={section} />
-            {section === "account" ? (
-              <AccountSettings />
-            ) : section === "notifications" ? (
-              <NotificationsSettings />
-            ) : section === "data" ? (
-              <DataSettings data={settings.data} />
-            ) : section === "retention" ? (
-              <RetentionSettings data={settings.data} />
-            ) : section === "status-pages" ? (
-              <StatusPagesSettings data={settings.data} />
-            ) : (
-              <GeneralSettings data={settings.data} />
-            )}
-          </div>
-        </div>
-      ) : null}
-    </AppPage>
+    <>
+      <SettingsSectionHeader section={section} />
+      {section === "account" ? (
+        <AccountSettings />
+      ) : section === "notifications" ? (
+        <NotificationsSettings />
+      ) : section === "data" ? (
+        <DataSettings data={data} />
+      ) : section === "retention" ? (
+        <RetentionSettings data={data} />
+      ) : section === "status-pages" ? (
+        <StatusPagesSettings data={data} />
+      ) : (
+        <GeneralSettings data={data} />
+      )}
+    </>
   );
 }
 
@@ -213,15 +189,9 @@ function StatusPagesSettings({ data }: { data: SettingsData }) {
 }
 
 function NotificationsSettings() {
-  const notifications = useNotificationsQuery();
+  const { data: notifications } = useSuspenseQuery(notificationsQueryOptions());
 
-  if (notifications.status === "pending") return <SettingsSkeleton />;
-
-  if (notifications.status === "error") {
-    return <Error message={notifications.error.message} />;
-  }
-
-  const providerCounts = notifications.data.destinations.reduce<
+  const providerCounts = notifications.destinations.reduce<
     Record<"discord" | "webhook" | "telegram", number>
   >(
     (counts, destination) => {
@@ -239,7 +209,7 @@ function NotificationsSettings() {
           <SettingsRowLabel>{m.settings_destinations()}</SettingsRowLabel>
           <SettingsRowDescription>
             {m.settings_destinations_summary({
-              count: notifications.data.destinations.length,
+              count: notifications.destinations.length,
             })}
           </SettingsRowDescription>
         </SettingsRowContent>
@@ -261,8 +231,8 @@ function NotificationsSettings() {
         <SettingsRowContent>
           <SettingsRowLabel>{m.settings_recent_notifiers()}</SettingsRowLabel>
           <SettingsRowDescription>
-            {notifications.data.destinations.length > 0
-              ? notifications.data.destinations
+            {notifications.destinations.length > 0
+              ? notifications.destinations
                   .slice(0, 3)
                   .map(
                     (destination) =>

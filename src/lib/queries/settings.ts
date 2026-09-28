@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { z } from "zod";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
@@ -30,8 +34,8 @@ export const monitorImportSchema = z.object({
 
 export type MonitorImportPayload = z.infer<typeof monitorImportSchema>;
 
-export function useSettingsQuery() {
-  return useQuery({
+export function settingsQueryOptions() {
+  return queryOptions({
     queryKey: privateKey("settings"),
     queryFn: () => parseResponse(apiClient.settings.$get()),
   });

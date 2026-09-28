@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { apiClient, parseResponse } from "@/lib/api-client";
 import { privateKey } from "@/lib/queries/keys";
@@ -13,23 +17,23 @@ export type StatusPagePayload = {
   monitorIds: string[];
 };
 
-export function useStatusPagesQuery() {
-  return useQuery({
+export function statusPagesQueryOptions() {
+  return queryOptions({
     queryKey: privateKey("status-pages"),
     queryFn: () => parseResponse(apiClient["status-pages"].$get()),
   });
 }
 
-export function useStatusPageQuery(id: string) {
-  return useQuery({
+export function statusPageQueryOptions(id: string) {
+  return queryOptions({
     queryKey: privateKey("status-pages", id),
     queryFn: () =>
       parseResponse(apiClient["status-pages"][":id"].$get({ param: { id } })),
   });
 }
 
-export function usePublicStatusPageQuery(slug: string) {
-  return useQuery({
+export function publicStatusPageQueryOptions(slug: string) {
+  return queryOptions({
     queryKey: ["public-status", slug],
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,

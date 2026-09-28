@@ -1,6 +1,6 @@
 import {
+  queryOptions,
   useMutation,
-  useQuery,
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
@@ -34,21 +34,18 @@ export type NotificationPayload =
       monitorIds: string[];
     };
 
-export function useNotificationsQuery() {
-  return useQuery({
+export function notificationsQueryOptions() {
+  return queryOptions({
     queryKey: privateKey("notifications"),
     queryFn: () => parseResponse(apiClient.notifications.$get()),
   });
 }
 
-export function useNotificationQuery(id: string | null) {
-  return useQuery({
-    enabled: Boolean(id),
-    queryKey: privateKey("notifications", id ?? "new"),
+export function notificationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: privateKey("notifications", id),
     queryFn: () =>
-      parseResponse(
-        apiClient.notifications[":id"].$get({ param: { id: id ?? "" } }),
-      ),
+      parseResponse(apiClient.notifications[":id"].$get({ param: { id } })),
   });
 }
 

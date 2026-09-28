@@ -1,6 +1,6 @@
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   LayoutDashboardIcon,
@@ -11,45 +11,42 @@ import {
 
 import type { MonitorDetailData, MonitorRecord } from "@/types";
 
-import { Error } from "@/components/error";
 import { AppPage } from "@/components/page";
 import { Separator } from "@/components/ui/separator";
-import { useMonitorStateQuery } from "@/lib/queries/monitors";
+import {
+  monitorQueryOptions,
+  monitorStateQueryOptions,
+} from "@/lib/queries/monitors";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
-import { MonitorDetailSkeleton } from "../-components/monitors-skeleton";
+// Detail data merged with the faster-polling state query, which owns the
+// monitor's live fields. Both are loaded by the `$monitorId` layout route.
+export function useMonitorWorkspaceData(monitorId: string): MonitorDetailData {
+  const { data: detail } = useSuspenseQuery(monitorQueryOptions(monitorId));
 
-export function MonitorWorkspacePage({
-  detail,
-  currentTab,
-  children,
-}: {
-  detail: UseQueryResult<MonitorDetailData, Error>;
-  currentTab: "overview" | "logs" | "incidents" | "settings";
-  children: (data: MonitorDetailData) => ReactNode;
-}) {
-  const monitorId = detail.data?.monitor.id ?? "";
-  const state = useMonitorStateQuery(monitorId);
+  const { data: monitor } = useSuspenseQuery(
+    monitorStateQueryOptions(monitorId),
+  );
 
-  if (detail.status === "pending") {
-    return <MonitorDetailSkeleton />;
-  }
-
-  if (detail.status === "error") {
-    return <Error message={detail.error.message} />;
-  }
-
-  const monitor = state.data ?? detail.data.monitor;
-
-  const data = {
-    ...detail.data,
+  return {
+    ...detail,
     monitor,
     metrics: {
-      ...detail.data.metrics,
+      ...detail.metrics,
       lastCheckedAt: monitor.lastCheckedAt,
     },
   };
+}
+
+export function MonitorWorkspace({
+  monitorId,
+  children,
+}: {
+  monitorId: string;
+  children: ReactNode;
+}) {
+  const { monitor } = useMonitorWorkspaceData(monitorId);
 
   return (
     <AppPage title={monitor.name}>
@@ -97,20 +94,18 @@ export function MonitorWorkspacePage({
               className="flex flex-wrap [&_svg]:size-4 [&_svg]:shrink-0"
             >
               <Link
-                aria-current={currentTab === "overview" ? "page" : undefined}
-                className={monitorNavigationClass(currentTab === "overview")}
-                params={{ monitorId: monitor.id }}
-                preload="intent"
+                activeOptions={{ exact: true }}
+                className={monitorNavigationClass}
+                params={{ monitorId }}
                 to="/monitors/$monitorId"
               >
                 <LayoutDashboardIcon />
                 {m.monitor_overview()}
               </Link>
               <Link
-                aria-current={currentTab === "logs" ? "page" : undefined}
-                className={monitorNavigationClass(currentTab === "logs")}
-                params={{ monitorId: monitor.id }}
-                preload="intent"
+                activeOptions={{ includeSearch: false }}
+                className={monitorNavigationClass}
+                params={{ monitorId }}
                 search={{ page: 1 }}
                 to="/monitors/$monitorId/logs"
               >
@@ -118,20 +113,16 @@ export function MonitorWorkspacePage({
                 {m.monitor_logs()}
               </Link>
               <Link
-                aria-current={currentTab === "incidents" ? "page" : undefined}
-                className={monitorNavigationClass(currentTab === "incidents")}
-                params={{ monitorId: monitor.id }}
-                preload="intent"
+                className={monitorNavigationClass}
+                params={{ monitorId }}
                 to="/monitors/$monitorId/incidents"
               >
                 <SirenIcon />
                 {m.nav_incidents()}
               </Link>
               <Link
-                aria-current={currentTab === "settings" ? "page" : undefined}
-                className={monitorNavigationClass(currentTab === "settings")}
-                params={{ monitorId: monitor.id }}
-                preload="intent"
+                className={monitorNavigationClass}
+                params={{ monitorId }}
                 to="/monitors/$monitorId/settings"
               >
                 <SettingsIcon />
@@ -141,20 +132,15 @@ export function MonitorWorkspacePage({
             <Separator />
           </div>
         </div>
-        {children(data)}
+        {children}
       </div>
     </AppPage>
   );
 }
 
-function monitorNavigationClass(active: boolean) {
-  return cn(
-    "-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
-    active
-      ? "border-foreground text-foreground"
-      : "border-transparent text-muted-foreground hover:text-foreground",
-  );
-}
+// TanStack `Link` marks the matching tab with `data-status="active"`.
+const monitorNavigationClass =
+  "-mb-px flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:border-foreground data-[status=active]:text-foreground";
 
 function monitorKindLabel(kind: MonitorRecord["kind"]) {
   return kind === "http"

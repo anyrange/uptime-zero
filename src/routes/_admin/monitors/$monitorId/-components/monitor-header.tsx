@@ -15,22 +15,17 @@ import {
   formatUptimePercent,
   notificationSummary,
 } from "@/lib/formatters";
-import { useMonitorQuery } from "@/lib/queries/monitors";
 import { providerLabel } from "@/lib/queries/notifications";
 import { m } from "@/paraglide/messages.js";
 
 import { CheckHistory } from "../-components/check-history";
 import { IncidentList } from "../-components/incident-list";
-import { MonitorWorkspacePage } from "../../-components/monitor-workspace-page";
+import { useMonitorWorkspaceData } from "../../-components/monitor-workspace";
 
-export function MonitorDetailPage({ monitorId }: { monitorId: string }) {
-  const detail = useMonitorQuery(monitorId);
+export function MonitorOverviewPage({ monitorId }: { monitorId: string }) {
+  const data = useMonitorWorkspaceData(monitorId);
 
-  return (
-    <MonitorWorkspacePage currentTab="overview" detail={detail}>
-      {(data) => <MonitorOverviewContent data={data} monitorId={monitorId} />}
-    </MonitorWorkspacePage>
-  );
+  return <MonitorOverviewContent data={data} monitorId={monitorId} />;
 }
 
 function MonitorOverviewContent({

@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   type ColumnDef,
@@ -9,7 +10,6 @@ import { useMemo, type ReactNode } from "react";
 import type { DashboardData, HeartbeatRecord, IncidentRecord } from "@/types";
 
 import { DataTable } from "@/components/data-table";
-import { Error } from "@/components/error";
 import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
 import { LiveTime } from "@/components/live-time";
@@ -30,13 +30,11 @@ import {
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
 import { formatDateTime, formatDurationMs } from "@/lib/formatters";
-import { useDashboardQuery } from "@/lib/queries/dashboard";
+import { dashboardQueryOptions } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
-import { OverviewSkeleton } from "./overview-skeleton";
-
 export function OverviewPage() {
-  const dashboard = useDashboardQuery();
+  const { data } = useSuspenseQuery(dashboardQueryOptions());
 
   return (
     <AppPage title={m.overview_title()}>
@@ -46,13 +44,7 @@ export function OverviewPage() {
           <AppPageSubtitle>{m.overview_description()}</AppPageSubtitle>
         </AppPageHeaderContent>
       </AppPageHeader>
-      {dashboard.status === "pending" ? <OverviewSkeleton /> : null}
-      {dashboard.status === "error" ? (
-        <Error message={dashboard.error.message} />
-      ) : null}
-      {dashboard.status === "success" ? (
-        <OverviewContent data={dashboard.data} />
-      ) : null}
+      <OverviewContent data={data} />
     </AppPage>
   );
 }

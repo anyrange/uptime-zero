@@ -1,3 +1,5 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
+
 import { StatusBanner } from "@/components/blocks/status-banner";
 import { StatusBar } from "@/components/blocks/status-bar";
 import { StatusBlankMonitors } from "@/components/blocks/status-blank";
@@ -36,25 +38,18 @@ import {
   StatusPageShell,
 } from "@/components/blocks/status-page-shell";
 import { StatusTimestamp } from "@/components/blocks/status-timestamp";
-import { Error } from "@/components/error";
 import { LiveTime } from "@/components/live-time";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildPublicStatusPageView } from "@/lib/public-status-page-view";
-import { usePublicStatusPageQuery } from "@/lib/queries/status-pages";
+import { publicStatusPageQueryOptions } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
 
-import { PublicStatusSkeleton } from "./public-status-skeleton";
-
 export function PublicStatusPage({ slug }: { slug: string }) {
-  const page = usePublicStatusPageQuery(slug);
+  const { data } = useSuspenseQuery(publicStatusPageQueryOptions(slug));
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {page.status === "pending" ? <PublicStatusSkeleton /> : null}
-      {page.status === "error" ? <Error message={page.error.message} /> : null}
-      {page.status === "success" ? (
-        <PublicStatusPageView data={page.data} />
-      ) : null}
+      <PublicStatusPageView data={data} />
     </main>
   );
 }
