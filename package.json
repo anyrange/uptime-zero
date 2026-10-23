@@ -16,7 +16,7 @@
     "format:check": "oxfmt --check",
     "type-check": "pnpm run paraglide:compile && void prepare && tsc --noEmit",
     "paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --emit-ts-declarations",
-    "test": "pnpm run paraglide:compile && vitest run",
+    "test": "pnpm run paraglide:compile && void prepare && vitest run",
     "db:generate": "void db generate",
     "db:migrate": "void db migrate",
     "db:reset": "void db reset",
