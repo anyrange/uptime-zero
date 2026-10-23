@@ -1,11 +1,10 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { AppPage } from "@/components/page";
-import { settingsQueryOptions } from "@/lib/queries/settings";
+import { settingsQueryOptions } from "@/lib/api/settings";
 import { m } from "@/paraglide/messages.js";
-
-import { SettingsNavigation } from "./-components/settings-page";
-import { SettingsSkeleton } from "./-components/settings-skeleton";
+import { SettingsNavigation } from "@/routes/_admin/settings/-components/settings-page";
+import { SettingsSkeleton } from "@/routes/_admin/settings/-components/settings-skeleton";
 
 export const Route = createFileRoute("/_admin/settings")({
   loader: async ({ context }) => {

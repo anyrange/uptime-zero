@@ -1,7 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { HeartbeatRecord, NotificationDestinationRecord } from "@/types";
-
 import {
   formatDateTime,
   formatDurationMs,
@@ -11,6 +9,11 @@ import {
   notificationSummary,
 } from "@/lib/formatters";
 import { m } from "@/paraglide/messages.js";
+
+// The helpers accept what their server functions return.
+type NotificationDestination = Parameters<typeof notificationSummary>[0];
+
+type Heartbeat = Parameters<typeof groupHeartbeats>[0][number];
 
 describe("formatting helpers", () => {
   it("returns translated placeholders for missing and invalid timestamps", () => {
@@ -77,21 +80,19 @@ describe("formatting helpers", () => {
   });
 
   it("summarizes notification destinations", () => {
-    const discord: NotificationDestinationRecord = {
+    const discord: NotificationDestination = {
       id: "1",
       name: "Discord",
       provider: "discord",
-      configJson: "{}",
       config: { webhookUrl: "https://discord.com/webhook" },
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const webhook: NotificationDestinationRecord = {
+    const webhook: NotificationDestination = {
       id: "2",
       name: "Webhook",
       provider: "webhook",
-      configJson: "{}",
       config: {
         url: "https://example.com/hook",
         headers: [{ key: "X-Api-Key", value: "token" }],
@@ -100,21 +101,19 @@ describe("formatting helpers", () => {
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const webhookNoHeaders: NotificationDestinationRecord = {
+    const webhookNoHeaders: NotificationDestination = {
       id: "3",
       name: "Webhook",
       provider: "webhook",
-      configJson: "{}",
       config: { url: "https://example.com/empty", headers: [] },
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const telegramWithThread: NotificationDestinationRecord = {
+    const telegramWithThread: NotificationDestination = {
       id: "4",
       name: "Telegram",
       provider: "telegram",
-      configJson: "{}",
       config: {
         botToken: "bot",
         chatId: "123",
@@ -124,11 +123,10 @@ describe("formatting helpers", () => {
       updatedAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const telegramFlat: NotificationDestinationRecord = {
+    const telegramFlat: NotificationDestination = {
       id: "5",
       name: "Telegram",
       provider: "telegram",
-      configJson: "{}",
       config: { botToken: "bot", chatId: "123", messageThreadId: null },
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
@@ -150,7 +148,7 @@ describe("formatting helpers", () => {
   });
 
   it("groups heartbeat records by monitor id", () => {
-    const heartbeats: HeartbeatRecord[] = [
+    const heartbeats: Heartbeat[] = [
       {
         id: "1",
         monitorId: "m1",

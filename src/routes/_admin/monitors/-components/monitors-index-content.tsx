@@ -21,9 +21,8 @@ import {
   Upload,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
-import { z } from "zod";
 
-import type { MonitorRecord } from "@/types";
+import type { Monitor } from "@/lib/schemas/monitors";
 
 import { DataTable } from "@/components/data-table";
 import { LiveTime } from "@/components/live-time";
@@ -56,28 +55,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { formatDurationMs } from "@/lib/formatters";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   useDeleteMonitorMutation,
   useDeleteMonitorsMutation,
-} from "@/lib/queries/monitors";
-import {
-  monitorImportSchema,
   useImportMonitorsMutation,
-} from "@/lib/queries/settings";
+} from "@/lib/api/monitors";
+import { formatDurationMs } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { readMonitorExportFile } from "@/lib/monitor/export-file";
 import { m } from "@/paraglide/messages.js";
 
-import { displayMonitorTarget } from "../-components/monitor-workspace";
+import { displayMonitorTarget } from "./monitor-workspace";
 
 export function MonitorsIndexContent({
   monitors,
   slowestP95ResponseMs,
 }: {
-  monitors: MonitorRecord[];
+  monitors: ReadonlyArray<Monitor>;
   slowestP95ResponseMs: number | null;
 }) {
-  const activeCount = monitors.filter((monitor) => monitor.active === 1).length;
+  const activeCount = monitors.filter((monitor) => monitor.active).length;
   const pausedCount = monitors.length - activeCount;
 
   const downCount = monitors.filter(
@@ -124,7 +121,7 @@ export function MonitorsIndexContent({
   );
 }
 
-function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
+function MonitorDataTable({ monitors }: { monitors: ReadonlyArray<Monitor> }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -139,7 +136,8 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
   const canImport = isReady && check("monitor.import");
 
   const table = useReactTable({
-    data: monitors,
+    // SAFETY: TanStack Table never mutates `data`; its option type just is not readonly.
+    data: monitors as Monitor[],
     columns: monitorColumns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -163,31 +161,30 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
 
   const selectedMonitorIds = selectedMonitors.map((monitor) => monitor.id);
 
-  const nameFilter = z
-    .string()
-    .catch("")
-    .parse(table.getColumn("name")?.getFilterValue());
+  const nameFilterValue = table.getColumn("name")?.getFilterValue();
+
+  const nameFilter = String(nameFilterValue ?? "");
 
   async function handleImport(file: File | undefined) {
     if (!file) return;
     setImportError(null);
 
-    try {
-      const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
-      await importMonitors.mutateAsync(payload);
-      setRowSelection({});
-    } catch (error) {
-      const parsedError = z.object({ message: z.string() }).safeParse(error);
-      setImportError(
-        parsedError.success
-          ? parsedError.data.message
-          : m.monitor_import_failed(),
-      );
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    const payload = await readMonitorExportFile(file);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
+
+    if (!payload) {
+      setImportError(m.monitor_import_failed());
+
+      return;
+    }
+
+    // Server failures render from `importMonitors.error`.
+    importMonitors.mutate(payload, {
+      onSuccess: () => setRowSelection({}),
+    });
   }
 
   return (
@@ -377,7 +374,7 @@ function MonitorDataTable({ monitors }: { monitors: MonitorRecord[] }) {
   );
 }
 
-const monitorColumns: ColumnDef<MonitorRecord>[] = [
+const monitorColumns: ColumnDef<Monitor>[] = [
   {
     id: "select",
     size: 44,
@@ -586,7 +583,7 @@ function columnLabel(id: string) {
           : id[0].toUpperCase() + id.slice(1);
 }
 
-function exportMonitors(monitors: MonitorRecord[]) {
+function exportMonitors(monitors: ReadonlyArray<Monitor>) {
   const exported = {
     kind: "uptime-monitor-export",
     version: 1,
@@ -604,7 +601,7 @@ function exportMonitors(monitors: MonitorRecord[]) {
       heartbeatGraceSec: monitor.heartbeatGraceSec,
       heartbeatTimezone: monitor.heartbeatTimezone,
       notificationGraceSec: monitor.notificationGraceSec,
-      active: monitor.active === 1,
+      active: monitor.active,
     })),
   };
 
@@ -624,7 +621,7 @@ function errorMessage(error: Error | null) {
   return error?.message || m.monitor_import_failed();
 }
 
-function MonitorRowActions({ monitor }: { monitor: MonitorRecord }) {
+function MonitorRowActions({ monitor }: { monitor: Monitor }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const remove = useDeleteMonitorMutation(monitor.id);
   const { check, isReady } = usePermissions();

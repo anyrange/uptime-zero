@@ -1,14 +1,7 @@
 import type { FormEvent } from "react";
+import type { z } from "zod";
 
 import { useEffect, useState } from "react";
-import { z } from "zod";
-
-import type {
-  NotificationDestinationDetail,
-  NotificationDestinationMonitorSummary,
-  NotificationHeader,
-  NotificationProvider,
-} from "@/types";
 
 import { SensitiveInput } from "@/components/sensitive-input";
 import { Button } from "@/components/ui/button";
@@ -30,26 +23,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { providerLabel } from "@/lib/api/notifications";
+import { firstSchemaErrorMessage } from "@/lib/form-errors";
 import {
-  providerLabel,
-  type NotificationPayload,
-} from "@/lib/queries/notifications";
+  type AssignedMonitor,
+  type NotificationDestinationDetail,
+  type NotificationHeader,
+  NotificationInput,
+  NotificationProvider,
+} from "@/lib/schemas/notifications";
 import { m } from "@/paraglide/messages.js";
 
 import { NotificationProviderIcon } from "./notification-provider-icon";
-
-const notificationProviderSchema = z.enum(["discord", "webhook", "telegram"]);
 
 export type NotificationFormState = {
   name: string;
   provider: NotificationProvider;
   webhookUrl: string;
   url: string;
-  headers: NotificationHeader[];
+  headers: ReadonlyArray<NotificationHeader>;
   botToken: string;
   chatId: string;
   messageThreadId: string;
-  monitorIds: string[];
+  monitorIds: ReadonlyArray<string>;
 };
 
 export function NotificationForm({
@@ -64,10 +60,10 @@ export function NotificationForm({
   defaultState: NotificationFormState;
   formId: string;
   lockedProvider?: boolean;
-  monitors: NotificationDestinationMonitorSummary[];
+  monitors: ReadonlyArray<AssignedMonitor>;
   submitError: string | null;
-  onInvalid: () => void;
-  onSubmit: (payload: NotificationPayload) => Promise<void>;
+  onInvalid: (message: string) => void;
+  onSubmit: (input: NotificationInput) => Promise<void>;
 }) {
   const [formState, setFormState] =
     useState<NotificationFormState>(defaultState);
@@ -82,15 +78,20 @@ export function NotificationForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const payload = buildNotificationPayload(formState);
+    const result = NotificationInput.safeParse(
+      notificationInputFromState(formState),
+    );
 
-    if (!payload) {
-      onInvalid();
+    if (!result.success) {
+      onInvalid(
+        firstSchemaErrorMessage(result.error) ??
+          m.notification_complete_required(),
+      );
 
       return;
     }
 
-    await onSubmit(payload);
+    await onSubmit(result.data);
   }
 
   return (
@@ -101,7 +102,7 @@ export function NotificationForm({
           <Select
             disabled={lockedProvider}
             onValueChange={(value) => {
-              const provider = notificationProviderSchema.safeParse(value);
+              const provider = NotificationProvider.safeParse(value);
 
               if (provider.success) {
                 setFormState(emptyNotificationFormState(provider.data));
@@ -401,7 +402,7 @@ export function notificationFormStateFromDestination(
       ...emptyNotificationFormState("webhook"),
       name: destination.name,
       url: config.url,
-      headers: config.headers ?? [],
+      headers: config.headers,
       monitorIds: destination.monitorIds,
     };
   }
@@ -427,56 +428,34 @@ function ProviderOption({ provider }: { provider: NotificationProvider }) {
   );
 }
 
-function buildNotificationPayload(
+/** The input the form describes; parsing it validates the form. */
+function notificationInputFromState(
   state: NotificationFormState,
-): NotificationPayload | null {
-  const monitorIds = dedupeIds(state.monitorIds);
-
-  if (!state.name.trim()) {
-    return null;
-  }
+): z.input<typeof NotificationInput> {
+  const fields = {
+    name: state.name,
+    monitorIds: [...new Set(state.monitorIds)],
+  };
 
   if (state.provider === "discord") {
-    if (!state.webhookUrl.trim()) {
-      return null;
-    }
-
-    return {
-      name: state.name.trim(),
-      provider: "discord",
-      webhookUrl: state.webhookUrl.trim(),
-      monitorIds,
-    };
+    return { ...fields, provider: "discord", webhookUrl: state.webhookUrl };
   }
 
   if (state.provider === "webhook") {
-    if (!state.url.trim()) {
-      return null;
-    }
-
     return {
-      name: state.name.trim(),
+      ...fields,
       provider: "webhook",
-      url: state.url.trim(),
+      url: state.url,
+      // Rows left without a key are dropped rather than rejected.
       headers: state.headers.filter((header) => header.key.trim().length > 0),
-      monitorIds,
     };
   }
 
-  if (!state.botToken.trim() || !state.chatId.trim()) {
-    return null;
-  }
-
   return {
-    name: state.name.trim(),
+    ...fields,
     provider: "telegram",
-    botToken: state.botToken.trim(),
-    chatId: state.chatId.trim(),
+    botToken: state.botToken,
+    chatId: state.chatId,
     messageThreadId: state.messageThreadId.trim() || null,
-    monitorIds,
   };
-}
-
-function dedupeIds(ids: string[]) {
-  return [...new Set(ids)];
 }

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import type { IncidentRecord } from "@/types";
+import type { Incident } from "@/lib/schemas/incidents";
 
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -10,7 +10,7 @@ export function IncidentList({
   incidents,
   monitorId,
 }: {
-  incidents: IncidentRecord[];
+  incidents: ReadonlyArray<Incident>;
   monitorId: string;
 }) {
   return (

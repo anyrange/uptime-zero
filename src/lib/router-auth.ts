@@ -1,32 +1,17 @@
-import type { QueryClient } from "@tanstack/react-query";
-
 import { redirect } from "@tanstack/react-router";
-import { z } from "zod";
 
-import { sessionQueryOptions } from "@/lib/queries/auth";
+import type { AppRouterContext } from "@/routes/__root";
 
-export type AppRouterContext = {
-  queryClient: QueryClient;
-};
+import { sessionQueryOptions } from "@/lib/api/auth";
 
+/**
+ * Navigation guard for private routes. It only shapes UX: every private
+ * server function enforces its own permission middleware.
+ */
 export async function requireSession({ queryClient }: AppRouterContext) {
-  try {
-    const session = await queryClient.ensureQueryData(sessionQueryOptions());
+  const session = await queryClient.ensureQueryData(sessionQueryOptions());
 
-    if (!session.user) {
-      throw redirect({ to: "/login" });
-    }
+  if (!session.user) throw redirect({ to: "/login" });
 
-    return session;
-  } catch (error) {
-    const parsedError = z
-      .object({ response: z.instanceof(Response) })
-      .safeParse(error);
-
-    if (parsedError.success && parsedError.data.response.status === 401) {
-      throw redirect({ to: "/login" });
-    }
-
-    throw error;
-  }
+  return session;
 }

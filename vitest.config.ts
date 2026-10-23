@@ -1,35 +1,29 @@
-import type { D1Migration } from "@cloudflare/vitest-pool-workers";
-
-import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import {
+  cloudflareTest,
+  readD1Migrations,
+} from "@cloudflare/vitest-pool-workers";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [
-    cloudflareTest(async () => {
-      const migrationsPath = path.join(
-        import.meta.dirname,
-        "src/server/db/migrations",
-      );
-
-      const migrations = await readNestedD1Migrations(migrationsPath);
-
-      return {
-        main: "./src/server/index.ts",
-        wrangler: {
-          configPath: "./wrangler.jsonc",
+    cloudflareTest(async () => ({
+      main: "./test/worker.ts",
+      // Void generates the deployed Worker config, so the test runtime
+      // declares just the bindings the server code uses.
+      miniflare: {
+        compatibilityDate: "2026-05-01",
+        compatibilityFlags: ["nodejs_compat"],
+        d1Databases: ["DB"],
+        bindings: {
+          BETTER_AUTH_SECRET: "test-secret-00000000000000000000000000000000",
+          BETTER_AUTH_URL: "http://localhost",
+          TEST_MIGRATIONS: await readD1Migrations(
+            fileURLToPath(new URL("./db/migrations", import.meta.url)),
+          ),
         },
-        miniflare: {
-          bindings: {
-            BETTER_AUTH_SECRET: "test-secret-00000000000000000000000000000000",
-            BETTER_AUTH_URL: "http://localhost",
-            TEST_MIGRATIONS: migrations,
-          },
-        },
-      };
-    }),
+      },
+    })),
   ],
   test: {
     include: ["test/**/*.test.ts"],
@@ -37,35 +31,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@schema": fileURLToPath(new URL("./db/schema.ts", import.meta.url)),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 });
-
-async function readNestedD1Migrations(
-  migrationsPath: string,
-): Promise<D1Migration[]> {
-  const entries = await readdir(migrationsPath, { withFileTypes: true });
-
-  const migrationDirs = entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-
-  return Promise.all(
-    migrationDirs.map(async (name) => {
-      const sql = await readFile(
-        path.join(migrationsPath, name, "migration.sql"),
-        "utf8",
-      );
-
-      return {
-        name,
-        queries: sql
-          .split("--> statement-breakpoint")
-          .map((query) => query.trim())
-          .filter(Boolean),
-      };
-    }),
-  );
-}

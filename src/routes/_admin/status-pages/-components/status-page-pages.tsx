@@ -9,10 +9,8 @@ import {
 import { Ellipsis, ExternalLink, Pencil, Search, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useState, type ReactNode } from "react";
-import { z } from "zod";
 
-import type { StatusPagePayload } from "@/lib/queries/status-pages";
-import type { MonitorRecord, StatusPageRecord } from "@/types";
+import type { Monitor } from "@/lib/schemas/monitors";
 
 import { DataTable } from "@/components/data-table";
 import {
@@ -55,35 +53,30 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  statusPageQueryOptions,
+  statusPagesQueryOptions,
+  useCreateStatusPageMutation,
+  useDeleteStatusPageMutation,
+  useUpdateStatusPageMutation,
+} from "@/lib/api/status-pages";
 import { firstFieldError } from "@/lib/form-errors";
 import { formatDateTime } from "@/lib/formatters";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  useCreateStatusPageMutation,
-  useDeleteStatusPageMutation,
-  statusPageQueryOptions,
-  statusPagesQueryOptions,
-  useUpdateStatusPageMutation,
-} from "@/lib/queries/status-pages";
+  type StatusPage,
+  StatusPageInput,
+  type StatusPageInputEncoded,
+} from "@/lib/schemas/status-pages";
 import { m } from "@/paraglide/messages.js";
-
-const statusPageSchema = z.object({
-  title: z.string().trim().min(1, m.status_page_title_required()),
-  slug: z.string().trim().min(1, m.status_page_slug_required()),
-  description: z.string().nullable(),
-  published: z.boolean(),
-  showHistory: z.boolean(),
-  showTarget: z.boolean(),
-  monitorIds: z.array(z.string()),
-});
 
 export function StatusPagesPage() {
   const { data: pages } = useSuspenseQuery(statusPagesQueryOptions());
   const monitorCount = new Map<string, number>();
   pages.links.forEach((link) => {
     monitorCount.set(
-      link.status_page_id,
-      (monitorCount.get(link.status_page_id) ?? 0) + 1,
+      link.statusPageId,
+      (monitorCount.get(link.statusPageId) ?? 0) + 1,
     );
   });
 
@@ -115,7 +108,7 @@ export function StatusPagesPage() {
 }
 
 interface StatusPageTableRow {
-  page: StatusPageRecord;
+  page: StatusPage;
   monitorCount: number;
 }
 
@@ -161,7 +154,7 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
     header: m.common_visibility(),
     cell: ({ row }) => (
       <span className="text-muted-foreground">
-        {row.original.page.published === 1
+        {row.original.page.published
           ? m.status_page_public()
           : m.status_page_draft_only()}
       </span>
@@ -171,10 +164,8 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
     id: "status",
     header: m.common_status(),
     cell: ({ row }) => (
-      <Badge
-        variant={row.original.page.published === 1 ? "success" : "outline"}
-      >
-        {row.original.page.published === 1
+      <Badge variant={row.original.page.published ? "success" : "outline"}>
+        {row.original.page.published
           ? m.status_page_published()
           : m.status_page_draft()}
       </Badge>
@@ -202,7 +193,7 @@ const statusPageColumns: ColumnDef<StatusPageTableRow>[] = [
   },
 ];
 
-function StatusPageRowActions({ page }: { page: StatusPageRecord }) {
+function StatusPageRowActions({ page }: { page: StatusPage }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const remove = useDeleteStatusPageMutation(page.id);
   const { check, isReady } = usePermissions();
@@ -398,12 +389,12 @@ function StatusPageForm({
   submitError,
   deleteError,
 }: {
-  page?: StatusPageRecord;
-  monitors: MonitorRecord[];
-  selectedMonitorIds?: string[];
+  page?: StatusPage;
+  monitors: ReadonlyArray<Monitor>;
+  selectedMonitorIds?: ReadonlyArray<string>;
   pending?: boolean;
   deletePending?: boolean;
-  onSubmit: (payload: StatusPagePayload) => Promise<void>;
+  onSubmit: (payload: StatusPageInputEncoded) => Promise<void>;
   onDelete?: () => void;
   submitError?: string | null;
   deleteError?: string | null;
@@ -419,18 +410,21 @@ function StatusPageForm({
       )
     : monitors;
 
+  // The form holds the encoded input, which is also what the server takes.
+  const defaultValues: StatusPageInputEncoded = {
+    title: page?.title ?? "",
+    slug: page?.slug ?? nanoid(10),
+    description: page?.description ?? null,
+    published: page?.published ?? true,
+    showHistory: page?.showHistory ?? true,
+    showTarget: page?.showTarget ?? false,
+    monitorIds: [...selectedMonitorIds],
+  };
+
   const form = useForm({
-    defaultValues: {
-      title: page?.title ?? "",
-      slug: page?.slug ?? nanoid(10),
-      description: page?.description ?? null,
-      published: page ? page.published === 1 : true,
-      showHistory: page ? page.showHistory === 1 : true,
-      showTarget: page ? page.showTarget === 1 : false,
-      monitorIds: selectedMonitorIds,
-    },
+    defaultValues,
     validators: {
-      onSubmit: statusPageSchema,
+      onSubmit: StatusPageInput,
     },
     onSubmit: async ({ value }) => {
       await onSubmit(value);
@@ -556,56 +550,56 @@ function StatusPageForm({
           </div>
         ) : null}
         <form.Field
-          mode="array"
           name="monitorIds"
-          children={(field) => (
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {monitors.length === 0 ? (
-                <Empty>{m.status_page_no_monitors()}</Empty>
-              ) : filteredMonitors.length === 0 ? (
-                <Empty>{m.status_page_no_monitors_match()}</Empty>
-              ) : (
-                filteredMonitors.map((monitor) => {
-                  const checked = field.state.value.includes(monitor.id);
+          children={(field) => {
+            const monitorIds = field.state.value ?? [];
 
-                  return (
-                    <Item asChild key={monitor.id} size="sm" variant="outline">
-                      <label>
-                        <ItemMedia>
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(nextChecked) => {
-                              if (nextChecked) {
-                                if (!checked) {
-                                  field.pushValue(monitor.id);
-                                }
+            return (
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {monitors.length === 0 ? (
+                  <Empty>{m.status_page_no_monitors()}</Empty>
+                ) : filteredMonitors.length === 0 ? (
+                  <Empty>{m.status_page_no_monitors_match()}</Empty>
+                ) : (
+                  filteredMonitors.map((monitor) => {
+                    const checked = monitorIds.includes(monitor.id);
 
-                                return;
+                    return (
+                      <Item
+                        asChild
+                        key={monitor.id}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <label>
+                          <ItemMedia>
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(nextChecked) =>
+                                field.handleChange(
+                                  nextChecked
+                                    ? [...monitorIds, monitor.id]
+                                    : monitorIds.filter(
+                                        (id) => id !== monitor.id,
+                                      ),
+                                )
                               }
-
-                              const index = field.state.value.indexOf(
-                                monitor.id,
-                              );
-
-                              if (index >= 0) {
-                                field.removeValue(index);
-                              }
-                            }}
-                          />
-                        </ItemMedia>
-                        <ItemContent>
-                          <ItemTitle>{monitor.name}</ItemTitle>
-                          <ItemDescription>
-                            {monitor.kind.toUpperCase()}
-                          </ItemDescription>
-                        </ItemContent>
-                      </label>
-                    </Item>
-                  );
-                })
-              )}
-            </div>
-          )}
+                            />
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle>{monitor.name}</ItemTitle>
+                            <ItemDescription>
+                              {monitor.kind.toUpperCase()}
+                            </ItemDescription>
+                          </ItemContent>
+                        </label>
+                      </Item>
+                    );
+                  })
+                )}
+              </div>
+            );
+          }}
         />
       </div>
       <div className="grid gap-3 border-b border-border/70 pb-5">

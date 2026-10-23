@@ -1,4 +1,5 @@
 allowBuilds:
+  better-sqlite3: false
   esbuild: true
   msw: true
   sharp: true

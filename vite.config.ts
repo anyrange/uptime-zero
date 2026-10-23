@@ -1,10 +1,10 @@
-import { cloudflare } from "@cloudflare/vite-plugin";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { voidPlugin } from "void";
 
 import pkg from "./package.json" with { type: "json" };
 
@@ -30,19 +30,18 @@ const config = defineConfig({
   plugins: [
     devtools(),
     tailwindcss(),
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    react(),
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/paraglide",
       emitTsDeclarations: true,
     }),
-    cloudflare({
-      persistState: isE2E ? { path: ".wrangler/e2e-state" } : true,
-    }),
+    // Void runs Start inside the Workers runtime (local D1 and the rate
+    // limiter included) and must precede the framework plugin. E2E runs keep
+    // their own local state so they never touch development data.
+    voidPlugin({ persistTo: isE2E ? ".void/e2e-state" : undefined }),
+    // Start must precede the React plugin.
+    tanstackStart(),
+    react(),
   ],
 });
 

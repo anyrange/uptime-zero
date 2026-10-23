@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { z } from "zod";
 
 import {
   AlertDialog,
@@ -17,13 +16,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { firstFieldError } from "@/lib/form-errors";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   accountQueryOptions,
   useDeleteAccountMutation,
   useUpdateAccountMutation,
-} from "@/lib/queries/auth";
+} from "@/lib/api/accounts";
+import { firstFieldError } from "@/lib/form-errors";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { ProfileInput } from "@/lib/schemas/accounts";
 import { m } from "@/paraglide/messages.js";
 
 import {
@@ -34,10 +34,6 @@ import {
   SettingsRowDescription,
   SettingsRowLabel,
 } from "./settings-layout";
-
-const accountSchema = z.object({
-  name: z.string().trim().min(1, m.validation_name_required()).max(120),
-});
 
 export function AccountSettings() {
   const { data } = useSuspenseQuery(accountQueryOptions());
@@ -53,7 +49,7 @@ export function AccountSettings() {
       name: data.user.name,
     },
     validators: {
-      onSubmit: accountSchema,
+      onSubmit: ProfileInput,
     },
     onSubmit: async ({ value }) => {
       await update.mutateAsync(value);

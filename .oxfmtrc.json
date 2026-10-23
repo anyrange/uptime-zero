@@ -11,7 +11,10 @@
     "src/routeTree.gen.ts",
     "worker-configuration.d.ts",
     "CHANGELOG.md",
-    "drizzle/**"
+    ".void/**",
+    ".claude/**",
+    "db/migrations/**",
+    "void.lock.json"
   ],
   "sortImports": {
     "groups": [

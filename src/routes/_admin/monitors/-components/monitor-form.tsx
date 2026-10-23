@@ -7,15 +7,8 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 
-import type { MonitorPayload } from "@/lib/queries/monitors";
-import type {
-  MonitorAssertion,
-  MonitorKind,
-  MonitorRecord,
-  NotificationDestinationRecord,
-} from "@/types";
+import type { NotificationDestination } from "@/lib/schemas/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,33 +55,34 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  usePauseMonitorMutation,
+  useResumeMonitorMutation,
+} from "@/lib/api/monitors";
+import { providerLabel } from "@/lib/api/notifications";
+import { firstSchemaErrorMessage } from "@/lib/form-errors";
 import { notificationSummary } from "@/lib/formatters";
 import {
-  addMonitorAssertion,
   applyMonitorKindChange,
   createBodyJsonAssertion,
   createBodyTextAssertion,
   createDnsAssertion,
   createHeaderAssertion,
   createStatusAssertion,
-  getMonitorConfigFormDefaults,
-  removeMonitorAssertion,
-  updateMonitorAssertion,
-  validateMonitorConfigForm,
-} from "@/lib/monitor/form";
+  MonitorConfig,
+  type MonitorConfigInput,
+  monitorConfigDefaults,
+} from "@/lib/schemas/monitor-config";
 import {
-  usePauseMonitorMutation,
-  useResumeMonitorMutation,
-} from "@/lib/queries/monitors";
-import { providerLabel } from "@/lib/queries/notifications";
+  HeartbeatMode,
+  type Monitor,
+  type MonitorAssertion,
+  MonitorKind,
+} from "@/lib/schemas/monitors";
 import { m } from "@/paraglide/messages.js";
 
 import { AssertionEditor } from "./assertion-editor";
 import { PushEndpoint } from "./push-endpoint";
-
-const monitorKindSchema = z.enum(["http", "dns", "push"]);
-
-const heartbeatModeSchema = z.enum(["interval", "cron"]);
 
 const monitorIntervalOptions = [60, 300, 600, 1800, 3600] as const;
 
@@ -102,19 +96,16 @@ export function MonitorForm({
   onTest,
   onDelete,
 }: {
-  destinations: NotificationDestinationRecord[];
-  monitor?: MonitorRecord;
-  selectedDestinationIds?: string[];
+  destinations: ReadonlyArray<NotificationDestination>;
+  monitor?: Monitor;
+  selectedDestinationIds?: ReadonlyArray<string>;
   pending?: boolean;
   testPending?: boolean;
-  onSubmit: (payload: MonitorPayload) => Promise<void>;
-  onTest?: (payload: MonitorPayload) => Promise<void>;
+  onSubmit: (config: MonitorConfig) => Promise<void>;
+  onTest?: (config: MonitorConfig) => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
-  const defaults = getMonitorConfigFormDefaults(
-    monitor,
-    selectedDestinationIds,
-  );
+  const defaults = monitorConfigDefaults(monitor, selectedDestinationIds);
 
   const [name, setName] = useState(defaults.name);
   const [kind, setKind] = useState(defaults.kind);
@@ -123,7 +114,7 @@ export function MonitorForm({
   const [timeoutMs, setTimeoutMs] = useState(defaults.timeoutMs);
   const [retries, setRetries] = useState(defaults.retries);
 
-  const [assertions, setAssertions] = useState<MonitorAssertion[]>(
+  const [assertions, setAssertions] = useState<ReadonlyArray<MonitorAssertion>>(
     defaults.assertions,
   );
 
@@ -153,23 +144,33 @@ export function MonitorForm({
   const actionPending =
     pending || testPending || pause.isPending || resume.isPending;
 
+  /** Parses the form state; failures carry the first issue's message. */
   function validateCurrentConfig() {
-    return validateMonitorConfigForm({
+    const result = MonitorConfig.safeParse({
       name,
       kind,
       target,
       intervalSec,
       timeoutMs,
       retries,
-      assertions,
+      assertions: [...assertions],
       heartbeatMode,
       heartbeatCron,
       heartbeatGraceSec,
       heartbeatTimezone,
       notificationGraceSec,
-      active: monitor ? monitor.active === 1 : true,
+      active: monitor?.active ?? true,
       notificationDestinationIds,
-    });
+    } satisfies MonitorConfigInput);
+
+    return result.success
+      ? { config: result.data, error: null }
+      : {
+          config: null,
+          error:
+            firstSchemaErrorMessage(result.error) ??
+            m.validation_monitor_payload(),
+        };
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -178,13 +179,13 @@ export function MonitorForm({
 
     const result = validateCurrentConfig();
 
-    if (!result.ok) {
+    if (!result.config) {
       setSubmitError(result.error);
 
       return;
     }
 
-    await onSubmit(result.payload);
+    await onSubmit(result.config);
   }
 
   async function handleTest() {
@@ -193,13 +194,13 @@ export function MonitorForm({
 
     const result = validateCurrentConfig();
 
-    if (!result.ok) {
+    if (!result.config) {
       toast.error(m.monitor_test_failed(), { description: result.error });
 
       return;
     }
 
-    await onTest(result.payload);
+    await onTest(result.config);
   }
 
   function handleKindChange(nextKind: MonitorKind) {
@@ -222,12 +223,12 @@ export function MonitorForm({
               <Button
                 disabled={actionPending}
                 onClick={() =>
-                  monitor.active === 1 ? pause.mutate() : resume.mutate()
+                  monitor.active ? pause.mutate() : resume.mutate()
                 }
                 type="button"
                 variant="outline"
               >
-                {monitor.active === 1 ? m.monitor_pause() : m.monitor_resume()}
+                {monitor.active ? m.monitor_pause() : m.monitor_resume()}
               </Button>
             </CardAction>
           ) : null}
@@ -248,9 +249,9 @@ export function MonitorForm({
                 aria-label={m.monitor_type()}
                 className="grid w-full grid-cols-1 md:grid-cols-3"
                 onValueChange={(value) => {
-                  const kind = monitorKindSchema.safeParse(value);
+                  const nextKind = MonitorKind.safeParse(value);
 
-                  if (kind.success) handleKindChange(kind.data);
+                  if (nextKind.success) handleKindChange(nextKind.data);
                 }}
                 type="single"
                 value={kind}
@@ -332,12 +333,10 @@ export function MonitorForm({
                     <>
                       <Button
                         onClick={() =>
-                          setAssertions(
-                            addMonitorAssertion(
-                              assertions,
-                              createStatusAssertion(),
-                            ),
-                          )
+                          setAssertions([
+                            ...assertions,
+                            createStatusAssertion(),
+                          ])
                         }
                         type="button"
                         variant="outline"
@@ -347,12 +346,10 @@ export function MonitorForm({
                       </Button>
                       <Button
                         onClick={() =>
-                          setAssertions(
-                            addMonitorAssertion(
-                              assertions,
-                              createHeaderAssertion(),
-                            ),
-                          )
+                          setAssertions([
+                            ...assertions,
+                            createHeaderAssertion(),
+                          ])
                         }
                         type="button"
                         variant="outline"
@@ -362,12 +359,10 @@ export function MonitorForm({
                       </Button>
                       <Button
                         onClick={() =>
-                          setAssertions(
-                            addMonitorAssertion(
-                              assertions,
-                              createBodyTextAssertion(),
-                            ),
-                          )
+                          setAssertions([
+                            ...assertions,
+                            createBodyTextAssertion(),
+                          ])
                         }
                         type="button"
                         variant="outline"
@@ -377,12 +372,10 @@ export function MonitorForm({
                       </Button>
                       <Button
                         onClick={() =>
-                          setAssertions(
-                            addMonitorAssertion(
-                              assertions,
-                              createBodyJsonAssertion(),
-                            ),
-                          )
+                          setAssertions([
+                            ...assertions,
+                            createBodyJsonAssertion(),
+                          ])
                         }
                         type="button"
                         variant="outline"
@@ -394,9 +387,7 @@ export function MonitorForm({
                   ) : (
                     <Button
                       onClick={() =>
-                        setAssertions(
-                          addMonitorAssertion(assertions, createDnsAssertion()),
-                        )
+                        setAssertions([...assertions, createDnsAssertion()])
                       }
                       type="button"
                       variant="outline"
@@ -423,12 +414,18 @@ export function MonitorForm({
                         key={assertion.id}
                         onChange={(nextAssertion) =>
                           setAssertions(
-                            updateMonitorAssertion(assertions, nextAssertion),
+                            assertions.map((item) =>
+                              item.id === nextAssertion.id
+                                ? nextAssertion
+                                : item,
+                            ),
                           )
                         }
                         onRemove={() =>
                           setAssertions(
-                            removeMonitorAssertion(assertions, assertion.id),
+                            assertions.filter(
+                              (item) => item.id !== assertion.id,
+                            ),
                           )
                         }
                       />
@@ -496,7 +493,7 @@ export function MonitorForm({
                 <FieldLabel>{m.monitor_heartbeat_mode()}</FieldLabel>
                 <Select
                   onValueChange={(value) => {
-                    const mode = heartbeatModeSchema.safeParse(value);
+                    const mode = HeartbeatMode.safeParse(value);
 
                     if (mode.success) setHeartbeatMode(mode.data);
                   }}

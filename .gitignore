@@ -9,3 +9,10 @@ e2e/.auth
 public/app.css
 .dev.vars
 .env
+.void-wrangler.jsonc
+.void/
+.void
+.env.*
+!.env.example
+*.tsbuildinfo
+.DS_Store

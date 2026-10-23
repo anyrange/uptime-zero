@@ -5,14 +5,15 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import type { HeartbeatPage, HeartbeatRecord } from "@/types";
+import type { MonitorLogs } from "@/lib/api/monitors";
+import type { Heartbeat } from "@/lib/schemas/monitors";
 
 import { DataTable } from "@/components/data-table";
 import { LiveTime } from "@/components/live-time";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { formatDurationMs } from "@/lib/formatters";
-import { getMonitorLogsPageRange } from "@/lib/monitor/logs";
+import { getMonitorLogsPageRange } from "@/lib/monitor-logs";
 import { m } from "@/paraglide/messages.js";
 
 export function MonitorLogsTable({
@@ -20,10 +21,11 @@ export function MonitorLogsTable({
   pageData,
 }: {
   monitorId: string;
-  pageData: HeartbeatPage;
+  pageData: MonitorLogs;
 }) {
   const table = useReactTable({
-    data: pageData.heartbeats,
+    // SAFETY: TanStack Table never mutates `data`; its option type just is not readonly.
+    data: pageData.heartbeats as Heartbeat[],
     columns: monitorLogColumns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -40,7 +42,7 @@ export function MonitorLogsTable({
   );
 }
 
-const monitorLogColumns: ColumnDef<HeartbeatRecord>[] = [
+const monitorLogColumns: ColumnDef<Heartbeat>[] = [
   {
     accessorKey: "createdAt",
     header: () => <span className="pl-5">{m.monitor_timestamp()}</span>,
@@ -104,7 +106,7 @@ function MonitorLogsPagination({
   pageData,
 }: {
   monitorId: string;
-  pageData: HeartbeatPage;
+  pageData: MonitorLogs;
 }) {
   const range = getMonitorLogsPageRange({
     page: pageData.page,

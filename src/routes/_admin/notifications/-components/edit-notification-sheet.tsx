@@ -1,7 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useId, useState } from "react";
 
-import type { NotificationDestinationMonitorSummary } from "@/types";
+import type {
+  AssignedMonitor,
+  NotificationInput,
+} from "@/lib/schemas/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +19,7 @@ import {
   notificationQueryOptions,
   useTestNotificationMutation,
   useUpdateNotificationMutation,
-  type NotificationPayload,
-} from "@/lib/queries/notifications";
+} from "@/lib/api/notifications";
 import { m } from "@/paraglide/messages.js";
 
 import {
@@ -32,7 +34,7 @@ export function EditNotificationSheet({
   onClose,
 }: {
   editingId: string | null;
-  monitors: NotificationDestinationMonitorSummary[];
+  monitors: ReadonlyArray<AssignedMonitor>;
   onClose: () => void;
 }) {
   return (
@@ -78,7 +80,7 @@ function EditNotificationForm({
   onClose,
 }: {
   id: string;
-  monitors: NotificationDestinationMonitorSummary[];
+  monitors: ReadonlyArray<AssignedMonitor>;
   onClose: () => void;
 }) {
   const { data: destination } = useSuspenseQuery(notificationQueryOptions(id));
@@ -88,7 +90,7 @@ function EditNotificationForm({
   const formId = useId();
   const pending = update.isPending || test.isPending;
 
-  async function handleSubmit(payload: NotificationPayload) {
+  async function handleSubmit(payload: NotificationInput) {
     setSubmitError(null);
 
     try {
@@ -108,7 +110,7 @@ function EditNotificationForm({
         formId={formId}
         lockedProvider
         monitors={monitors}
-        onInvalid={() => setSubmitError(m.notification_complete_required())}
+        onInvalid={setSubmitError}
         onSubmit={handleSubmit}
         submitError={submitError}
       />

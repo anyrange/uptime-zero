@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { MonitorAssertion, MonitorDetailData } from "@/types";
+import type { MonitorDetail } from "@/lib/api/monitors";
+import type { MonitorAssertion } from "@/lib/schemas/monitors";
 
 import { LiveTime } from "@/components/live-time";
 import {
@@ -9,18 +10,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { providerLabel } from "@/lib/api/notifications";
 import {
   formatDateTime,
   formatDurationMs,
   formatUptimePercent,
   notificationSummary,
 } from "@/lib/formatters";
-import { providerLabel } from "@/lib/queries/notifications";
 import { m } from "@/paraglide/messages.js";
+import { useMonitorWorkspaceData } from "@/routes/_admin/monitors/-components/monitor-workspace";
 
-import { CheckHistory } from "../-components/check-history";
-import { IncidentList } from "../-components/incident-list";
-import { useMonitorWorkspaceData } from "../../-components/monitor-workspace";
+import { CheckHistory } from "./check-history";
+import { IncidentList } from "./incident-list";
 
 export function MonitorOverviewPage({ monitorId }: { monitorId: string }) {
   const data = useMonitorWorkspaceData(monitorId);
@@ -32,7 +33,7 @@ function MonitorOverviewContent({
   data,
   monitorId,
 }: {
-  data: MonitorDetailData;
+  data: MonitorDetail;
   monitorId: string;
 }) {
   return (
@@ -41,7 +42,11 @@ function MonitorOverviewContent({
         <OverviewMetricCard accent="emerald">
           <OverviewMetricCardBody>
             <CardDescription className="text-sm font-medium">
-              {data.metrics.windows[0]?.label ?? m.monitor_availability()}
+              {data.metrics.windows[0] == null
+                ? m.monitor_availability()
+                : m.monitor_availability_window_label({
+                    days: data.metrics.windows[0].days,
+                  })}
             </CardDescription>
             <CardTitle className="text-2xl">
               {data.metrics.windows[0]?.uptimePercentage == null
@@ -134,10 +139,12 @@ function MonitorOverviewContent({
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data.metrics.windows.map((window) => (
-              <Card key={window.label} size="sm">
+              <Card key={window.days} size="sm">
                 <CardHeader className="gap-1">
                   <CardDescription className="font-medium">
-                    {window.label}
+                    {m.monitor_availability_window_label({
+                      days: window.days,
+                    })}
                   </CardDescription>
                   <CardTitle className="text-2xl">
                     {window.uptimePercentage == null

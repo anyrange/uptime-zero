@@ -1,5 +1,3 @@
-import type { MonitorAssertion } from "@/types";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,20 +24,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  dnsRecordTypeSchema,
-  dnsRecordTypes,
-  jsonOperatorSchema,
-  jsonOperators,
-  textAssertionOperators,
-  textOperatorSchema,
-} from "@/lib/monitor/assertions";
+  DnsRecordType,
+  JsonOperator,
+  type MonitorAssertion,
+  TextAssertionOperator,
+} from "@/lib/schemas/monitors";
 import { m } from "@/paraglide/messages.js";
 
-const textOperatorOptions = textAssertionOperators;
+// Selects hand back plain strings; these narrow them to the option sets.
+function isTextOperator(value: unknown): value is TextAssertionOperator {
+  return TextAssertionOperator.safeParse(value).success;
+}
 
-const jsonOperatorOptions = jsonOperators;
+function isJsonOperator(value: unknown): value is JsonOperator {
+  return JsonOperator.safeParse(value).success;
+}
 
-const dnsRecordTypeOptions = dnsRecordTypes;
+function isDnsRecordType(value: unknown): value is DnsRecordType {
+  return DnsRecordType.safeParse(value).success;
+}
 
 export function AssertionEditor({
   assertion,
@@ -98,10 +101,8 @@ export function AssertionEditor({
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
                 onValueChange={(value) => {
-                  const operator = textOperatorSchema.safeParse(value);
-
-                  if (operator.success) {
-                    onChange({ ...assertion, operator: operator.data });
+                  if (isTextOperator(value)) {
+                    onChange({ ...assertion, operator: value });
                   }
                 }}
                 value={assertion.operator}
@@ -111,7 +112,7 @@ export function AssertionEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {textOperatorOptions.map((operator) => (
+                    {TextAssertionOperator.options.map((operator) => (
                       <SelectItem key={operator} value={operator}>
                         {operator}
                       </SelectItem>
@@ -138,10 +139,8 @@ export function AssertionEditor({
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
                 onValueChange={(value) => {
-                  const operator = textOperatorSchema.safeParse(value);
-
-                  if (operator.success) {
-                    onChange({ ...assertion, operator: operator.data });
+                  if (isTextOperator(value)) {
+                    onChange({ ...assertion, operator: value });
                   }
                 }}
                 value={assertion.operator}
@@ -151,7 +150,7 @@ export function AssertionEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {textOperatorOptions.map((operator) => (
+                    {TextAssertionOperator.options.map((operator) => (
                       <SelectItem key={operator} value={operator}>
                         {operator}
                       </SelectItem>
@@ -187,10 +186,8 @@ export function AssertionEditor({
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
                 onValueChange={(value) => {
-                  const operator = jsonOperatorSchema.safeParse(value);
-
-                  if (operator.success) {
-                    onChange({ ...assertion, operator: operator.data });
+                  if (isJsonOperator(value)) {
+                    onChange({ ...assertion, operator: value });
                   }
                 }}
                 value={assertion.operator}
@@ -200,7 +197,7 @@ export function AssertionEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {jsonOperatorOptions.map((operator) => (
+                    {JsonOperator.options.map((operator) => (
                       <SelectItem key={operator} value={operator}>
                         {operator}
                       </SelectItem>
@@ -227,10 +224,8 @@ export function AssertionEditor({
               <FieldLabel>{m.monitor_record_type()}</FieldLabel>
               <Select
                 onValueChange={(value) => {
-                  const recordType = dnsRecordTypeSchema.safeParse(value);
-
-                  if (recordType.success) {
-                    onChange({ ...assertion, recordType: recordType.data });
+                  if (isDnsRecordType(value)) {
+                    onChange({ ...assertion, recordType: value });
                   }
                 }}
                 value={assertion.recordType}
@@ -240,7 +235,7 @@ export function AssertionEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {dnsRecordTypeOptions.map((recordType) => (
+                    {DnsRecordType.options.map((recordType) => (
                       <SelectItem key={recordType} value={recordType}>
                         {recordType}
                       </SelectItem>
@@ -253,10 +248,8 @@ export function AssertionEditor({
               <FieldLabel>{m.monitor_operator()}</FieldLabel>
               <Select
                 onValueChange={(value) => {
-                  const operator = textOperatorSchema.safeParse(value);
-
-                  if (operator.success) {
-                    onChange({ ...assertion, operator: operator.data });
+                  if (isTextOperator(value)) {
+                    onChange({ ...assertion, operator: value });
                   }
                 }}
                 value={assertion.operator}
@@ -266,7 +259,7 @@ export function AssertionEditor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {textOperatorOptions.map((operator) => (
+                    {TextAssertionOperator.options.map((operator) => (
                       <SelectItem key={operator} value={operator}>
                         {operator}
                       </SelectItem>

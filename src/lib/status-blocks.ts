@@ -2,7 +2,8 @@ import type {
   StatusBarData,
   StatusType,
 } from "@/components/blocks/status.types";
-import type { HeartbeatRecord, IncidentRecord, MonitorStatus } from "@/types";
+import type { Incident } from "@/lib/schemas/incidents";
+import type { Heartbeat, MonitorStatus } from "@/lib/schemas/monitors";
 
 import { formatUptimePercent } from "@/lib/formatters";
 import { m } from "@/paraglide/messages.js";
@@ -21,7 +22,7 @@ export function monitorStatusToBlockStatus(
   return "degraded";
 }
 
-export function formatMonitorUptime(heartbeats: HeartbeatRecord[]) {
+export function formatMonitorUptime(heartbeats: ReadonlyArray<Heartbeat>) {
   if (heartbeats.length === 0) {
     return m.common_no_data();
   }
@@ -36,8 +37,8 @@ export function formatMonitorUptime(heartbeats: HeartbeatRecord[]) {
 }
 
 export function buildStatusBarData(
-  heartbeats: HeartbeatRecord[],
-  incidents: IncidentRecord[] = [],
+  heartbeats: ReadonlyArray<Heartbeat>,
+  incidents: ReadonlyArray<Incident> = [],
   count = 24,
 ): StatusBarData[] {
   return heartbeats
@@ -84,8 +85,8 @@ export function buildStatusBarData(
 }
 
 export function buildHourlyStatusBarData(
-  heartbeats: HeartbeatRecord[],
-  incidents: IncidentRecord[] = [],
+  heartbeats: ReadonlyArray<Heartbeat>,
+  incidents: ReadonlyArray<Incident> = [],
   count = 48,
 ): StatusBarData[] {
   return buildBucketedStatusBarData({
@@ -99,8 +100,8 @@ export function buildHourlyStatusBarData(
 }
 
 export function buildDailyStatusBarData(
-  heartbeats: HeartbeatRecord[],
-  incidents: IncidentRecord[] = [],
+  heartbeats: ReadonlyArray<Heartbeat>,
+  incidents: ReadonlyArray<Incident> = [],
   count = 45,
 ): StatusBarData[] {
   return buildBucketedStatusBarData({
@@ -121,8 +122,8 @@ function buildBucketedStatusBarData({
   startOfBucket,
   emptyBuckets,
 }: {
-  heartbeats: HeartbeatRecord[];
-  incidents: IncidentRecord[];
+  heartbeats: ReadonlyArray<Heartbeat>;
+  incidents: ReadonlyArray<Incident>;
   count: number;
   intervalMs: number;
   startOfBucket: (date: Date) => Date;
@@ -136,7 +137,7 @@ function buildBucketedStatusBarData({
 
   const buckets = Array.from({ length: count }, (_, index) => {
     const start = new Date(firstBucketStart.getTime() + index * intervalMs);
-    const bucketHeartbeats: HeartbeatRecord[] = [];
+    const bucketHeartbeats: Heartbeat[] = [];
 
     return {
       start,
@@ -179,8 +180,8 @@ function buildBucketedStatusBarData({
 function bucketToStatusBarData(
   bucketStart: Date,
   bucketEnd: Date,
-  heartbeats: HeartbeatRecord[],
-  incidents: IncidentRecord[],
+  heartbeats: ReadonlyArray<Heartbeat>,
+  incidents: ReadonlyArray<Incident>,
 ): StatusBarData {
   const counts = heartbeats.reduce(
     (result, heartbeat) => {
@@ -264,7 +265,7 @@ function startOfDay(date: Date) {
 }
 
 function incidentOverlapsHeartbeat(
-  incident: IncidentRecord,
+  incident: Incident,
   heartbeatAt: Date,
 ): boolean {
   const openedAt = new Date(incident.openedAt);
@@ -286,7 +287,7 @@ function incidentOverlapsHeartbeat(
 }
 
 function incidentOverlapsWindow(
-  incident: IncidentRecord,
+  incident: Incident,
   windowStart: Date,
   windowEnd: Date,
 ): boolean {
@@ -311,7 +312,7 @@ function incidentOverlapsWindow(
   return true;
 }
 
-function incidentToStatusBarEvent(incident: IncidentRecord, index: number) {
+function incidentToStatusBarEvent(incident: Incident, index: number) {
   return {
     id:
       Number.parseInt(incident.id.replace(/\D/g, "").slice(0, 9), 10) ||

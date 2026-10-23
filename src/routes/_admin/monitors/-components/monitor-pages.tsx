@@ -21,15 +21,15 @@ import {
   useDeleteMonitorMutation,
   useTestMonitorMutation,
   useUpdateMonitorMutation,
-} from "@/lib/queries/monitors";
+} from "@/lib/api/monitors";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
-import { MonitorIncidentsTable } from "../-components/monitor-incidents-table";
-import { MonitorLogsTable } from "../-components/monitor-logs-table";
-import { useMonitorWorkspaceData } from "../-components/monitor-workspace";
-import { MonitorsIndexContent } from "../-components/monitors-index-content";
 import { MonitorForm } from "./monitor-form";
+import { MonitorIncidentsTable } from "./monitor-incidents-table";
+import { MonitorLogsTable } from "./monitor-logs-table";
+import { useMonitorWorkspaceData } from "./monitor-workspace";
+import { MonitorsIndexContent } from "./monitors-index-content";
 
 export function NewMonitorPage() {
   const { data } = useSuspenseQuery(monitorListQueryOptions());
@@ -170,7 +170,9 @@ export function MonitorSettingsPage({ monitorId }: { monitorId: string }) {
           });
         }}
         pending={update.isPending || remove.isPending}
-        selectedDestinationIds={data.notificationDestinationIds}
+        selectedDestinationIds={data.notificationDestinations.map(
+          (destination) => destination.id,
+        )}
       />
     </MonitorConfigLayout>
   );

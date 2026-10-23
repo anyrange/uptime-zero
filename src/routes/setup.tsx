@@ -2,9 +2,7 @@ import type { ReactNode } from "react";
 
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { all } from "better-all";
-import { z } from "zod";
+import { createFileRoute, redirect, useHydrated } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,20 +13,21 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { firstFieldError } from "@/lib/form-errors";
 import {
   sessionQueryOptions,
   setupStateQueryOptions,
   useSetupMutation,
-} from "@/lib/queries/auth";
+} from "@/lib/api/auth";
+import { firstFieldError } from "@/lib/form-errors";
+import { SetupInput } from "@/lib/schemas/auth";
 import { m } from "@/paraglide/messages.js";
 
 export const Route = createFileRoute("/setup")({
   beforeLoad: async ({ context: { queryClient } }) => {
-    const { setup, session } = await all({
-      setup: () => queryClient.ensureQueryData(setupStateQueryOptions()),
-      session: () => queryClient.ensureQueryData(sessionQueryOptions()),
-    });
+    const [setup, session] = await Promise.all([
+      queryClient.ensureQueryData(setupStateQueryOptions()),
+      queryClient.ensureQueryData(sessionQueryOptions()),
+    ]);
 
     if (session.user) {
       throw redirect({ to: "/" });
@@ -41,15 +40,12 @@ export const Route = createFileRoute("/setup")({
   component: SetupRoute,
 });
 
-const setupSchema = z.object({
-  name: z.string().trim().min(1, m.validation_name_required()),
-  email: z.email(m.validation_email_valid()),
-  password: z.string().min(12, m.validation_password_min_12()),
-});
-
 function SetupRoute() {
   const { data: setup } = useSuspenseQuery(setupStateQueryOptions());
   const navigate = Route.useNavigate();
+  // Before hydration the form would submit natively, putting the password
+  // in the URL, so it only becomes submittable once React owns it.
+  const hydrated = useHydrated();
   const mutation = useSetupMutation();
 
   const form = useForm({
@@ -59,12 +55,11 @@ function SetupRoute() {
       password: "",
     },
     validators: {
-      onSubmit: setupSchema,
+      onSubmit: SetupInput,
     },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
-      await navigate({ to: "/" });
-    },
+    // Failures render from `mutation.error` below the fields.
+    onSubmit: ({ value }) =>
+      mutation.mutate(value, { onSuccess: () => navigate({ to: "/" }) }),
   });
 
   return (
@@ -180,7 +175,7 @@ function SetupRoute() {
                 {mutation.error.message}
               </p>
             ) : null}
-            <Button disabled={mutation.isPending} type="submit">
+            <Button disabled={!hydrated || mutation.isPending} type="submit">
               {m.auth_create_admin()}
             </Button>
           </form>

@@ -1,241 +1,149 @@
-import { env } from "cloudflare:workers";
-import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as schema from "@schema";
+import { describe, expect, it } from "vitest";
+import { db, eq } from "void/db";
 
-import {
-  monitorConfigSchema,
-  parseMonitorConfigForStorage,
-} from "@/lib/monitor/config";
-import { createDatabase } from "@/server/db";
-import * as schema from "@/server/db/schema";
-import { daysAgoIso } from "@/server/lib/dates";
-import { MaintenanceService } from "@/server/services/maintenance";
+import * as maintenance from "@/modules/maintenance/maintenance.service";
+import * as settings from "@/modules/settings/settings.service";
+
+import { seedMonitor, setNow } from "./support";
+
+const NOW = Date.parse("2026-06-13T00:00:00.000Z");
+
+// Retention is one day, so the cutoff sits exactly one day before `NOW`.
+const CUTOFF = NOW - 86_400_000;
+
+const iso = (ms: number) => new Date(ms).toISOString();
+
+const daysBefore = (days: number) => iso(NOW - days * 86_400_000).slice(0, 10);
+
+const idsOf = (rows: ReadonlyArray<{ id: string }>) =>
+  new Set(rows.map((row) => row.id));
 
 describe("maintenance retention", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-13T00:00:00.000Z"));
-  });
+  it("deletes expired records but keeps the ones on the boundary", async () => {
+    setNow(iso(NOW));
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("deletes expired heartbeats and closed incidents but keeps boundary records", async () => {
-    const db = createDatabase(env.DB);
-    await db.settings.update({
+    await settings.updateRetention({
       heartbeatRetentionDays: 1,
       incidentRetentionDays: 1,
     });
 
-    const monitor = await db.monitor.create(
-      parseMonitorConfigForStorage(
-        monitorConfigSchema.parse({
-          name: "HTTP",
-          kind: "http",
-          target: "https://example.com/health",
-          intervalSec: 60,
-          timeoutMs: 10_000,
-          retries: 0,
-          assertions: [],
-          active: true,
-          heartbeatCron: null,
-          heartbeatGraceSec: null,
-          heartbeatTimezone: null,
-          notificationGraceSec: 0,
-          notificationDestinationIds: [],
-        }),
-      ),
-    );
+    const monitor = await seedMonitor();
+    const tooOld = iso(CUTOFF - 1000);
+    const atCutoff = iso(CUTOFF);
+    const fresh = iso(CUTOFF + 1000);
 
-    if (!monitor) {
-      throw new Error("Monitor creation should not fail");
-    }
-
-    const retentionCutoff = daysAgoIso(1);
-
-    const tooOld = new Date(
-      new Date(retentionCutoff).getTime() - 1000,
-    ).toISOString();
-
-    const atCutoff = retentionCutoff;
-
-    const fresh = new Date(
-      new Date(retentionCutoff).getTime() + 1000,
-    ).toISOString();
-
-    const oldHeartbeat = {
+    const heartbeat = (createdAt: string, status: "up" | "down") => ({
       id: crypto.randomUUID(),
       monitorId: monitor.id,
-      status: "down" as const,
-      statusCode: 500,
-      durationMs: 99,
-      error: "too old",
-      createdAt: tooOld,
-      source: "poll" as const,
-    };
-
-    const cutOffHeartbeat = {
-      id: crypto.randomUUID(),
-      monitorId: monitor.id,
-      status: "up" as const,
-      statusCode: 200,
+      status,
+      statusCode: status === "up" ? 200 : 500,
       durationMs: 100,
       error: null,
-      createdAt: atCutoff,
-      source: "system" as const,
+      createdAt,
+      source: "poll" as const,
+    });
+
+    const heartbeats = {
+      old: heartbeat(tooOld, "down"),
+      cutoff: heartbeat(atCutoff, "up"),
+      fresh: heartbeat(fresh, "up"),
     };
 
-    const freshHeartbeat = {
+    await db.insert(schema.heartbeats).values(Object.values(heartbeats));
+
+    // Rollups back the one-year availability window: they are kept for
+    // 366 days regardless of the heartbeat retention.
+    const rollup = (day: string) => ({
+      monitorId: monitor.id,
+      day,
+      total: 1,
+      up: 1,
+      down: 0,
+      unknown: 0,
+    });
+
+    await db
+      .insert(schema.heartbeatDaily)
+      .values([
+        rollup(daysBefore(367)),
+        rollup(daysBefore(366)),
+        rollup(daysBefore(1)),
+      ]);
+
+    const incident = (status: "open" | "closed", closedAt: string | null) => ({
       id: crypto.randomUUID(),
       monitorId: monitor.id,
-      status: "up" as const,
-      statusCode: 200,
-      durationMs: 101,
-      error: null,
-      createdAt: fresh,
-      source: "system" as const,
-    };
-
-    await db.drizzle
-      .insert(schema.heartbeats)
-      .values([oldHeartbeat, cutOffHeartbeat, freshHeartbeat]);
-    await db.maintenance.backfillHeartbeatDaily();
-
-    const rollups = await db.drizzle
-      .select()
-      .from(schema.heartbeatDaily)
-      .where(eq(schema.heartbeatDaily.monitorId, monitor.id));
-
-    expect(rollups).toHaveLength(2);
-    expect(rollups.reduce((total, row) => total + row.total, 0)).toBe(3);
-    expect(rollups.reduce((total, row) => total + row.up, 0)).toBe(2);
-    expect(rollups.reduce((total, row) => total + row.down, 0)).toBe(1);
-
-    const oldClosedIncident = {
-      id: crypto.randomUUID(),
-      monitorId: monitor.id,
-      title: "old closed",
-      status: "closed" as const,
+      title: "Outage",
+      status,
       body: null,
-      pinned: 0,
+      pinned: false,
       openedAt: tooOld,
-      closedAt: tooOld,
+      closedAt,
+    });
+
+    const incidents = {
+      oldClosed: incident("closed", tooOld),
+      cutoffClosed: incident("closed", atCutoff),
+      openOld: incident("open", null),
     };
 
-    const cutoffClosedIncident = {
-      id: crypto.randomUUID(),
-      monitorId: monitor.id,
-      title: "cutoff closed",
-      status: "closed" as const,
-      body: null,
-      pinned: 0,
-      openedAt: tooOld,
-      closedAt: atCutoff,
-    };
-
-    const openIncident = {
-      id: crypto.randomUUID(),
-      monitorId: monitor.id,
-      title: "open old",
-      status: "open" as const,
-      body: null,
-      pinned: 0,
-      openedAt: tooOld,
-      closedAt: null,
-    };
-
-    await db.drizzle
-      .insert(schema.incidents)
-      .values([oldClosedIncident, cutoffClosedIncident, openIncident]);
+    await db.insert(schema.incidents).values(Object.values(incidents));
 
     const userId = crypto.randomUUID();
-    const baseNow = new Date(Date.now());
-    const oldSessionExpiresAt = new Date(baseNow.getTime() - 1_000);
-    const cutoffSessionExpiresAt = baseNow;
-    const freshSessionExpiresAt = new Date(baseNow.getTime() + 1_000);
-    await db.drizzle.insert(schema.user).values({
+    const createdAt = new Date(NOW);
+
+    await db.insert(schema.user).values({
       id: userId,
       name: "Expired Keeper",
       email: `${userId}@example.com`,
       emailVerified: true,
-      createdAt: baseNow,
-      updatedAt: baseNow,
       role: "user",
-      image: null,
+      createdAt,
+      updatedAt: createdAt,
     });
 
-    const oldSession = {
+    const session = (token: string, expiresAt: number) => ({
       id: crypto.randomUUID(),
       userId,
-      token: "old-session",
-      expiresAt: oldSessionExpiresAt,
-      ipAddress: null,
-      userAgent: null,
-      createdAt: baseNow,
-      updatedAt: baseNow,
+      token,
+      expiresAt: new Date(expiresAt),
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    const sessions = {
+      expired: session("expired", NOW - 1000),
+      expiringNow: session("expiring-now", NOW),
+      fresh: session("fresh", NOW + 1000),
     };
 
-    const cutoffSession = {
-      id: crypto.randomUUID(),
-      userId,
-      token: "cutoff-session",
-      expiresAt: cutoffSessionExpiresAt,
-      ipAddress: null,
-      userAgent: null,
-      createdAt: baseNow,
-      updatedAt: baseNow,
-    };
+    await db.insert(schema.session).values(Object.values(sessions));
 
-    const freshSession = {
-      id: crypto.randomUUID(),
-      userId,
-      token: "fresh-session",
-      expiresAt: freshSessionExpiresAt,
-      ipAddress: null,
-      userAgent: null,
-      createdAt: baseNow,
-      updatedAt: baseNow,
-    };
+    await maintenance.applyRetention();
 
-    await db.drizzle.insert(schema.session).values(oldSession);
-    await db.drizzle.insert(schema.session).values(cutoffSession);
-    await db.drizzle.insert(schema.session).values(freshSession);
+    const heartbeatIds = idsOf(await db.select().from(schema.heartbeats));
+    const incidentIds = idsOf(await db.select().from(schema.incidents));
+    const sessionIds = idsOf(await db.select().from(schema.session));
 
-    const service = new MaintenanceService(db);
-    await service.cleanupRetention();
+    const rollupDays = (
+      await db
+        .select({ day: schema.heartbeatDaily.day })
+        .from(schema.heartbeatDaily)
+        .where(eq(schema.heartbeatDaily.monitorId, monitor.id))
+    ).map((row) => row.day);
 
-    const remainingHeartbeats = await db.drizzle
-      .select()
-      .from(schema.heartbeats);
-
-    const heartbeatIds = new Set(remainingHeartbeats.map((row) => row.id));
-    expect(heartbeatIds.has(oldHeartbeat.id)).toBe(false);
-    expect(heartbeatIds.has(cutOffHeartbeat.id)).toBe(true);
-    expect(heartbeatIds.has(freshHeartbeat.id)).toBe(true);
-
-    const remainingIncidents = await db.drizzle.select().from(schema.incidents);
-
-    const incidentStatuses = new Set(
-      remainingIncidents.map((row) => row.status),
+    expect(heartbeatIds).toEqual(
+      new Set([heartbeats.cutoff.id, heartbeats.fresh.id]),
     );
-
-    expect(incidentStatuses.has("open")).toBe(true);
-    expect(incidentStatuses.has("closed")).toBe(true);
-    const incidentIds = new Set(remainingIncidents.map((row) => row.id));
-    expect(incidentIds.has(oldClosedIncident.id)).toBe(false);
-    expect(incidentIds.has(cutoffClosedIncident.id)).toBe(true);
-    expect(incidentIds.has(openIncident.id)).toBe(true);
-
-    const remainingSessions = await db.drizzle
-      .select()
-      .from(schema.session)
-      .where(eq(schema.session.userId, userId));
-
-    expect(remainingSessions).toHaveLength(2);
-    const sessionIds = new Set(remainingSessions.map((row) => row.id));
-    expect(sessionIds.has(oldSession.id)).toBe(false);
-    expect(sessionIds.has(cutoffSession.id)).toBe(true);
-    expect(sessionIds.has(freshSession.id)).toBe(true);
+    expect(incidentIds).toEqual(
+      new Set([incidents.cutoffClosed.id, incidents.openOld.id]),
+    );
+    expect(sessionIds).toEqual(
+      new Set([sessions.expiringNow.id, sessions.fresh.id]),
+    );
+    expect(new Set(rollupDays)).toEqual(
+      new Set([daysBefore(366), daysBefore(1)]),
+    );
   });
 });

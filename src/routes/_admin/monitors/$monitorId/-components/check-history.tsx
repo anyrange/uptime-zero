@@ -11,7 +11,8 @@ import {
   YAxis,
 } from "recharts";
 
-import type { HeartbeatRecord, IncidentRecord, MonitorKind } from "@/types";
+import type { Incident } from "@/lib/schemas/incidents";
+import type { Heartbeat, MonitorKind } from "@/lib/schemas/monitors";
 
 import { StatusBar } from "@/components/blocks/status-bar";
 import {
@@ -95,8 +96,8 @@ export function CheckHistory({
   incidents,
   monitorKind,
 }: {
-  heartbeats: HeartbeatRecord[];
-  incidents: IncidentRecord[];
+  heartbeats: ReadonlyArray<Heartbeat>;
+  incidents: ReadonlyArray<Incident>;
   monitorKind: MonitorKind;
 }) {
   const charts = useMemo(
@@ -320,8 +321,8 @@ function deriveMonitorCharts({
   incidents,
   monitorKind,
 }: {
-  heartbeats: HeartbeatRecord[];
-  incidents: IncidentRecord[];
+  heartbeats: ReadonlyArray<Heartbeat>;
+  incidents: ReadonlyArray<Incident>;
   monitorKind: MonitorKind;
 }): MonitorChartData {
   const sortedHeartbeats = [...heartbeats].sort(
@@ -355,8 +356,8 @@ function deriveMonitorCharts({
 }
 
 function hasUsableDuration(
-  heartbeat: HeartbeatRecord,
-): heartbeat is HeartbeatRecord & { durationMs: number } {
+  heartbeat: Heartbeat,
+): heartbeat is Heartbeat & { durationMs: number } {
   return (
     heartbeat.status === "up" &&
     heartbeat.durationMs !== null &&
@@ -414,7 +415,9 @@ function buildPercentileSeries(points: LatencyPoint[], bucketMs: number) {
     });
 }
 
-function buildOutcomePoints(heartbeats: HeartbeatRecord[]): OutcomePoint[] {
+function buildOutcomePoints(
+  heartbeats: ReadonlyArray<Heartbeat>,
+): OutcomePoint[] {
   const counts = heartbeats.reduce(
     (totals, heartbeat) => {
       totals[heartbeat.status] += 1;
@@ -436,7 +439,7 @@ function buildOutcomePoints(heartbeats: HeartbeatRecord[]): OutcomePoint[] {
 }
 
 function buildIncidentMarkers(
-  incidents: IncidentRecord[],
+  incidents: ReadonlyArray<Incident>,
   latencyPoints: LatencyPoint[],
 ) {
   const first = latencyPoints[0]?.timestamp;
@@ -463,7 +466,7 @@ function buildIncidentMarkers(
   });
 }
 
-function buildStatusCodeSummary(heartbeats: HeartbeatRecord[]) {
+function buildStatusCodeSummary(heartbeats: ReadonlyArray<Heartbeat>) {
   const grouped = new Map<string, number>();
 
   for (const heartbeat of heartbeats) {

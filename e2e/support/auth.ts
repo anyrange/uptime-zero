@@ -13,6 +13,10 @@ export async function setupAdmin(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Create admin" }),
   ).toBeVisible();
+  // The submit button is enabled once the server-rendered form has hydrated.
+  await expect(
+    page.getByRole("button", { name: "Create admin" }),
+  ).toBeEnabled();
   await page.getByLabel("Name").fill(adminUser.name);
   await page.getByLabel("Email").fill(adminUser.email);
   await page.getByLabel("Password").fill(adminUser.password);
@@ -24,6 +28,7 @@ export async function setupAdmin(page: Page) {
 export async function login(page: Page) {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
   await page.getByLabel("Email").fill(adminUser.email);
   await page.getByLabel("Password").fill(adminUser.password);
   await page.getByRole("button", { name: "Sign in" }).click();

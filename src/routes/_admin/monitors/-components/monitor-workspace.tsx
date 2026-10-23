@@ -9,20 +9,21 @@ import {
   SirenIcon,
 } from "lucide-react";
 
-import type { MonitorDetailData, MonitorRecord } from "@/types";
+import type { MonitorDetail } from "@/lib/api/monitors";
+import type { Monitor } from "@/lib/schemas/monitors";
 
 import { AppPage } from "@/components/page";
 import { Separator } from "@/components/ui/separator";
 import {
   monitorQueryOptions,
   monitorStateQueryOptions,
-} from "@/lib/queries/monitors";
+} from "@/lib/api/monitors";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages.js";
 
 // Detail data merged with the faster-polling state query, which owns the
 // monitor's live fields. Both are loaded by the `$monitorId` layout route.
-export function useMonitorWorkspaceData(monitorId: string): MonitorDetailData {
+export function useMonitorWorkspaceData(monitorId: string): MonitorDetail {
   const { data: detail } = useSuspenseQuery(monitorQueryOptions(monitorId));
 
   const { data: monitor } = useSuspenseQuery(
@@ -69,7 +70,7 @@ export function MonitorWorkspace({
               <span>{monitorKindLabel(monitor.kind)}</span>
               <span aria-hidden="true">·</span>
               <span>
-                {monitor.active === 1 ? m.common_active() : m.common_paused()}
+                {monitor.active ? m.common_active() : m.common_paused()}
               </span>
               <span aria-hidden="true">·</span>
               <span className="flex items-center gap-2">
@@ -142,7 +143,7 @@ export function MonitorWorkspace({
 const monitorNavigationClass =
   "-mb-px flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:border-foreground data-[status=active]:text-foreground";
 
-function monitorKindLabel(kind: MonitorRecord["kind"]) {
+function monitorKindLabel(kind: Monitor["kind"]) {
   return kind === "http"
     ? m.monitor_http()
     : kind === "dns"
@@ -150,7 +151,7 @@ function monitorKindLabel(kind: MonitorRecord["kind"]) {
       : m.monitor_heartbeat();
 }
 
-function monitorStatusLabel(status: MonitorRecord["lastStatus"]) {
+function monitorStatusLabel(status: Monitor["lastStatus"]) {
   return status === "up"
     ? m.common_operational()
     : status === "down"
@@ -158,13 +159,13 @@ function monitorStatusLabel(status: MonitorRecord["lastStatus"]) {
       : m.common_unknown();
 }
 
-export function displayMonitorTarget(monitor: MonitorRecord) {
+export function displayMonitorTarget(monitor: Monitor) {
   return monitor.kind === "push" && monitor.pushToken
     ? `/api/push/${monitor.pushToken}`
     : monitor.target;
 }
 
-function MonitorTargetLink({ monitor }: { monitor: MonitorRecord }) {
+function MonitorTargetLink({ monitor }: { monitor: Monitor }) {
   const target = displayMonitorTarget(monitor);
 
   return (

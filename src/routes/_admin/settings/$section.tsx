@@ -1,17 +1,16 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 
-import { accountQueryOptions } from "@/lib/queries/auth";
-import { notificationsQueryOptions } from "@/lib/queries/notifications";
-
+import { accountQueryOptions } from "@/lib/api/accounts";
+import { notificationsQueryOptions } from "@/lib/api/notifications";
 import {
   SettingsSectionPage,
-  settingsSectionSchema,
-} from "./-components/settings-page";
-import { SettingsSkeleton } from "./-components/settings-skeleton";
+  SettingsSection,
+} from "@/routes/_admin/settings/-components/settings-page";
+import { SettingsSkeleton } from "@/routes/_admin/settings/-components/settings-skeleton";
 
 export const Route = createFileRoute("/_admin/settings/$section")({
   beforeLoad: ({ params }) => {
-    const section = settingsSectionSchema.safeParse(params.section);
+    const section = SettingsSection.safeParse(params.section);
 
     if (!section.success) {
       throw notFound();

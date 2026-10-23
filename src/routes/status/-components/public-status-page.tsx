@@ -40,8 +40,8 @@ import {
 import { StatusTimestamp } from "@/components/blocks/status-timestamp";
 import { LiveTime } from "@/components/live-time";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { publicStatusPageQueryOptions } from "@/lib/api/status-pages";
 import { buildPublicStatusPageView } from "@/lib/public-status-page-view";
-import { publicStatusPageQueryOptions } from "@/lib/queries/status-pages";
 import { m } from "@/paraglide/messages.js";
 
 export function PublicStatusPage({ slug }: { slug: string }) {

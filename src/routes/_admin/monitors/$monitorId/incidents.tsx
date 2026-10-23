@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { MonitorIncidentsPage } from "../-components/monitor-pages";
+import { MonitorIncidentsPage } from "@/routes/_admin/monitors/-components/monitor-pages";
 
 export const Route = createFileRoute("/_admin/monitors/$monitorId/incidents")({
   component: RouteComponent,

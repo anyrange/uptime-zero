@@ -1,14 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { PublicStatusPage } from "@/lib/api/status-pages";
 import type {
-  HeartbeatRecord,
-  IncidentRecord,
+  Heartbeat,
   MonitorKind,
-  MonitorRecord,
   MonitorStatus,
-  PublicStatusPageData,
-  StatusPageRecord,
-} from "@/types";
+} from "@/lib/schemas/monitors";
+import type { StatusPage } from "@/lib/schemas/status-pages";
 
 import { buildPublicStatusPageView } from "@/lib/public-status-page-view";
 
@@ -94,7 +92,7 @@ describe("public status page view model", () => {
 
     const visible = buildPublicStatusPageView(
       publicStatusPageData({
-        page: { showTarget: 1 },
+        page: { showTarget: true },
         monitors: [monitor("http-1", "API", "http", "up")],
       }),
     );
@@ -107,12 +105,11 @@ describe("public status page view model", () => {
     const data = publicStatusPageData({
       monitors: [monitor("http-1", "API", "http", "down")],
       incidents: [
-        incident("incident-1", "http-1", "API is down", "Origin timeout", null),
+        incident("incident-1", "http-1", "API is down", null),
         incident(
           "incident-2",
           "missing-monitor",
           "Unknown dependency recovered",
-          null,
           "2026-05-07T11:00:00.000Z",
         ),
       ],
@@ -127,7 +124,7 @@ describe("public status page view model", () => {
     });
     expect(view.incidents[0].updates).toMatchObject([
       {
-        message: "Origin timeout",
+        message: "Incident opened.",
         status: "investigating",
       },
     ]);
@@ -164,7 +161,7 @@ describe("public status page view model", () => {
     const data = publicStatusPageData({
       page: {
         updatedAt: "2026-05-01T00:00:00.000Z",
-        showHistory: 0,
+        showHistory: false,
       },
       monitors: [
         monitor("http-1", "API", "http", "up", {
@@ -176,7 +173,6 @@ describe("public status page view model", () => {
           "incident-1",
           "http-1",
           "API is down",
-          null,
           null,
           "2026-05-03T00:00:00.000Z",
         ),
@@ -198,22 +194,22 @@ function publicStatusPageData({
   historyDays = 30,
   status = "up",
 }: {
-  page?: Partial<StatusPageRecord>;
-  monitors?: MonitorRecord[];
-  incidents?: IncidentRecord[];
-  heartbeats?: HeartbeatRecord[];
+  page?: Partial<StatusPage>;
+  monitors?: PublicStatusPage["monitors"];
+  incidents?: PublicStatusPage["incidents"];
+  heartbeats?: Heartbeat[];
   historyDays?: number;
   status?: MonitorStatus;
-}): PublicStatusPageData {
+}): PublicStatusPage {
   return {
     page: {
       id: "page-1",
       slug: "status",
       title: "Status",
       description: "Public status",
-      published: 1,
-      showHistory: 1,
-      showTarget: 0,
+      published: true,
+      showHistory: true,
+      showTarget: false,
       createdAt: "2026-05-01T00:00:00.000Z",
       updatedAt: "2026-05-01T00:00:00.000Z",
       ...page,
@@ -251,31 +247,14 @@ function monitor(
   name: string,
   kind: MonitorKind,
   lastStatus: MonitorStatus,
-  overrides: Partial<MonitorRecord> = {},
-): MonitorRecord {
+  overrides: { updatedAt?: string } = {},
+): PublicStatusPage["monitors"][number] {
   return {
     id,
     name,
     kind,
     target: kind === "push" ? "" : `https://${id}.example.com`,
-    intervalSec: 60,
-    timeoutMs: 10_000,
-    retries: 0,
-    assertions: [],
-    heartbeatMode: "interval",
-    heartbeatCron: "0 * * * *",
-    heartbeatGraceSec: 300,
-    heartbeatTimezone: "UTC",
-    notificationGraceSec: 0,
-    pushToken: kind === "push" ? `token-${id}` : null,
-    active: 1,
     lastStatus,
-    lastCheckedAt: null,
-    lastDurationMs: null,
-    lastError: null,
-    revision: 0,
-    retryAt: null,
-    createdAt: "2026-05-01T00:00:00.000Z",
     updatedAt: "2026-05-01T00:00:00.000Z",
     ...overrides,
   };
@@ -285,7 +264,7 @@ function heartbeat(
   id: string,
   monitorId: string,
   status: MonitorStatus,
-): HeartbeatRecord {
+): Heartbeat {
   return {
     id,
     monitorId,
@@ -302,17 +281,17 @@ function incident(
   id: string,
   monitorId: string,
   title: string,
-  body: string | null,
   closedAt: string | null,
   openedAt = "2026-05-07T10:00:00.000Z",
-): IncidentRecord {
+): PublicStatusPage["incidents"][number] {
   return {
     id,
     monitorId,
     title,
     status: closedAt ? "closed" : "open",
-    body,
-    pinned: 0,
+    // Public pages never carry incident bodies.
+    body: null,
+    pinned: false,
     openedAt,
     closedAt,
   };

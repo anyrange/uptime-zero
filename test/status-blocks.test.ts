@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { HeartbeatRecord, IncidentRecord, MonitorStatus } from "@/types";
+import type { Incident } from "@/lib/schemas/incidents";
+import type { Heartbeat, MonitorStatus } from "@/lib/schemas/monitors";
 
 import {
   buildDailyStatusBarData,
@@ -13,7 +14,7 @@ function heartbeat(
   id: string,
   status: MonitorStatus,
   createdAt: Date,
-): HeartbeatRecord {
+): Heartbeat {
   return {
     id,
     monitorId,
@@ -26,18 +27,14 @@ function heartbeat(
   };
 }
 
-function incident(
-  id: string,
-  openedAt: Date,
-  closedAt: Date | null,
-): IncidentRecord {
+function incident(id: string, openedAt: Date, closedAt: Date | null): Incident {
   return {
     id,
     monitorId,
     title: `Incident ${id}`,
     status: closedAt ? "closed" : "open",
     body: null,
-    pinned: 0,
+    pinned: false,
     openedAt: openedAt.toISOString(),
     closedAt: closedAt ? closedAt.toISOString() : null,
   };

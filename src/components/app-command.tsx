@@ -26,7 +26,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { dashboardQueryOptions } from "@/lib/queries/dashboard";
+import { dashboardQueryOptions } from "@/lib/api/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 type CommandDestination = {

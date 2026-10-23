@@ -1,9 +1,10 @@
 import { useEffect, useId, useState } from "react";
 
 import type {
-  NotificationDestinationMonitorSummary,
+  AssignedMonitor,
+  NotificationInput,
   NotificationProvider,
-} from "@/types";
+} from "@/lib/schemas/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,10 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  useCreateNotificationMutation,
-  type NotificationPayload,
-} from "@/lib/queries/notifications";
+import { useCreateNotificationMutation } from "@/lib/api/notifications";
 import { m } from "@/paraglide/messages.js";
 
 import {
@@ -31,7 +29,7 @@ export function CreateNotificationSheet({
   onClose,
 }: {
   provider: NotificationProvider | null;
-  monitors: NotificationDestinationMonitorSummary[];
+  monitors: ReadonlyArray<AssignedMonitor>;
   onClose: () => void;
 }) {
   const create = useCreateNotificationMutation();
@@ -45,7 +43,7 @@ export function CreateNotificationSheet({
     }
   }, [open, provider]);
 
-  async function handleSubmit(payload: NotificationPayload) {
+  async function handleSubmit(payload: NotificationInput) {
     setSubmitError(null);
 
     try {
@@ -76,7 +74,7 @@ export function CreateNotificationSheet({
             defaultState={emptyNotificationFormState(provider)}
             formId={formId}
             monitors={monitors}
-            onInvalid={() => setSubmitError(m.notification_complete_required())}
+            onInvalid={setSubmitError}
             onSubmit={handleSubmit}
             submitError={submitError}
           />

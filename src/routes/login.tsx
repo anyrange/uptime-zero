@@ -2,28 +2,27 @@ import type { ReactNode } from "react";
 
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { all } from "better-all";
-import { z } from "zod";
+import { createFileRoute, redirect, useHydrated } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { firstFieldError } from "@/lib/form-errors";
 import {
   sessionQueryOptions,
   setupStateQueryOptions,
   useLoginMutation,
-} from "@/lib/queries/auth";
+} from "@/lib/api/auth";
+import { firstFieldError } from "@/lib/form-errors";
+import { SignInInput } from "@/lib/schemas/auth";
 import { m } from "@/paraglide/messages.js";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: async ({ context: { queryClient } }) => {
-    const { setup, session } = await all({
-      setup: () => queryClient.ensureQueryData(setupStateQueryOptions()),
-      session: () => queryClient.ensureQueryData(sessionQueryOptions()),
-    });
+    const [setup, session] = await Promise.all([
+      queryClient.ensureQueryData(setupStateQueryOptions()),
+      queryClient.ensureQueryData(sessionQueryOptions()),
+    ]);
 
     if (!setup.hasAdmin) {
       throw redirect({ to: "/setup" });
@@ -36,14 +35,12 @@ export const Route = createFileRoute("/login")({
   component: LoginRoute,
 });
 
-const loginSchema = z.object({
-  email: z.email(m.validation_email_valid()),
-  password: z.string().min(1, m.validation_password_required()),
-});
-
 function LoginRoute() {
   const { data: setup } = useSuspenseQuery(setupStateQueryOptions());
   const navigate = Route.useNavigate();
+  // Before hydration the form would submit natively, putting the password
+  // in the URL, so it only becomes submittable once React owns it.
+  const hydrated = useHydrated();
   const mutation = useLoginMutation();
 
   const form = useForm({
@@ -52,12 +49,11 @@ function LoginRoute() {
       password: "",
     },
     validators: {
-      onSubmit: loginSchema,
+      onSubmit: SignInInput,
     },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
-      await navigate({ to: "/" });
-    },
+    // Failures render from `mutation.error` below the fields.
+    onSubmit: ({ value }) =>
+      mutation.mutate(value, { onSuccess: () => navigate({ to: "/" }) }),
   });
 
   return (
@@ -141,7 +137,7 @@ function LoginRoute() {
                 {mutation.error.message}
               </p>
             ) : null}
-            <Button disabled={mutation.isPending} type="submit">
+            <Button disabled={!hydrated || mutation.isPending} type="submit">
               {m.auth_sign_in()}
             </Button>
           </form>

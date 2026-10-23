@@ -36,6 +36,15 @@ Before editing files for a substantial task:
 - Apply local schema changes with `pnpm run db:migrate`.
 - Do not hand-write migration SQL.
 
+## Coding preferences (Backend focused)
+
+- The stack is TanStack Start + Void. Follow `docs/architecture.md` and Void's conventions: tables in `db/schema.ts` (`@schema`), queries through `db` from `void/db`, crons in `crons/`, env in `env.ts` (`void/env`), logs through `void/log`.
+- Server code lives in `src/modules/<feature>/` as plain async functions: `<feature>.repository.ts` (Drizzle queries) and `<feature>.service.ts` (rules). Mark every file there with `import "@tanstack/react-start/server-only"`.
+- Server functions live in `src/lib/api/<feature>.ts` next to the `queryOptions` and mutation hooks that call them; they call services and never touch `db`. UI code imports `src/lib/*`, never `src/modules/*`.
+- Let Drizzle infer row and return types; validate inputs and stored JSON with zod schemas in `src/lib/schemas/<feature>.ts`, using translated messages.
+- Throw `notFound()` for missing resources and `AppError` (`src/lib/errors.ts`) with an `m.*` message for expected failures; anything else is logged and masked by `errorMiddleware`.
+- Use `db.batch([...])` for writes that must commit together.
+
 ## Coding preferences (Frontend focused)
 
 - Follow shadcn principles. Prefer adapting the local UI kit over one-off bespoke styling.
@@ -52,3 +61,8 @@ Before editing files for a substantial task:
 - Do not use uppercase section or metric titles.
 - Put non-visual formatting and grouping helpers in `src/lib/*`.
 - All app messages must go through Paraglide i18n (`messages/en.json` and `m.*`). Do not ship hard-coded user-facing strings in React components or frontend formatting helpers. Use Paraglide plural messages for counts; do not hand-roll English pluralization with suffix conditionals such as `{count === 1 ? "" : "s"}`.
+
+## Void
+
+- This app deploys with [Void](https://void.cloud). Read the docs bundled with the installed package in `node_modules/void/docs/` (they match the app's Void version); start with `guide/quickstart.md` and `reference/cli.md`.
+- Load the `void` skill (`.claude/skills/void`, `.agents/skills/void`) before changing Void config, bindings, migrations, or deployment, and run Void commands through the local CLI (`pnpm void ...`).

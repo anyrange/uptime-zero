@@ -9,30 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/_admin/route'
-import { Route as StatusSlugRouteImport } from './routes/status/$slug'
-import { Route as AdminSettingsRouteRouteImport } from './routes/_admin/settings/route'
-import { Route as AdminNotificationsRouteRouteImport } from './routes/_admin/notifications/route'
-import { Route as AdminIncidentsRouteRouteImport } from './routes/_admin/incidents/route'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AdminIndexRouteRouteImport } from './routes/_admin/index/route'
-import { Route as AdminStatusPagesIndexRouteImport } from './routes/_admin/status-pages/index'
-import { Route as AdminSettingsIndexRouteImport } from './routes/_admin/settings/index'
+import { Route as AdminIncidentsRouteRouteImport } from './routes/_admin/incidents/route'
+import { Route as AdminNotificationsRouteRouteImport } from './routes/_admin/notifications/route'
+import { Route as AdminSettingsRouteRouteImport } from './routes/_admin/settings/route'
+import { Route as StatusSlugRouteImport } from './routes/status/$slug'
 import { Route as AdminMonitorsIndexRouteImport } from './routes/_admin/monitors/index'
-import { Route as AdminStatusPagesNewRouteImport } from './routes/_admin/status-pages/new'
-import { Route as AdminSettingsSectionRouteImport } from './routes/_admin/settings/$section'
-import { Route as AdminMonitorsNewRouteImport } from './routes/_admin/monitors/new'
 import { Route as AdminMonitorsMonitorIdRouteRouteImport } from './routes/_admin/monitors/$monitorId/route'
+import { Route as AdminMonitorsNewRouteImport } from './routes/_admin/monitors/new'
+import { Route as AdminSettingsIndexRouteImport } from './routes/_admin/settings/index'
+import { Route as AdminSettingsSectionRouteImport } from './routes/_admin/settings/$section'
+import { Route as AdminStatusPagesIndexRouteImport } from './routes/_admin/status-pages/index'
+import { Route as AdminStatusPagesNewRouteImport } from './routes/_admin/status-pages/new'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiPushTokenRouteImport } from './routes/api/push/$token'
 import { Route as AdminMonitorsMonitorIdIndexRouteImport } from './routes/_admin/monitors/$monitorId/index'
-import { Route as AdminStatusPagesPageIdEditRouteImport } from './routes/_admin/status-pages/$pageId/edit'
-import { Route as AdminMonitorsMonitorIdSettingsRouteImport } from './routes/_admin/monitors/$monitorId/settings'
-import { Route as AdminMonitorsMonitorIdLogsRouteImport } from './routes/_admin/monitors/$monitorId/logs'
 import { Route as AdminMonitorsMonitorIdIncidentsRouteImport } from './routes/_admin/monitors/$monitorId/incidents'
+import { Route as AdminMonitorsMonitorIdLogsRouteImport } from './routes/_admin/monitors/$monitorId/logs'
+import { Route as AdminMonitorsMonitorIdSettingsRouteImport } from './routes/_admin/monitors/$monitorId/settings'
+import { Route as AdminStatusPagesPageIdEditRouteImport } from './routes/_admin/status-pages/$pageId/edit'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -40,23 +41,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRouteRoute = AdminRouteRouteImport.update({
-  id: '/_admin',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StatusSlugRoute = StatusSlugRouteImport.update({
-  id: '/status/$slug',
-  path: '/status/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminNotificationsRouteRoute = AdminNotificationsRouteRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
+const AdminIndexRouteRoute = AdminIndexRouteRouteImport.update({
+  id: '/',
+  path: '',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminIncidentsRouteRoute = AdminIncidentsRouteRouteImport.update({
@@ -64,39 +56,24 @@ const AdminIncidentsRouteRoute = AdminIncidentsRouteRouteImport.update({
   path: '/incidents',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminIndexRouteRoute = AdminIndexRouteRouteImport.update({
-  id: '/',
-  path: '',
+const AdminNotificationsRouteRoute = AdminNotificationsRouteRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminStatusPagesIndexRoute = AdminStatusPagesIndexRouteImport.update({
-  id: '/status-pages/',
-  path: '/status-pages/',
+const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminSettingsRouteRoute,
+const StatusSlugRoute = StatusSlugRouteImport.update({
+  id: '/status/$slug',
+  path: '/status/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMonitorsIndexRoute = AdminMonitorsIndexRouteImport.update({
   id: '/monitors/',
   path: '/monitors/',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminStatusPagesNewRoute = AdminStatusPagesNewRouteImport.update({
-  id: '/status-pages/new',
-  path: '/status-pages/new',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSettingsSectionRoute = AdminSettingsSectionRouteImport.update({
-  id: '/$section',
-  path: '/$section',
-  getParentRoute: () => AdminSettingsRouteRoute,
-} as any)
-const AdminMonitorsNewRoute = AdminMonitorsNewRouteImport.update({
-  id: '/monitors/new',
-  path: '/monitors/new',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminMonitorsMonitorIdRouteRoute =
@@ -105,22 +82,51 @@ const AdminMonitorsMonitorIdRouteRoute =
     path: '/monitors/$monitorId',
     getParentRoute: () => AdminRouteRoute,
   } as any)
+const AdminMonitorsNewRoute = AdminMonitorsNewRouteImport.update({
+  id: '/monitors/new',
+  path: '/monitors/new',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
+const AdminSettingsSectionRoute = AdminSettingsSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
+const AdminStatusPagesIndexRoute = AdminStatusPagesIndexRouteImport.update({
+  id: '/status-pages/',
+  path: '/status-pages/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminStatusPagesNewRoute = AdminStatusPagesNewRouteImport.update({
+  id: '/status-pages/new',
+  path: '/status-pages/new',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushTokenRoute = ApiPushTokenRouteImport.update({
+  id: '/api/push/$token',
+  path: '/api/push/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMonitorsMonitorIdIndexRoute =
   AdminMonitorsMonitorIdIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
   } as any)
-const AdminStatusPagesPageIdEditRoute =
-  AdminStatusPagesPageIdEditRouteImport.update({
-    id: '/status-pages/$pageId/edit',
-    path: '/status-pages/$pageId/edit',
-    getParentRoute: () => AdminRouteRoute,
-  } as any)
-const AdminMonitorsMonitorIdSettingsRoute =
-  AdminMonitorsMonitorIdSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
+const AdminMonitorsMonitorIdIncidentsRoute =
+  AdminMonitorsMonitorIdIncidentsRouteImport.update({
+    id: '/incidents',
+    path: '/incidents',
     getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
   } as any)
 const AdminMonitorsMonitorIdLogsRoute =
@@ -129,11 +135,17 @@ const AdminMonitorsMonitorIdLogsRoute =
     path: '/logs',
     getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
   } as any)
-const AdminMonitorsMonitorIdIncidentsRoute =
-  AdminMonitorsMonitorIdIncidentsRouteImport.update({
-    id: '/incidents',
-    path: '/incidents',
+const AdminMonitorsMonitorIdSettingsRoute =
+  AdminMonitorsMonitorIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
     getParentRoute: () => AdminMonitorsMonitorIdRouteRoute,
+  } as any)
+const AdminStatusPagesPageIdEditRoute =
+  AdminStatusPagesPageIdEditRouteImport.update({
+    id: '/status-pages/$pageId/edit',
+    path: '/status-pages/$pageId/edit',
+    getParentRoute: () => AdminRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -148,6 +160,8 @@ export interface FileRoutesByFullPath {
   '/monitors/new': typeof AdminMonitorsNewRoute
   '/settings/$section': typeof AdminSettingsSectionRoute
   '/status-pages/new': typeof AdminStatusPagesNewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/$token': typeof ApiPushTokenRoute
   '/monitors/': typeof AdminMonitorsIndexRoute
   '/settings/': typeof AdminSettingsIndexRoute
   '/status-pages/': typeof AdminStatusPagesIndexRoute
@@ -167,6 +181,8 @@ export interface FileRoutesByTo {
   '/monitors/new': typeof AdminMonitorsNewRoute
   '/settings/$section': typeof AdminSettingsSectionRoute
   '/status-pages/new': typeof AdminStatusPagesNewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/$token': typeof ApiPushTokenRoute
   '/monitors': typeof AdminMonitorsIndexRoute
   '/settings': typeof AdminSettingsIndexRoute
   '/status-pages': typeof AdminStatusPagesIndexRoute
@@ -190,6 +206,8 @@ export interface FileRoutesById {
   '/_admin/monitors/new': typeof AdminMonitorsNewRoute
   '/_admin/settings/$section': typeof AdminSettingsSectionRoute
   '/_admin/status-pages/new': typeof AdminStatusPagesNewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/$token': typeof ApiPushTokenRoute
   '/_admin/monitors/': typeof AdminMonitorsIndexRoute
   '/_admin/settings/': typeof AdminSettingsIndexRoute
   '/_admin/status-pages/': typeof AdminStatusPagesIndexRoute
@@ -213,6 +231,8 @@ export interface FileRouteTypes {
     | '/monitors/new'
     | '/settings/$section'
     | '/status-pages/new'
+    | '/api/auth/$'
+    | '/api/push/$token'
     | '/monitors/'
     | '/settings/'
     | '/status-pages/'
@@ -232,6 +252,8 @@ export interface FileRouteTypes {
     | '/monitors/new'
     | '/settings/$section'
     | '/status-pages/new'
+    | '/api/auth/$'
+    | '/api/push/$token'
     | '/monitors'
     | '/settings'
     | '/status-pages'
@@ -254,6 +276,8 @@ export interface FileRouteTypes {
     | '/_admin/monitors/new'
     | '/_admin/settings/$section'
     | '/_admin/status-pages/new'
+    | '/api/auth/$'
+    | '/api/push/$token'
     | '/_admin/monitors/'
     | '/_admin/settings/'
     | '/_admin/status-pages/'
@@ -269,15 +293,17 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
   StatusSlugRoute: typeof StatusSlugRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPushTokenRoute: typeof ApiPushTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -287,32 +313,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_admin': {
-      id: '/_admin'
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin/': {
+      id: '/_admin/'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AdminRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/status/$slug': {
-      id: '/status/$slug'
-      path: '/status/$slug'
-      fullPath: '/status/$slug'
-      preLoaderRoute: typeof StatusSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_admin/settings': {
-      id: '/_admin/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AdminSettingsRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_admin/notifications': {
-      id: '/_admin/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AdminNotificationsRouteRouteImport
+      preLoaderRoute: typeof AdminIndexRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/_admin/incidents': {
@@ -322,53 +334,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIncidentsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/_admin/': {
-      id: '/_admin/'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AdminIndexRouteRouteImport
+    '/_admin/notifications': {
+      id: '/_admin/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/_admin/status-pages/': {
-      id: '/_admin/status-pages/'
-      path: '/status-pages'
-      fullPath: '/status-pages/'
-      preLoaderRoute: typeof AdminStatusPagesIndexRouteImport
+    '/_admin/settings': {
+      id: '/_admin/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AdminSettingsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/_admin/settings/': {
-      id: '/_admin/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AdminSettingsIndexRouteImport
-      parentRoute: typeof AdminSettingsRouteRoute
+    '/status/$slug': {
+      id: '/status/$slug'
+      path: '/status/$slug'
+      fullPath: '/status/$slug'
+      preLoaderRoute: typeof StatusSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_admin/monitors/': {
       id: '/_admin/monitors/'
       path: '/monitors'
       fullPath: '/monitors/'
       preLoaderRoute: typeof AdminMonitorsIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_admin/status-pages/new': {
-      id: '/_admin/status-pages/new'
-      path: '/status-pages/new'
-      fullPath: '/status-pages/new'
-      preLoaderRoute: typeof AdminStatusPagesNewRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_admin/settings/$section': {
-      id: '/_admin/settings/$section'
-      path: '/$section'
-      fullPath: '/settings/$section'
-      preLoaderRoute: typeof AdminSettingsSectionRouteImport
-      parentRoute: typeof AdminSettingsRouteRoute
-    }
-    '/_admin/monitors/new': {
-      id: '/_admin/monitors/new'
-      path: '/monitors/new'
-      fullPath: '/monitors/new'
-      preLoaderRoute: typeof AdminMonitorsNewRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/_admin/monitors/$monitorId': {
@@ -378,6 +369,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMonitorsMonitorIdRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_admin/monitors/new': {
+      id: '/_admin/monitors/new'
+      path: '/monitors/new'
+      fullPath: '/monitors/new'
+      preLoaderRoute: typeof AdminMonitorsNewRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_admin/settings/': {
+      id: '/_admin/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AdminSettingsIndexRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/_admin/settings/$section': {
+      id: '/_admin/settings/$section'
+      path: '/$section'
+      fullPath: '/settings/$section'
+      preLoaderRoute: typeof AdminSettingsSectionRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/_admin/status-pages/': {
+      id: '/_admin/status-pages/'
+      path: '/status-pages'
+      fullPath: '/status-pages/'
+      preLoaderRoute: typeof AdminStatusPagesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_admin/status-pages/new': {
+      id: '/_admin/status-pages/new'
+      path: '/status-pages/new'
+      fullPath: '/status-pages/new'
+      preLoaderRoute: typeof AdminStatusPagesNewRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/$token': {
+      id: '/api/push/$token'
+      path: '/api/push/$token'
+      fullPath: '/api/push/$token'
+      preLoaderRoute: typeof ApiPushTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_admin/monitors/$monitorId/': {
       id: '/_admin/monitors/$monitorId/'
       path: '/'
@@ -385,18 +425,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMonitorsMonitorIdIndexRouteImport
       parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
     }
-    '/_admin/status-pages/$pageId/edit': {
-      id: '/_admin/status-pages/$pageId/edit'
-      path: '/status-pages/$pageId/edit'
-      fullPath: '/status-pages/$pageId/edit'
-      preLoaderRoute: typeof AdminStatusPagesPageIdEditRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_admin/monitors/$monitorId/settings': {
-      id: '/_admin/monitors/$monitorId/settings'
-      path: '/settings'
-      fullPath: '/monitors/$monitorId/settings'
-      preLoaderRoute: typeof AdminMonitorsMonitorIdSettingsRouteImport
+    '/_admin/monitors/$monitorId/incidents': {
+      id: '/_admin/monitors/$monitorId/incidents'
+      path: '/incidents'
+      fullPath: '/monitors/$monitorId/incidents'
+      preLoaderRoute: typeof AdminMonitorsMonitorIdIncidentsRouteImport
       parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
     }
     '/_admin/monitors/$monitorId/logs': {
@@ -406,12 +439,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMonitorsMonitorIdLogsRouteImport
       parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
     }
-    '/_admin/monitors/$monitorId/incidents': {
-      id: '/_admin/monitors/$monitorId/incidents'
-      path: '/incidents'
-      fullPath: '/monitors/$monitorId/incidents'
-      preLoaderRoute: typeof AdminMonitorsMonitorIdIncidentsRouteImport
+    '/_admin/monitors/$monitorId/settings': {
+      id: '/_admin/monitors/$monitorId/settings'
+      path: '/settings'
+      fullPath: '/monitors/$monitorId/settings'
+      preLoaderRoute: typeof AdminMonitorsMonitorIdSettingsRouteImport
       parentRoute: typeof AdminMonitorsMonitorIdRouteRoute
+    }
+    '/_admin/status-pages/$pageId/edit': {
+      id: '/_admin/status-pages/$pageId/edit'
+      path: '/status-pages/$pageId/edit'
+      fullPath: '/status-pages/$pageId/edit'
+      preLoaderRoute: typeof AdminStatusPagesPageIdEditRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
   }
 }
@@ -485,7 +525,19 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
   StatusSlugRoute: StatusSlugRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPushTokenRoute: ApiPushTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

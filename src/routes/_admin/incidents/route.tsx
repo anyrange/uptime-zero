@@ -8,8 +8,6 @@ import {
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import type { IncidentListRecord } from "@/types";
-
 import { DataTable } from "@/components/data-table";
 import { IncidentDuration } from "@/components/incident-duration";
 import { IncidentStatusBadge } from "@/components/incident-status-badge";
@@ -28,19 +26,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDateTime } from "@/lib/formatters";
+import { dashboardQueryOptions } from "@/lib/api/dashboard";
 import {
-  dashboardQueryOptions,
+  type IncidentSummary,
   incidentsQueryOptions,
-} from "@/lib/queries/dashboard";
+} from "@/lib/api/incidents";
+import { formatDateTime } from "@/lib/formatters";
+import { IncidentFilters } from "@/lib/schemas/incidents";
 import { m } from "@/paraglide/messages.js";
+import { IncidentsSkeleton } from "@/routes/_admin/incidents/-components/incidents-skeleton";
 
-import { IncidentsSkeleton } from "./-components/incidents-skeleton";
+/** Malformed filters in a shared URL are dropped instead of failing the page. */
+const { monitor, q, status } = IncidentFilters.shape;
 
 const incidentsSearchSchema = z.object({
-  monitor: z.string().optional().catch(undefined),
-  q: z.string().optional().catch(undefined),
-  status: z.enum(["open", "closed", "all"]).optional().catch(undefined),
+  monitor: monitor.catch(undefined),
+  q: q.catch(undefined),
+  status: status.catch(undefined),
 });
 
 export const Route = createFileRoute("/_admin/incidents")({
@@ -183,9 +185,14 @@ function IncidentsRoute() {
   );
 }
 
-function IncidentsTable({ incidents }: { incidents: IncidentListRecord[] }) {
+function IncidentsTable({
+  incidents,
+}: {
+  incidents: ReadonlyArray<IncidentSummary>;
+}) {
   const table = useReactTable({
-    data: incidents,
+    // SAFETY: TanStack Table never mutates `data`; its option type just is not readonly.
+    data: incidents as IncidentSummary[],
     columns: incidentColumns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -199,7 +206,7 @@ function IncidentsTable({ incidents }: { incidents: IncidentListRecord[] }) {
   );
 }
 
-const incidentColumns: ColumnDef<IncidentListRecord>[] = [
+const incidentColumns: ColumnDef<IncidentSummary>[] = [
   {
     accessorKey: "status",
     header: m.common_status(),

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-import type { MonitorRecord } from "@/types";
+import type { Monitor } from "@/lib/schemas/monitors";
 
 import {
   AlertDialog,
@@ -22,11 +22,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { useRotatePushTokenMutation } from "@/lib/api/monitors";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useRotatePushTokenMutation } from "@/lib/queries/monitors";
 import { m } from "@/paraglide/messages.js";
 
-export function PushEndpoint({ monitor }: { monitor: MonitorRecord }) {
+export function PushEndpoint({ monitor }: { monitor: Monitor }) {
   const rotate = useRotatePushTokenMutation(monitor.id);
   const permissions = usePermissions();
 

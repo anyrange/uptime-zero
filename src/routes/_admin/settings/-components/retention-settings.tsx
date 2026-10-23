@@ -1,7 +1,6 @@
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
 
-import type { SettingsData } from "@/types";
+import type { SettingsOverview } from "@/lib/api/settings";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -12,9 +11,10 @@ import {
   NumberFieldIncrement,
   NumberFieldInput,
 } from "@/components/ui/number-field";
+import { useUpdateRetentionMutation } from "@/lib/api/settings";
 import { firstFieldError } from "@/lib/form-errors";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { useUpdateRetentionMutation } from "@/lib/queries/settings";
+import { RetentionSettings as RetentionSettingsInput } from "@/lib/schemas/settings";
 import { m } from "@/paraglide/messages.js";
 
 import {
@@ -25,12 +25,7 @@ import {
   SettingsRowLabel,
 } from "./settings-layout";
 
-const retentionSchema = z.object({
-  heartbeatRetentionDays: z.number().int().min(1, m.validation_min_one_day()),
-  incidentRetentionDays: z.number().int().min(1, m.validation_min_one_day()),
-});
-
-export function RetentionSettings({ data }: { data: SettingsData }) {
+export function RetentionSettings({ data }: { data: SettingsOverview }) {
   const update = useUpdateRetentionMutation();
   const { check, isReady } = usePermissions();
   const canUpdateRetention = isReady && check("settings.updateRetention");
@@ -41,7 +36,7 @@ export function RetentionSettings({ data }: { data: SettingsData }) {
       incidentRetentionDays: data.settings.incidentRetentionDays,
     },
     validators: {
-      onSubmit: retentionSchema,
+      onSubmit: RetentionSettingsInput,
     },
     onSubmit: async ({ value }) => {
       await update.mutateAsync(value);

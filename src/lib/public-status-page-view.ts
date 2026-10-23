@@ -3,11 +3,8 @@ import type {
   StatusReport,
   StatusType,
 } from "@/components/blocks/status.types";
-import type {
-  IncidentRecord,
-  MonitorRecord,
-  PublicStatusPageData,
-} from "@/types";
+import type { PublicStatusPage } from "@/lib/api/status-pages";
+import type { MonitorKind } from "@/lib/schemas/monitors";
 
 import { formatUptimePercent } from "@/lib/formatters";
 import { monitorStatusToBlockStatus } from "@/lib/status-blocks";
@@ -16,7 +13,7 @@ import { m } from "@/paraglide/messages.js";
 export interface PublicStatusPageMonitorView {
   id: string;
   name: string;
-  kind: MonitorRecord["kind"];
+  kind: MonitorKind;
   status: Exclude<StatusType, "empty">;
   meta: string;
   uptime: string;
@@ -60,7 +57,7 @@ export interface PublicStatusPageViewModel {
 }
 
 export function buildPublicStatusPageView(
-  data: PublicStatusPageData,
+  data: PublicStatusPage,
 ): PublicStatusPageViewModel {
   const historyDays = Number.isFinite(data.historyDays)
     ? Math.max(1, data.historyDays)
@@ -78,12 +75,11 @@ export function buildPublicStatusPageView(
       name: monitor.name,
       kind: monitor.kind,
       status: monitorStatusToBlockStatus(monitor.lastStatus),
-      meta:
-        data.page.showTarget !== 1
-          ? ""
-          : monitor.kind === "push"
-            ? m.status_page_push_monitor_meta()
-            : (monitor.target ?? ""),
+      meta: !data.page.showTarget
+        ? ""
+        : monitor.kind === "push"
+          ? m.status_page_push_monitor_meta()
+          : (monitor.target ?? ""),
       uptime: counts?.total
         ? m.monitor_uptime_percent({
             percent: formatUptimePercent((counts.up / counts.total) * 100),
@@ -100,7 +96,7 @@ export function buildPublicStatusPageView(
     title: data.page.title,
     description: data.page.description,
     overallStatus: monitorStatusToBlockStatus(data.status),
-    showHistory: data.page.showHistory === 1,
+    showHistory: data.page.showHistory,
     updatedAt: latestUpdatedAt(data),
     uptimeWindows: buildPublicUptimeWindows(data.uptime),
     monitors,
@@ -132,7 +128,7 @@ export function buildPublicStatusPageView(
 }
 
 function buildPublicUptimeWindows(
-  rows: PublicStatusPageData["uptime"],
+  rows: PublicStatusPage["uptime"],
 ): PublicStatusPageUptimeWindow[] {
   const windows = [
     {
@@ -165,7 +161,7 @@ function buildPublicUptimeWindows(
 }
 
 function buildPublicHistory(
-  rows: PublicStatusPageData["history"],
+  rows: PublicStatusPage["history"],
   days: number,
 ): StatusBarData[] {
   const today = new Date();
@@ -219,12 +215,9 @@ function groupPublicMonitors(
     http: m.status_block_http_monitors(),
     dns: m.status_block_dns_monitors(),
     push: m.status_block_push_monitors(),
-  } satisfies Record<MonitorRecord["kind"], string>;
+  } satisfies Record<MonitorKind, string>;
 
-  const grouped = new Map<
-    MonitorRecord["kind"],
-    PublicStatusPageMonitorView[]
-  >();
+  const grouped = new Map<MonitorKind, PublicStatusPageMonitorView[]>();
 
   for (const monitor of monitors) {
     const bucket = monitor.kind;
@@ -256,7 +249,9 @@ function aggregateBlockStatus(
   return "success";
 }
 
-function toIncidentUpdates(incident: IncidentRecord): StatusReport["updates"] {
+function toIncidentUpdates(
+  incident: PublicStatusPage["incidents"][number],
+): StatusReport["updates"] {
   const updates: StatusReport["updates"] = [
     {
       date: new Date(incident.openedAt),
@@ -276,7 +271,7 @@ function toIncidentUpdates(incident: IncidentRecord): StatusReport["updates"] {
   return updates;
 }
 
-function latestUpdatedAt(data: PublicStatusPageData) {
+function latestUpdatedAt(data: PublicStatusPage) {
   const timestamps = [
     data.page.updatedAt,
     ...data.monitors.map((monitor) => monitor.updatedAt),

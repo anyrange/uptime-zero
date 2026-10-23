@@ -1,118 +1,137 @@
-import { describe, expect, it, vi } from "vitest";
+import type { z } from "zod";
 
-import type { MonitorRecord, NotificationDestinationRecord } from "@/types";
+import * as schema from "@schema";
+import { describe, expect, it } from "vitest";
+import { and, db, eq } from "void/db";
 
-import { NotificationService } from "@/server/services/notifications";
 import {
-  dispatchNotificationEvent,
-  deliverNotificationDestination,
-} from "@/server/services/notifications/delivery";
+  type NotificationDestination,
+  NotificationInput,
+} from "@/lib/schemas/notifications";
+import * as monitors from "@/modules/monitors/monitors.service";
+import * as notifications from "@/modules/notifications/notifications.service";
+import {
+  deliverNotification,
+  type NotificationEvent,
+} from "@/modules/notifications/providers";
 
-const monitor: MonitorRecord = {
+import { respondWith, seedMonitor, setNow, stubFetch } from "./support";
+
+const input = (value: z.input<typeof NotificationInput>) =>
+  NotificationInput.parse(value);
+
+const monitor = {
   id: "monitor-api",
   name: "API Gateway",
   kind: "http",
   target: "https://status.example.com/health",
-  intervalSec: 60,
-  timeoutMs: 10000,
-  retries: 0,
-  assertions: [],
-  heartbeatMode: "interval",
-  heartbeatCron: "0 * * * *",
-  heartbeatGraceSec: 300,
-  heartbeatTimezone: "UTC",
-  notificationGraceSec: 0,
-  pushToken: null,
-  active: 1,
-  lastStatus: "up",
-  lastCheckedAt: null,
-  lastDurationMs: null,
-  lastError: null,
-  revision: 0,
-  retryAt: null,
+} as const;
+
+const timestamps = {
   createdAt: "2026-05-01T00:00:00.000Z",
   updatedAt: "2026-05-01T00:00:00.000Z",
 };
 
-const webhookDestination: NotificationDestinationRecord = {
+const webhookDestination: NotificationDestination = {
   id: "dest-webhook",
   name: "Ops Webhook",
   provider: "webhook",
-  configJson: JSON.stringify({
-    url: "https://example.com/hook",
-    headers: [{ key: "x-api-key", value: "secret" }],
-  }),
   config: {
     url: "https://example.com/hook",
     headers: [{ key: "x-api-key", value: "secret" }],
   },
-  createdAt: "2026-05-01T00:00:00.000Z",
-  updatedAt: "2026-05-01T00:00:00.000Z",
+  ...timestamps,
 };
 
-const discordDestination: NotificationDestinationRecord = {
+const discordDestination: NotificationDestination = {
   id: "dest-discord",
   name: "Ops Discord",
   provider: "discord",
-  configJson: JSON.stringify({
-    webhookUrl: "https://discord.com/api/webhooks/1/abc",
-  }),
-  config: {
-    webhookUrl: "https://discord.com/api/webhooks/1/abc",
-  },
-  createdAt: "2026-05-01T00:00:00.000Z",
-  updatedAt: "2026-05-01T00:00:00.000Z",
+  config: { webhookUrl: "https://discord.com/api/webhooks/1/abc" },
+  ...timestamps,
 };
 
-const telegramDestination: NotificationDestinationRecord = {
+const telegramDestination: NotificationDestination = {
   id: "dest-telegram",
   name: "Ops Telegram",
   provider: "telegram",
-  configJson: JSON.stringify({
-    botToken: "123456:abcdef",
-    chatId: "-100100200300",
-    messageThreadId: "42",
-  }),
   config: {
     botToken: "123456:abcdef",
     chatId: "-100100200300",
     messageThreadId: "42",
   },
-  createdAt: "2026-05-01T00:00:00.000Z",
-  updatedAt: "2026-05-01T00:00:00.000Z",
+  ...timestamps,
 };
+
+const transition = (
+  status: "up" | "down",
+  error: string | null,
+): NotificationEvent => ({
+  kind: "transition",
+  monitor,
+  status,
+  checkedAt: "2026-05-04T10:00:00.000Z",
+  error,
+});
+
+const testEvent = (
+  destination: NotificationDestination,
+): NotificationEvent => ({
+  kind: "test",
+  sentAt: "2026-05-04T10:10:00.000Z",
+  destination: {
+    id: destination.id,
+    name: destination.name,
+    provider: destination.provider,
+  },
+});
+
+type RecordedRequest = {
+  url: string;
+  headers: Headers;
+  body: string;
+};
+
+/** Records outbound requests and answers each with `status(url)`. */
+const recordRequests = (status: (url: string) => number = () => 200) => {
+  const requests: RecordedRequest[] = [];
+
+  const handler: typeof fetch = async (request, init) => {
+    const url = String(request);
+
+    requests.push({
+      url,
+      headers: new Headers(init?.headers),
+      body: String(init?.body),
+    });
+
+    return new Response(null, { status: status(url) });
+  };
+
+  stubFetch(handler);
+
+  return { requests, restore: () => stubFetch(handler) };
+};
+
+const bodyOf = (request: RecordedRequest | undefined) =>
+  JSON.parse(request?.body ?? "null");
 
 describe("notification delivery", () => {
   it("posts the transition payload shape to webhook destinations", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
+    const recorder = recordRequests();
 
-    await deliverNotificationDestination(
+    await deliverNotification(
       webhookDestination,
-      {
-        kind: "transition",
-        monitor,
-        status: "down",
-        checkedAt: "2026-05-04T10:00:00.000Z",
-        error: "HTTP 500",
-      },
-      fetchMock,
+      transition("down", "HTTP 500"),
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://example.com/hook",
-      expect.objectContaining({
-        method: "POST",
-        headers: expect.objectContaining({
-          "content-type": "application/json",
-          "x-api-key": "secret",
-        }),
-      }),
-    );
-    const [, init] = fetchMock.mock.calls[0];
-    expect(JSON.parse(String(init?.body))).toEqual({
+    const [request] = recorder.requests;
+
+    expect(recorder.requests).toHaveLength(1);
+    expect(request?.url).toBe("https://example.com/hook");
+    expect(request?.headers.get("content-type")).toBe("application/json");
+    expect(request?.headers.get("x-api-key")).toBe("secret");
+    expect(bodyOf(request)).toEqual({
       kind: "monitor.down",
       monitor: {
         id: "monitor-api",
@@ -127,28 +146,19 @@ describe("notification delivery", () => {
   });
 
   it("posts Discord-native embeds for transition events", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
+    const recorder = recordRequests();
 
-    await deliverNotificationDestination(
+    await deliverNotification(
       discordDestination,
-      {
-        kind: "transition",
-        monitor,
-        status: "down",
-        checkedAt: "2026-05-04T10:00:00.000Z",
-        error: "timeout",
-      },
-      fetchMock,
+      transition("down", "timeout"),
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://discord.com/api/webhooks/1/abc");
-    const body = JSON.parse(String(init?.body));
-    expect(body.embeds[0].title).toContain("Monitor down");
-    expect(body.embeds[0].fields).toEqual(
+    const [request] = recorder.requests;
+    const [embed] = bodyOf(request).embeds;
+
+    expect(request?.url).toBe("https://discord.com/api/webhooks/1/abc");
+    expect(embed.title).toBe("Monitor down: API Gateway");
+    expect(embed.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: "Status", value: "DOWN" }),
         expect.objectContaining({ name: "Error", value: "timeout" }),
@@ -156,58 +166,30 @@ describe("notification delivery", () => {
     );
   });
 
-  it("sends Telegram messages with bot token, chat id, and thread id", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
+  it("sends compact Telegram messages to the configured thread", async () => {
+    const recorder = recordRequests();
 
-    await deliverNotificationDestination(
+    await deliverNotification(telegramDestination, transition("up", null));
+    await deliverNotification(
       telegramDestination,
-      {
-        kind: "transition",
-        monitor,
-        status: "up",
-        checkedAt: "2026-05-04T10:05:00.000Z",
-        error: null,
-      },
-      fetchMock,
+      transition("down", "Expected HTTP 200, got 502"),
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.telegram.org/bot123456:abcdef/sendMessage");
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    const [recovered, down] = recorder.requests;
+
+    expect(recovered?.url).toBe(
+      "https://api.telegram.org/bot123456:abcdef/sendMessage",
+    );
+    expect(bodyOf(recovered)).toEqual({
       chat_id: "-100100200300",
       message_thread_id: "42",
-    });
-    expect(JSON.parse(String(init?.body)).text).toBe(
-      [
+      text: [
         "API Gateway",
         "[http] [✅ Up] recovered",
         "https://status.example.com/health",
       ].join("\n"),
-    );
-  });
-
-  it("sends compact Telegram down alerts with the failure reason", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
-
-    await deliverNotificationDestination(
-      telegramDestination,
-      {
-        kind: "transition",
-        monitor,
-        status: "down",
-        checkedAt: "2026-05-04T10:05:00.000Z",
-        error: "Expected HTTP 200, got 502",
-      },
-      fetchMock,
-    );
-
-    const [, init] = fetchMock.mock.calls[0];
-    expect(JSON.parse(String(init?.body)).text).toBe(
+    });
+    expect(bodyOf(down).text).toBe(
       [
         "API Gateway",
         "[http] [🔴 Down] Expected HTTP 200, got 502",
@@ -216,176 +198,201 @@ describe("notification delivery", () => {
     );
   });
 
-  it("posts test payloads for all provider types", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
+  it("posts test payloads for every provider", async () => {
+    const recorder = recordRequests();
 
-    await deliverNotificationDestination(
+    for (const destination of [
       discordDestination,
-      {
-        kind: "test",
-        sentAt: "2026-05-04T10:10:00.000Z",
-        destination: {
-          id: discordDestination.id,
-          name: discordDestination.name,
-          provider: discordDestination.provider,
-        },
-      },
-      fetchMock,
-    );
-    await deliverNotificationDestination(
       webhookDestination,
-      {
-        kind: "test",
-        sentAt: "2026-05-04T10:10:00.000Z",
-        destination: {
-          id: webhookDestination.id,
-          name: webhookDestination.name,
-          provider: webhookDestination.provider,
-        },
-      },
-      fetchMock,
-    );
-    await deliverNotificationDestination(
       telegramDestination,
-      {
-        kind: "test",
-        sentAt: "2026-05-04T10:10:00.000Z",
-        destination: {
-          id: telegramDestination.id,
-          name: telegramDestination.name,
-          provider: telegramDestination.provider,
-        },
-      },
-      fetchMock,
-    );
-
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    const discordCall = fetchMock.mock.calls[0];
-    const webhookCall = fetchMock.mock.calls[1];
-    const telegramCall = fetchMock.mock.calls[2];
-
-    if (!discordCall || !webhookCall || !telegramCall) {
-      throw new Error("Expected one delivery call per notification provider");
+    ]) {
+      await deliverNotification(destination, testEvent(destination));
     }
 
-    const discordBody = JSON.parse(String(discordCall[1]?.body));
-    const webhookBody = JSON.parse(String(webhookCall[1]?.body));
-    const telegramBody = JSON.parse(String(telegramCall[1]?.body));
-    expect(discordBody.embeds[0].title).toContain("Test notification");
-    expect(webhookBody.kind).toBe("notification.test");
-    expect(telegramBody.text).toContain("Test notification");
+    const [discord, webhook, telegram] = recorder.requests.map(bodyOf);
+
+    expect(discord.embeds[0].title).toBe("Test notification: Ops Discord");
+    expect(webhook.kind).toBe("notification.test");
+    expect(telegram.text).toContain("Test notification: Ops Telegram");
   });
 
-  it("dispatches mixed bound destinations for one transition", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
+  it("fails test sends with the destination and status", async () => {
+    const recorder = recordRequests(() => 500);
+
+    const created = await notifications.create(
+      input({
+        name: "Ops Webhook",
+        provider: "webhook",
+        url: "https://example.com/hook",
+      }),
     );
 
-    await dispatchNotificationEvent(
-      [discordDestination, webhookDestination, telegramDestination],
-      {
-        kind: "transition",
-        monitor,
-        status: "down",
-        checkedAt: "2026-05-04T10:00:00.000Z",
-        error: "timeout",
+    await expect(notifications.sendTest(created.id)).rejects.toThrow(
+      "webhook notification failed for Ops Webhook: HTTP 500.",
+    );
+    expect(recorder.requests).toHaveLength(1);
+  });
+});
+
+describe("notification destinations", () => {
+  it("saves provider config and deduplicates monitor bindings", async () => {
+    const seeded = await seedMonitor();
+
+    const created = await notifications.create(
+      input({
+        name: "Ops webhook",
+        provider: "webhook",
+        url: "https://example.com/hook",
+        headers: [{ key: " x-api-key ", value: "secret" }],
+        monitorIds: [seeded.id, seeded.id],
+      }),
+    );
+
+    expect(created).toMatchObject({
+      name: "Ops webhook",
+      provider: "webhook",
+      config: {
+        url: "https://example.com/hook",
+        headers: [{ key: "x-api-key", value: "secret" }],
       },
-      fetchMock,
-    );
-
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-  });
-
-  it("throws when a destination returns a non-success response", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 401 }),
-    );
-
-    await expect(
-      deliverNotificationDestination(
-        webhookDestination,
-        {
-          kind: "transition",
-          monitor,
-          status: "down",
-          checkedAt: "2026-05-04T10:00:00.000Z",
-          error: "timeout",
-        },
-        fetchMock,
-      ),
-    ).rejects.toThrow("webhook notification failed");
-  });
-
-  it("does nothing when no destinations are bound", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
-
-    await dispatchNotificationEvent(
-      [],
-      {
-        kind: "transition",
-        monitor,
-        status: "down",
-        checkedAt: "2026-05-04T10:00:00.000Z",
-        error: "timeout",
-      },
-      fetchMock,
-    );
-
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("swallows provider failures so one broken destination does not abort delivery", async () => {
-    const fetchMock = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }));
-
-    await expect(
-      dispatchNotificationEvent(
-        [discordDestination, webhookDestination, telegramDestination],
-        {
-          kind: "transition",
-          monitor,
-          status: "down",
-          checkedAt: "2026-05-04T10:00:00.000Z",
-          error: "timeout",
-        },
-        fetchMock,
-      ),
-    ).resolves.toEqual({
-      attempted: 3,
-      succeeded: 2,
-      failed: 1,
-      delivered: false,
+      monitorIds: [seeded.id],
     });
-
-    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it("surfaces provider failures for explicit test sends", async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 500 }),
-    );
+  it("rejects bindings to unknown monitors without saving", async () => {
+    const seeded = await seedMonitor();
 
-    // SAFETY: This focused service test supplies only the database method exercised here.
-    const notificationService = new NotificationService({
-      notification: {
-        getById: vi.fn(async () => webhookDestination),
-      },
-    } as never);
+    const webhook = (monitorIds: Array<string>) =>
+      input({
+        name: "Ops webhook",
+        provider: "webhook",
+        url: "https://example.com/hook",
+        monitorIds,
+      });
 
     await expect(
-      notificationService.sendTestNotification(
-        webhookDestination.id,
-        fetchMock,
-      ),
-    ).rejects.toThrow("webhook notification failed for Ops Webhook: HTTP 500");
+      notifications.create(webhook([seeded.id, "missing"])),
+    ).rejects.toThrow("Unknown monitor ids: missing");
+    expect(await notifications.destinations()).toEqual([]);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const created = await notifications.create(webhook([seeded.id]));
+
+    await expect(
+      notifications.update(created.id, webhook(["missing"])),
+    ).rejects.toThrow("Unknown monitor ids: missing");
+    expect((await notifications.detail(created.id)).monitorIds).toEqual([
+      seeded.id,
+    ]);
+  });
+});
+
+describe("notification outbox", () => {
+  const deliveriesFor = (monitorId: string, status: "up" | "down") =>
+    db
+      .select()
+      .from(schema.notificationDeliveries)
+      .where(
+        and(
+          eq(schema.notificationDeliveries.monitorId, monitorId),
+          eq(schema.notificationDeliveries.status, status),
+        ),
+      );
+
+  /** A push monitor that is overdue at 12:05, with one webhook per name. */
+  const overduePushMonitor = async (
+    destinationNames: ReadonlyArray<string>,
+  ) => {
+    setNow("2026-05-01T12:05:00.000Z");
+    const seeded = await seedMonitor({ kind: "push", lastStatus: "up" });
+
+    for (const name of destinationNames) {
+      await notifications.create(
+        input({
+          name,
+          provider: "webhook",
+          url: `https://${name}.example`,
+          monitorIds: [seeded.id],
+        }),
+      );
+    }
+
+    expect(await monitors.runScheduledCheck(seeded.id)).toBe("checked");
+
+    const { pushToken } = seeded;
+
+    if (!pushToken) throw new Error("push token missing");
+
+    return {
+      id: seeded.id,
+      recover: () => monitors.recordHeartbeat(pushToken),
+    };
+  };
+
+  it("retries only failed destinations and keeps undelivered recoveries", async () => {
+    const recorder = recordRequests((url) =>
+      url.includes("second") ? 503 : 200,
+    );
+
+    const seeded = await overduePushMonitor(["first", "second"]);
+
+    await notifications.deliverDue();
+    await notifications.deliverDue();
+
+    // The failed destination is backed off, so the second run sends nothing.
+    expect(recorder.requests).toHaveLength(2);
+
+    const downs = await deliveriesFor(seeded.id, "down");
+
+    expect(downs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          attempts: 0,
+          deliveredAt: expect.any(String),
+        }),
+        expect.objectContaining({ attempts: 1, deliveredAt: null }),
+      ]),
+    );
+
+    await seeded.recover();
+
+    // Only the destination that received the down alert gets a recovery.
+    const recovery = await deliveriesFor(seeded.id, "up");
+
+    expect(recovery).toHaveLength(1);
+    expect(recovery[0]?.destinationId).toBe(
+      downs.find((delivery) => delivery.deliveredAt !== null)?.destinationId,
+    );
+
+    respondWith(503, null);
+    await notifications.deliverDue();
+
+    expect(await deliveriesFor(seeded.id, "up")).toEqual([
+      expect.objectContaining({ deliveredAt: null, attempts: 1 }),
+    ]);
+  });
+
+  it("queues a recovery when a retried down alert lands after the monitor recovered", async () => {
+    const recorder = recordRequests();
+    const seeded = await overduePushMonitor(["ops"]);
+
+    respondWith(503, null);
+    await notifications.deliverDue();
+
+    // An attempted down alert survives the recovery but gets no recovery yet.
+    await seeded.recover();
+    expect(await deliveriesFor(seeded.id, "up")).toHaveLength(0);
+
+    recorder.restore();
+    setNow("2026-05-01T12:05:30.000Z");
+    await notifications.deliverDue();
+    await notifications.deliverDue();
+
+    expect(recorder.requests.map((request) => bodyOf(request).kind)).toEqual([
+      "monitor.down",
+      "monitor.recovered",
+    ]);
+    expect(await deliveriesFor(seeded.id, "up")).toEqual([
+      expect.objectContaining({ deliveredAt: expect.any(String) }),
+    ]);
   });
 });

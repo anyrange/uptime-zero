@@ -4,7 +4,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import type { IncidentRecord } from "@/types";
+import type { Incident } from "@/lib/schemas/incidents";
 
 import { DataTable } from "@/components/data-table";
 import { IncidentDuration } from "@/components/incident-duration";
@@ -15,10 +15,11 @@ import { m } from "@/paraglide/messages.js";
 export function MonitorIncidentsTable({
   incidents,
 }: {
-  incidents: IncidentRecord[];
+  incidents: ReadonlyArray<Incident>;
 }) {
   const table = useReactTable({
-    data: incidents,
+    // SAFETY: TanStack Table never mutates `data`; its option type just is not readonly.
+    data: incidents as Incident[],
     columns: monitorIncidentColumns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -32,7 +33,7 @@ export function MonitorIncidentsTable({
   );
 }
 
-const monitorIncidentColumns: ColumnDef<IncidentRecord>[] = [
+const monitorIncidentColumns: ColumnDef<Incident>[] = [
   {
     accessorKey: "title",
     header: () => <span className="pl-5">{m.monitor_incident()}</span>,

@@ -3,15 +3,15 @@ import { Link } from "@tanstack/react-router";
 import { Archive, Bell, Database, Globe2, Settings2, User } from "lucide-react";
 import { z } from "zod";
 
-import type { SettingsData } from "@/types";
+import type { SettingsOverview } from "@/lib/api/settings";
 
 import { Button } from "@/components/ui/button";
-import { notificationSummary } from "@/lib/formatters";
 import {
   notificationsQueryOptions,
   providerLabel,
-} from "@/lib/queries/notifications";
-import { settingsQueryOptions } from "@/lib/queries/settings";
+} from "@/lib/api/notifications";
+import { settingsQueryOptions } from "@/lib/api/settings";
+import { notificationSummary } from "@/lib/formatters";
 import { m } from "@/paraglide/messages.js";
 
 import { AccountSettings } from "./account-settings";
@@ -26,23 +26,21 @@ import {
   SettingsRowLabel,
 } from "./settings-layout";
 
-const sections = [
+export const SettingsSection = z.enum([
   "general",
   "account",
   "data",
   "status-pages",
   "notifications",
   "retention",
-] as const;
+]);
 
-export const settingsSectionSchema = z.enum(sections);
-
-export type SettingsSection = z.infer<typeof settingsSectionSchema>;
+export type SettingsSection = z.infer<typeof SettingsSection>;
 
 export function SettingsNavigation() {
   return (
     <nav aria-label={m.settings_sections()} className="grid gap-1">
-      {sections.map((item) => {
+      {SettingsSection.options.map((item) => {
         const Icon = sectionIcon(item);
 
         return (
@@ -84,10 +82,8 @@ export function SettingsSectionPage({ section }: { section: SettingsSection }) {
   );
 }
 
-function GeneralSettings({ data }: { data: SettingsData }) {
-  const published = data.statusPages.filter(
-    (page) => page.published === 1,
-  ).length;
+function GeneralSettings({ data }: { data: SettingsOverview }) {
+  const published = data.statusPages.filter((page) => page.published).length;
 
   return (
     <SettingsPanel>
@@ -151,10 +147,8 @@ function GeneralSettings({ data }: { data: SettingsData }) {
   );
 }
 
-function StatusPagesSettings({ data }: { data: SettingsData }) {
-  const published = data.statusPages.filter(
-    (page) => page.published === 1,
-  ).length;
+function StatusPagesSettings({ data }: { data: SettingsOverview }) {
+  const published = data.statusPages.filter((page) => page.published).length;
 
   return (
     <SettingsPanel>

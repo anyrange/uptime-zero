@@ -1,0 +1,97 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1777881179000,
+      "tag": "20260504075259_naive_gambit",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777900330000,
+      "tag": "20260504131210_mean_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1777904262000,
+      "tag": "20260504141742_awesome_sugar_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1778084574000,
+      "tag": "20260506162254_square_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780904437000,
+      "tag": "20260608074037_open_star_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780932487000,
+      "tag": "20260608152807_messy_luckman",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1780992113000,
+      "tag": "20260609080153_redundant_magma",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1780994593000,
+      "tag": "20260609084313_mighty_microchip",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1781261589000,
+      "tag": "20260612105309_wet_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789201121000,
+      "tag": "20260912081841_flat_shriek",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789201692000,
+      "tag": "20260912082812_good_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1789205375000,
+      "tag": "20260912092935_puzzling_serpent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789220469000,
+      "tag": "20260912134109_stormy_the_order",
+      "breakpoints": true
+    }
+  ]
+}

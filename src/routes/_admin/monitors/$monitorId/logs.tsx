@@ -1,17 +1,17 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { monitorLogsQueryOptions } from "@/lib/queries/monitors";
+import { monitorLogsQueryOptions } from "@/lib/api/monitors";
+import { MonitorLogsPage } from "@/routes/_admin/monitors/-components/monitor-pages";
+import { MonitorsSkeleton } from "@/routes/_admin/monitors/-components/monitors-skeleton";
 
-import { MonitorLogsPage } from "../-components/monitor-pages";
-import { MonitorsSkeleton } from "../-components/monitors-skeleton";
-
-export const validateMonitorLogsSearch = z.object({
-  page: z.coerce.number().int().min(1).catch(1),
+/** A missing or malformed page falls back to the first one. */
+const monitorLogsSearchSchema = z.object({
+  page: z.int().min(1).default(1).catch(1),
 });
 
 export const Route = createFileRoute("/_admin/monitors/$monitorId/logs")({
-  validateSearch: validateMonitorLogsSearch,
+  validateSearch: monitorLogsSearchSchema,
   loaderDeps: ({ search: { page } }) => ({ page }),
   loader: async ({ context, params: { monitorId }, deps: { page } }) => {
     const logs = await context.queryClient.ensureQueryData(

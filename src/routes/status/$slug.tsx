@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { publicStatusPageQueryOptions } from "@/lib/queries/status-pages";
-
-import { PublicStatusPage } from "./-components/public-status-page";
-import { PublicStatusSkeleton } from "./-components/public-status-skeleton";
+import { publicStatusPageQueryOptions } from "@/lib/api/status-pages";
+import { PublicStatusPage } from "@/routes/status/-components/public-status-page";
+import { PublicStatusSkeleton } from "@/routes/status/-components/public-status-skeleton";
 
 export const Route = createFileRoute("/status/$slug")({
   loader: async ({ context, params: { slug } }) => {

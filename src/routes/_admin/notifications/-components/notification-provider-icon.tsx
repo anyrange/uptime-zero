@@ -1,6 +1,6 @@
 import { Webhook } from "lucide-react";
 
-import type { NotificationProvider } from "@/types";
+import type { NotificationProvider } from "@/lib/schemas/notifications";
 
 import { Discord } from "@/components/ui/svgs/discord";
 import { Telegram } from "@/components/ui/svgs/telegram";

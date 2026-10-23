@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { monitorListQueryOptions } from "@/lib/queries/monitors";
-
-import { MonitorSettingsPage } from "../-components/monitor-pages";
-import { MonitorFormSkeleton } from "../-components/monitors-skeleton";
+import { monitorListQueryOptions } from "@/lib/api/monitors";
+import { MonitorSettingsPage } from "@/routes/_admin/monitors/-components/monitor-pages";
+import { MonitorFormSkeleton } from "@/routes/_admin/monitors/-components/monitors-skeleton";
 
 export const Route = createFileRoute("/_admin/monitors/$monitorId/settings")({
   // The list carries the notification destinations the form offers.

@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/support/migrate.ts",
   fullyParallel: false,
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
@@ -21,7 +22,9 @@ export default defineConfig({
     },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    url: "http://127.0.0.1:5173",
+    // A static asset: the app's pages need the e2e database, which global
+    // setup migrates only once the server is up.
+    url: "http://127.0.0.1:5173/favicon.ico",
   },
   projects: [
     {

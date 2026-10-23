@@ -1,116 +1,44 @@
-import { createPermix, type Rules } from "permix";
+import type { Role } from "@/lib/schemas/auth";
 
-export type UserRole = "admin" | "user";
+/**
+ * What each role may do. Server-function middleware enforces it; the UI uses
+ * the same table only to hide actions a user can't perform.
+ */
+const capabilities = {
+  admin: [
+    "monitor.read",
+    "monitor.create",
+    "monitor.update",
+    "monitor.pause",
+    "monitor.resume",
+    "monitor.delete",
+    "monitor.import",
+    "monitor.export",
+    "statusPage.read",
+    "statusPage.create",
+    "statusPage.update",
+    "statusPage.delete",
+    "notification.read",
+    "notification.create",
+    "notification.update",
+    "notification.delete",
+    "notification.test",
+    "settings.read",
+    "settings.updateRetention",
+    "account.read",
+    "account.update",
+    "account.deleteWorkspace",
+  ],
+  user: ["account.read", "account.update"],
+} as const satisfies Record<Role, ReadonlyArray<string>>;
 
-export type PermissionProfile = "admin" | "user";
+export type Capability = (typeof capabilities)["admin"][number];
 
-export type AppPermissionsDefinition = {
-  monitor: [
-    "read",
-    "create",
-    "update",
-    "pause",
-    "resume",
-    "delete",
-    "import",
-    "export",
-  ];
-  statusPage: ["read", "create", "update", "delete"];
-  notification: ["read", "create", "update", "delete", "test"];
-  settings: ["read", "updateRetention"];
-  account: ["read", "update", "deleteWorkspace"];
+const grants: Record<Role, ReadonlySet<Capability>> = {
+  admin: new Set(capabilities.admin),
+  user: new Set(capabilities.user),
 };
 
-export type AppPermissionPath = (typeof permix)["$inferPath"];
-
-export type AppPermissionRules = Rules<AppPermissionsDefinition>;
-
-export const permix = createPermix<AppPermissionsDefinition>();
-
-const adminPermissions = permix.template({
-  monitor: {
-    read: true,
-    create: true,
-    update: true,
-    pause: true,
-    resume: true,
-    delete: true,
-    import: true,
-    export: true,
-  },
-  statusPage: {
-    read: true,
-    create: true,
-    update: true,
-    delete: true,
-  },
-  notification: {
-    read: true,
-    create: true,
-    update: true,
-    delete: true,
-    test: true,
-  },
-  settings: {
-    read: true,
-    updateRetention: true,
-  },
-  account: {
-    read: true,
-    update: true,
-    deleteWorkspace: true,
-  },
-});
-
-const userPermissions = permix.template({
-  monitor: {
-    read: false,
-    create: false,
-    update: false,
-    pause: false,
-    resume: false,
-    delete: false,
-    import: false,
-    export: false,
-  },
-  statusPage: {
-    read: false,
-    create: false,
-    update: false,
-    delete: false,
-  },
-  notification: {
-    read: false,
-    create: false,
-    update: false,
-    delete: false,
-    test: false,
-  },
-  settings: {
-    read: false,
-    updateRetention: false,
-  },
-  account: {
-    read: true,
-    update: true,
-    deleteWorkspace: false,
-  },
-});
-
-export function resolvePermissionProfile(
-  role: UserRole | null | undefined,
-): PermissionProfile {
-  if (role === "admin") return "admin";
-
-  return "user";
-}
-
-export function getPermissionRules(
-  role: UserRole | null | undefined,
-): AppPermissionRules {
-  const profile = resolvePermissionProfile(role);
-
-  if (profile === "admin") return adminPermissions();
-
-  return userPermissions();
+export function can(role: Role, capability: Capability): boolean {
+  return grants[role].has(capability);
 }

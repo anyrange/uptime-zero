@@ -16,7 +16,8 @@ import {
   User,
 } from "lucide-react";
 
-import type { MonitorStatus, SessionData } from "@/types";
+import type { Session } from "@/lib/schemas/auth";
+import type { MonitorStatus } from "@/lib/schemas/monitors";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -44,10 +45,10 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { sessionQueryOptions, useLogoutMutation } from "@/lib/api/auth";
+import { dashboardQueryOptions } from "@/lib/api/dashboard";
 import { appVersion } from "@/lib/build-info";
 import { usePermissions } from "@/lib/hooks/use-permissions";
-import { sessionQueryOptions, useLogoutMutation } from "@/lib/queries/auth";
-import { dashboardQueryOptions } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 export function AppSidebar() {
@@ -205,8 +206,7 @@ export function AppSidebar() {
           })}
         >
           {dashboard.monitors.map((monitor) => {
-            const status =
-              monitor.active === 1 ? monitor.lastStatus : "unknown";
+            const status = monitor.active ? monitor.lastStatus : "unknown";
 
             return (
               <SidebarMenuItem key={monitor.id}>
@@ -319,7 +319,7 @@ function SessionFooter({
   onLogout,
   isLoggingOut,
 }: {
-  user: SessionData["user"];
+  user: Session["user"];
   onLogout: () => void;
   isLoggingOut: boolean;
 }) {

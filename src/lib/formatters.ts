@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 
-import type { HeartbeatRecord, NotificationDestinationRecord } from "@/types";
+import type { Heartbeat } from "@/lib/schemas/monitors";
+import type { NotificationDestination } from "@/lib/schemas/notifications";
 
 import { m } from "@/paraglide/messages.js";
 
@@ -128,9 +129,7 @@ function formatDurationSpan(value: number) {
     : m.common_days_short({ value: days });
 }
 
-export function notificationSummary(
-  destination: NotificationDestinationRecord,
-) {
+export function notificationSummary(destination: NotificationDestination) {
   if (destination.provider === "discord") {
     return destination.config.webhookUrl;
   }
@@ -148,13 +147,13 @@ export function notificationSummary(
 
   const config = destination.config;
 
-  return config.headers && config.headers.length > 0
+  return config.headers.length > 0
     ? `${config.url} (${m.common_count_headers({ count: config.headers.length })})`
     : config.url;
 }
 
-export function groupHeartbeats(heartbeats: HeartbeatRecord[]) {
-  const map = new Map<string, HeartbeatRecord[]>();
+export function groupHeartbeats(heartbeats: ReadonlyArray<Heartbeat>) {
+  const map = new Map<string, Heartbeat[]>();
 
   for (const heartbeat of heartbeats) {
     const monitorHeartbeats = map.get(heartbeat.monitorId);

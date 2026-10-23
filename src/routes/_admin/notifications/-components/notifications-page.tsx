@@ -4,9 +4,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import type {
-  NotificationDestinationListItem,
+  NotificationDestinationSummary,
   NotificationProvider,
-} from "@/types";
+} from "@/lib/schemas/notifications";
 
 import {
   AppPage,
@@ -24,15 +24,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
-import { formatDateTime, notificationSummary } from "@/lib/formatters";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   notificationsQueryOptions,
   providerLabel,
   useCreateNotificationMutation,
   useDeleteNotificationMutation,
   useTestNotificationMutation,
-} from "@/lib/queries/notifications";
+} from "@/lib/api/notifications";
+import { formatDateTime, notificationSummary } from "@/lib/formatters";
+import { usePermissions } from "@/lib/hooks/use-permissions";
 import { m } from "@/paraglide/messages.js";
 
 import { CreateNotificationSheet } from "./create-notification-sheet";
@@ -81,7 +81,7 @@ export function NotificationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const assignedCount = destinations.reduce(
-    (count, destination) => count + destination.monitorCount,
+    (count, destination) => count + destination.assignedMonitors.length,
     0,
   );
 
@@ -217,7 +217,7 @@ function NotifierCard({
   onTest,
   pending,
 }: {
-  destination: NotificationDestinationListItem;
+  destination: NotificationDestinationSummary;
   onEdit: (() => void) | null;
   onDelete: (() => void) | null;
   onTest: (() => void) | null;
@@ -238,7 +238,7 @@ function NotifierCard({
               </div>
               <Badge className="shrink-0" variant="outline">
                 {m.notification_monitor_count({
-                  count: destination.monitorCount,
+                  count: destination.assignedMonitors.length,
                 })}
               </Badge>
             </div>

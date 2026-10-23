@@ -2,8 +2,6 @@
 
 **Simple self-hostable uptime monitoring, built to run on Cloudflare.**
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/wsehl/uptime)
-
 Uptime Zero is heavily inspired by [Uptime Kuma](https://github.com/louislam/uptime-kuma) and [OpenStatus](https://github.com/openstatusHQ/openstatus), but built for people who want a simple monitor dashboard, public status pages, and webhook alerts without keeping a separate server around.
 
 > [!WARNING]
@@ -29,25 +27,18 @@ Password: AdminPass24!
 - Incident history from monitor state changes
 - Webhook alerts when monitors change state
 - Configurable retention for monitor checks and incidents
-- Cloudflare-native runtime with Workers, D1, Durable Objects, and scheduled triggers
+- Cloudflare-native runtime with Workers, D1, and cron triggers, deployed with Void
 
 ## 🚀 Deploy
 
-The full deployment guide is in [docs/deployment.md](docs/deployment.md).
+The full deployment guide is in [docs/deployment.md](docs/deployment.md). The code layout and its rules are in [docs/architecture.md](docs/architecture.md).
 
-For the short version, install dependencies, log in to Cloudflare, and create the D1 database:
+For the short version, install dependencies, set the auth secrets, and deploy with [Void](https://void.cloud):
 
 ```sh
 pnpm install
-pnpm wrangler login
-pnpm wrangler d1 create uptime-zero
-```
-
-Paste the returned D1 `database_id` into `wrangler.jsonc`, then set the auth secrets and deploy:
-
-```sh
-pnpm wrangler secret put BETTER_AUTH_SECRET
-pnpm wrangler secret put BETTER_AUTH_URL
+pnpm void secret put BETTER_AUTH_SECRET
+pnpm void secret put BETTER_AUTH_URL
 pnpm run deploy
 ```
 
@@ -55,22 +46,27 @@ After deploy, open `/setup` on your Worker URL and create the first admin accoun
 
 ## 🛠️ Local Development
 
+Put local secrets in `.env` (see `env.ts`), for example `BETTER_AUTH_SECRET=` with a random value, then:
+
 ```sh
 pnpm install
 pnpm run db:migrate
 pnpm run dev
 ```
 
-The local Worker runs on `http://localhost:5173`
+The app runs in the local Workers runtime on `http://localhost:5173`. Crons don't fire locally; the dev server prints a `curl` command that triggers them through `/__void/scheduled`.
+
+`void db` commands use the local database the dev server last started with. E2E runs (`pnpm e2e`) use their own database in `.void/e2e-state`, so start `pnpm run dev` once before running `pnpm run db:migrate` again afterwards.
 
 ## 🧱 Stack
 
 - Cloudflare Workers
 - Cloudflare D1
-- Cloudflare Durable Objects
+- Void
 - React 19
-- TanStack Router
-- Hono
+- TanStack Start (SSR, server functions, server routes)
+- TanStack Query
 - Drizzle ORM
+- Zod
 - Better Auth
 - shadcn/ui

@@ -1,16 +1,15 @@
 import { Download, Upload } from "lucide-react";
 import { useRef, useState } from "react";
-import { z } from "zod";
 
-import type { SettingsData } from "@/types";
+import type { SettingsOverview } from "@/lib/api/settings";
 
 import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  monitorImportSchema,
   useExportMonitorsMutation,
   useImportMonitorsMutation,
-} from "@/lib/queries/settings";
+} from "@/lib/api/monitors";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { readMonitorExportFile } from "@/lib/monitor/export-file";
 import { m } from "@/paraglide/messages.js";
 
 import {
@@ -22,7 +21,7 @@ import {
   SettingsRowLabel,
 } from "./settings-layout";
 
-export function DataSettings({ data }: { data: SettingsData }) {
+export function DataSettings({ data }: { data: SettingsOverview }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const exportMonitors = useExportMonitorsMutation();
   const importMonitors = useImportMonitorsMutation();
@@ -49,21 +48,20 @@ export function DataSettings({ data }: { data: SettingsData }) {
     if (!file) return;
     setImportError(null);
 
-    try {
-      const payload = monitorImportSchema.parse(JSON.parse(await file.text()));
-      await importMonitors.mutateAsync(payload);
-    } catch (error) {
-      const parsedError = z.object({ message: z.string() }).safeParse(error);
-      setImportError(
-        parsedError.success
-          ? parsedError.data.message
-          : m.settings_import_failed(),
-      );
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    const payload = await readMonitorExportFile(file);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
+
+    if (!payload) {
+      setImportError(m.settings_import_failed());
+
+      return;
+    }
+
+    // Server failures render from `importMonitors.error`.
+    importMonitors.mutate(payload);
   }
 
   const importedCount = importMonitors.data?.imported;

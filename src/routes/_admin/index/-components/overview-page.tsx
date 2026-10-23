@@ -7,7 +7,9 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, type ReactNode } from "react";
 
-import type { DashboardData, HeartbeatRecord, IncidentRecord } from "@/types";
+import type { Dashboard } from "@/lib/api/dashboard";
+import type { Incident } from "@/lib/schemas/incidents";
+import type { Heartbeat } from "@/lib/schemas/monitors";
 
 import { DataTable } from "@/components/data-table";
 import { IncidentDuration } from "@/components/incident-duration";
@@ -29,8 +31,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Empty } from "@/components/ui/empty";
+import { dashboardQueryOptions } from "@/lib/api/dashboard";
 import { formatDateTime, formatDurationMs } from "@/lib/formatters";
-import { dashboardQueryOptions } from "@/lib/queries/dashboard";
 import { m } from "@/paraglide/messages.js";
 
 export function OverviewPage() {
@@ -49,7 +51,7 @@ export function OverviewPage() {
   );
 }
 
-function OverviewContent({ data }: { data: DashboardData }) {
+function OverviewContent({ data }: { data: Dashboard }) {
   const incidents = useMemo(
     () => getRecentIncidents(data.incidents),
     [data.incidents],
@@ -138,7 +140,7 @@ function OverviewSectionDescription({ children }: { children: ReactNode }) {
   return <p className="mt-1 text-sm text-muted-foreground">{children}</p>;
 }
 
-function LatestCheckMetrics({ data }: { data: DashboardData }) {
+function LatestCheckMetrics({ data }: { data: Dashboard }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Card size="sm">
@@ -157,7 +159,7 @@ function LatestCheckMetrics({ data }: { data: DashboardData }) {
   );
 }
 
-function LatestChecksTable({ data }: { data: DashboardData }) {
+function LatestChecksTable({ data }: { data: Dashboard }) {
   const rows = useMemo(() => {
     const monitorNames = new Map(
       data.monitors.map((monitor) => [monitor.id, monitor.name]),
@@ -189,7 +191,7 @@ function LatestChecksTable({ data }: { data: DashboardData }) {
 }
 
 interface LatestCheckRow {
-  heartbeat: HeartbeatRecord;
+  heartbeat: Heartbeat;
   monitorName: string | undefined;
 }
 
@@ -280,8 +282,8 @@ function RecentIncidentsTable({
   data,
   incidents,
 }: {
-  data: DashboardData;
-  incidents: IncidentRecord[];
+  data: Dashboard;
+  incidents: ReadonlyArray<Incident>;
 }) {
   const rows = useMemo(() => {
     const monitorNames = new Map(
@@ -314,7 +316,7 @@ function RecentIncidentsTable({
 }
 
 interface RecentIncidentRow {
-  incident: IncidentRecord;
+  incident: Incident;
   monitorName: string | undefined;
 }
 
@@ -382,7 +384,7 @@ const recentIncidentColumns: ColumnDef<RecentIncidentRow>[] = [
   },
 ];
 
-function getRecentIncidents(incidents: IncidentRecord[]) {
+function getRecentIncidents(incidents: ReadonlyArray<Incident>) {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   return incidents.filter((incident) => {

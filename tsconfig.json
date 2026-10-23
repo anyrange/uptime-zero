@@ -1,4 +1,5 @@
 {
+  "extends": "./.void/tsconfig.json",
   "include": [
     "**/*.ts",
     "**/*.tsx",
@@ -11,23 +12,21 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@schema": ["./db/schema.ts"],
+      "void/db": ["./.void/db.d.ts"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": [
       "node",
       "vite/client",
       "vitest/globals",
-      "@cloudflare/vitest-pool-workers/types"
+      "@cloudflare/vitest-pool-workers/types",
+      "void/env"
     ],
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
     "noEmit": true,
-
-    /* Linting */
     "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": true,

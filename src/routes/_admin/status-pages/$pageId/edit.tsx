@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { statusPageQueryOptions } from "@/lib/queries/status-pages";
-
-import { EditStatusPagePage } from "../-components/status-page-pages";
-import { StatusPageFormSkeleton } from "../-components/status-pages-skeleton";
+import { statusPageQueryOptions } from "@/lib/api/status-pages";
+import { EditStatusPagePage } from "@/routes/_admin/status-pages/-components/status-page-pages";
+import { StatusPageFormSkeleton } from "@/routes/_admin/status-pages/-components/status-pages-skeleton";
 
 export const Route = createFileRoute("/_admin/status-pages/$pageId/edit")({
   loader: async ({ context, params: { pageId } }) => {

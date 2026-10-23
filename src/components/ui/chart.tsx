@@ -171,11 +171,12 @@ function ChartTooltipContent({
     const [item] = payload;
     const key = `${labelKey ?? item?.dataKey ?? item?.name ?? "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
-    const stringLabel = z.string().safeParse(label);
+
+    const labelName = labelKey ? undefined : ChartLabel.safeParse(label).data;
 
     const value =
-      !labelKey && stringLabel.success
-        ? (config[stringLabel.data]?.label ?? stringLabel.data)
+      labelName !== undefined
+        ? (config[labelName]?.label ?? labelName)
         : itemConfig?.label;
 
     if (labelFormatter) {
@@ -276,9 +277,8 @@ function ChartTooltipContent({
                         <span className="font-mono font-medium text-foreground tabular-nums">
                           {valueFormatter
                             ? valueFormatter(item.value)
-                            : z.number().safeParse(item.value).success
-                              ? Number(item.value).toLocaleString()
-                              : String(item.value)}
+                            : // Groups digits of numbers; strings pass through.
+                              item.value.toLocaleString()}
                         </span>
                       )}
                     </div>
@@ -349,34 +349,25 @@ function ChartLegendContent({
   );
 }
 
+const ChartLabel = z.string();
+
+/** A payload may name its config entry under `key`, directly or nested. */
+function payloadLabel(key: string) {
+  return z.union([
+    z.object({ [key]: ChartLabel }).transform((entry) => entry[key]),
+    z
+      .object({ payload: z.object({ [key]: ChartLabel }) })
+      .transform((entry) => entry.payload[key]),
+  ]);
+}
+
 function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: ChartPayload | null | undefined,
   key: string,
 ) {
-  const recordResult = z.record(z.string(), z.unknown()).safeParse(payload);
-
-  if (!recordResult.success) {
-    return undefined;
-  }
-
-  const payloadRecord = recordResult.data;
-
-  const nestedResult = z
-    .record(z.string(), z.unknown())
-    .safeParse(payloadRecord.payload);
-
-  const payloadPayload = nestedResult.success ? nestedResult.data : undefined;
-
-  let configLabelKey: string = key;
-  const directLabel = z.string().safeParse(payloadRecord[key]);
-  const nestedLabel = z.string().safeParse(payloadPayload?.[key]);
-
-  if (directLabel.success) {
-    configLabelKey = directLabel.data;
-  } else if (nestedLabel.success) {
-    configLabelKey = nestedLabel.data;
-  }
+  const label = payloadLabel(key).safeParse(payload);
+  const configLabelKey = label.success ? label.data : key;
 
   return configLabelKey in config ? config[configLabelKey] : config[key];
 }

@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { statusPagesQueryOptions } from "@/lib/queries/status-pages";
-
-import { StatusPagesPage } from "./-components/status-page-pages";
-import { StatusPagesSkeleton } from "./-components/status-pages-skeleton";
+import { statusPagesQueryOptions } from "@/lib/api/status-pages";
+import { StatusPagesPage } from "@/routes/_admin/status-pages/-components/status-page-pages";
+import { StatusPagesSkeleton } from "@/routes/_admin/status-pages/-components/status-pages-skeleton";
 
 export const Route = createFileRoute("/_admin/status-pages/")({
   loader: async ({ context }) => {

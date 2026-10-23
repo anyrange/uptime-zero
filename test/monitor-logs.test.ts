@@ -1,40 +1,15 @@
+import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, it } from "vitest";
 
 import {
   clampMonitorLogsPage,
   getMonitorLogsPageRange,
   MONITOR_LOGS_PAGE_SIZE,
-} from "@/lib/monitor/logs";
+} from "@/lib/monitor-logs";
+import * as repo from "@/modules/monitors/monitors.repository";
+import * as monitors from "@/modules/monitors/monitors.service";
 
-import {
-  testAuth,
-  apiFetch,
-  seedMonitorWithHeartbeats,
-} from "./api-test-utils";
-
-async function setupAdminTestSession() {
-  const { test } = await testAuth.$context;
-
-  const user = test.createUser({
-    name: "Admin",
-    email: `admin-${crypto.randomUUID()}@example.com`,
-    role: "admin",
-  });
-
-  await test.saveUser(user);
-
-  const headers = await test.getAuthHeaders({
-    userId: user.id,
-  });
-
-  const cookie = headers.get("cookie");
-
-  if (!cookie) {
-    throw new Error("Failed to setup test auth session");
-  }
-
-  return cookie;
-}
+import { seedMonitor } from "./support";
 
 describe("monitor log pagination helpers", () => {
   it("clamps page numbers to the nearest available page", () => {
@@ -70,69 +45,38 @@ describe("monitor log pagination helpers", () => {
   });
 });
 
-describe("monitor logs API", () => {
-  it("requires authentication for private monitor log routes", async () => {
-    const response = await apiFetch("/api/monitors/missing/logs?page=1");
+describe("monitor log pages", () => {
+  it("pages heartbeats newest first and clamps the page", async () => {
+    const monitor = await seedMonitor();
 
-    expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Authentication required",
-    });
-  });
+    const createdAt = (minute: number) =>
+      new Date(Date.UTC(2026, 4, 1, 12, minute)).toISOString();
 
-  it("returns a real paginated heartbeat page from D1", async () => {
-    const cookie = await setupAdminTestSession();
-    const monitorId = await seedMonitorWithHeartbeats(33);
+    // Each recorded check bumps the revision it must run against.
+    for (let minute = 0; minute < 33; minute += 1) {
+      await repo.recordCheck(
+        { ...monitor, revision: minute },
+        { status: "up", statusCode: 200, durationMs: 10, error: null },
+        "poll",
+        createdAt(minute),
+      );
+    }
 
-    const response = await apiFetch(
-      `/api/monitors/${monitorId}/logs?page=2`,
-      cookie,
-    );
+    const last = await monitors.logs(monitor.id, 9);
 
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
+    expect(last).toMatchObject({
       page: 2,
       pageSize: MONITOR_LOGS_PAGE_SIZE,
       total: 33,
       totalPages: 2,
       hasPreviousPage: true,
       hasNextPage: false,
-      heartbeats: expect.arrayContaining([
-        expect.objectContaining({ monitorId }),
-      ]),
     });
-  });
-
-  it("defaults invalid page values to the first page", async () => {
-    const cookie = await setupAdminTestSession();
-    const monitorId = await seedMonitorWithHeartbeats(1);
-
-    const response = await apiFetch(
-      `/api/monitors/${monitorId}/logs?page=wat`,
-      cookie,
+    expect(last.heartbeats).toHaveLength(33 - MONITOR_LOGS_PAGE_SIZE);
+    expect(last.heartbeats[0]?.createdAt).toBe(
+      createdAt(32 - MONITOR_LOGS_PAGE_SIZE),
     );
 
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      page: 1,
-      total: 1,
-      totalPages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
-    });
-  });
-
-  it("returns 404 for an unknown monitor", async () => {
-    const cookie = await setupAdminTestSession();
-
-    const response = await apiFetch(
-      "/api/monitors/missing/logs?page=1",
-      cookie,
-    );
-
-    expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toMatchObject({
-      error: "Monitor not found",
-    });
+    await expect(monitors.logs("missing", 1)).rejects.toSatisfy(isNotFound);
   });
 });
