@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v1.0.0...uptime-zero-v1.0.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **server:** build Better Auth on first request ([a3d9c30](https://github.com/anyrange/uptime-zero/commit/a3d9c30bdf0fa6da5f4648d6e5298f8fb2dc617f))
+* **server:** drop the AUTH_RATE_LIMIT binding ([3894476](https://github.com/anyrange/uptime-zero/commit/38944768ba8889746fe7a695e1a65cf3261dfc75))
+* **server:** enable Better Auth rate limiting in Workers ([a50ee94](https://github.com/anyrange/uptime-zero/commit/a50ee94dcdc996d1857cc453079faaafbc4629b2))
+
 ## [1.0.0](https://github.com/anyrange/uptime-zero/compare/uptime-zero-v0.15.0...uptime-zero-v1.0.0) (2026-10-23)
 
 
