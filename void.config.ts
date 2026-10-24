@@ -24,7 +24,7 @@ export default defineConfig({
       {
         binding: "DB",
         database_name: "uptime-zero",
-        migrations_dir: "db/migrations",
+        migrations_dir: "./db/migrations",
       },
     ],
     // Deployed Workers carry this Durable Object history; never reorder or drop steps.

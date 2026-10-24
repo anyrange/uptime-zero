@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "cloudflare:workers";
 
-import { auth } from "@/modules/auth/better-auth";
+import { getAuth } from "@/modules/auth/better-auth";
 
 // Credential endpoints are throttled per client IP before Better Auth runs.
 const RATE_LIMITED_PATHS = new Set([
@@ -12,7 +12,7 @@ const RATE_LIMITED_PATHS = new Set([
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
-      GET: ({ request }) => auth.handler(request),
+      GET: ({ request }) => getAuth().handler(request),
       POST: async ({ request }) => {
         if (RATE_LIMITED_PATHS.has(new URL(request.url).pathname)) {
           const { success } = await env.AUTH_RATE_LIMIT.limit({
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/auth/$")({
           }
         }
 
-        return auth.handler(request);
+        return getAuth().handler(request);
       },
     },
   },

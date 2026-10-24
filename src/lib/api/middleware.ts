@@ -3,13 +3,13 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 
 import { AppError } from "@/lib/errors";
 import { type Capability, can } from "@/lib/permissions";
-import { auth, toSessionUser } from "@/modules/auth/better-auth";
+import { getAuth, toSessionUser } from "@/modules/auth/better-auth";
 import { m } from "@/paraglide/messages.js";
 
 /** Resolves the Better Auth session; anonymous requests get `user: null`. */
 export const sessionMiddleware = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const session = await auth.api.getSession({
+    const session = await getAuth().api.getSession({
       headers: getRequestHeaders(),
     });
 
