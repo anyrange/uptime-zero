@@ -8,6 +8,10 @@ export default defineConfig({
   cloudflare: {
     name: "uptime-zero",
     account_id: "070a91f36bb99185a44495c5dc870132",
+    // Dashboard-managed routing, pinned so `void deploy` can republish it.
+    routes: [{ pattern: "uptime.gagrstan.xyz", custom_domain: true }],
+    workers_dev: true,
+    preview_urls: true,
     observability: {
       enabled: true,
       head_sampling_rate: 1,
