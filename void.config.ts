@@ -9,6 +9,7 @@ export default defineConfig({
     name: "uptime-zero-demo",
     account_id: "4f1f6a74f0f1faee4a93162736f7cb05",
     // Dashboard-managed routing, pinned so `void deploy` can republish it.
+    routes: [],
     workers_dev: true,
     preview_urls: true,
     observability: {

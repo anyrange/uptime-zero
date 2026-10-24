@@ -1,7 +1,11 @@
 {
   "version": 1,
   "source": {
-    "name": "uptime-zero",
+    "name": "uptime-zero-demo",
+    "account_id": "4f1f6a74f0f1faee4a93162736f7cb05",
+    "routes": [],
+    "workers_dev": true,
+    "preview_urls": true,
     "observability": {
       "enabled": true,
       "head_sampling_rate": 1,
@@ -16,7 +20,8 @@
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "uptime-zero",
+        "database_id": "f97ea3da-9701-40e5-b92d-9d52e3c30b93",
+        "database_name": "uptime-zero-demo",
         "migrations_dir": "./db/migrations"
       }
     ],
@@ -55,7 +60,10 @@
     ]
   },
   "resolved": {
-    "name": "uptime-zero",
+    "name": "uptime-zero-demo",
+    "account_id": "4f1f6a74f0f1faee4a93162736f7cb05",
+    "workers_dev": true,
+    "preview_urls": true,
     "observability": {
       "enabled": true,
       "head_sampling_rate": 1,
@@ -70,8 +78,9 @@
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "uptime-zero",
-        "migrations_dir": "./db/migrations"
+        "database_name": "uptime-zero-demo",
+        "migrations_dir": "./db/migrations",
+        "database_id": "f97ea3da-9701-40e5-b92d-9d52e3c30b93"
       }
     ],
     "migrations": [
@@ -106,7 +115,8 @@
           "NotificationActor"
         ]
       }
-    ]
+    ],
+    "routes": []
   },
-  "text": "{\n  \"name\": \"uptime-zero\",\n  \"observability\": {\n    \"enabled\": true,\n    \"head_sampling_rate\": 1,\n    \"logs\": {\n      \"head_sampling_rate\": 1,\n      \"invocation_logs\": false\n    },\n    \"traces\": {\n      \"head_sampling_rate\": 1\n    }\n  },\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"uptime-zero\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"migrations\": [\n    {\n      \"tag\": \"v1\",\n      \"new_sqlite_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v2\",\n      \"new_sqlite_classes\": [\n        \"SchedulerActor\"\n      ]\n    },\n    {\n      \"tag\": \"v3\",\n      \"deleted_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v4\",\n      \"new_sqlite_classes\": [\n        \"NotificationActor\"\n      ]\n    },\n    {\n      \"tag\": \"v5\",\n      \"deleted_classes\": [\n        \"SchedulerActor\",\n        \"NotificationActor\"\n      ]\n    }\n  ]\n}\n"
+  "text": "{\n  \"name\": \"uptime-zero-demo\",\n  \"account_id\": \"4f1f6a74f0f1faee4a93162736f7cb05\",\n  \"workers_dev\": true,\n  \"preview_urls\": true,\n  \"observability\": {\n    \"enabled\": true,\n    \"head_sampling_rate\": 1,\n    \"logs\": {\n      \"head_sampling_rate\": 1,\n      \"invocation_logs\": false\n    },\n    \"traces\": {\n      \"head_sampling_rate\": 1\n    }\n  },\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"uptime-zero-demo\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"database_id\": \"f97ea3da-9701-40e5-b92d-9d52e3c30b93\"\n    }\n  ],\n  \"migrations\": [\n    {\n      \"tag\": \"v1\",\n      \"new_sqlite_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v2\",\n      \"new_sqlite_classes\": [\n        \"SchedulerActor\"\n      ]\n    },\n    {\n      \"tag\": \"v3\",\n      \"deleted_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v4\",\n      \"new_sqlite_classes\": [\n        \"NotificationActor\"\n      ]\n    },\n    {\n      \"tag\": \"v5\",\n      \"deleted_classes\": [\n        \"SchedulerActor\",\n        \"NotificationActor\"\n      ]\n    }\n  ],\n  \"routes\": []\n}\n"
 }
