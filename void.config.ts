@@ -13,13 +13,6 @@ export default defineConfig({
       logs: { head_sampling_rate: 1, invocation_logs: false },
       traces: { head_sampling_rate: 1 },
     },
-    ratelimits: [
-      {
-        name: "AUTH_RATE_LIMIT",
-        namespace_id: "1001",
-        simple: { limit: 10, period: 60 },
-      },
-    ],
     d1_databases: [
       {
         binding: "DB",
