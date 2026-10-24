@@ -27,6 +27,10 @@ function createAuth() {
     trustedOrigins: (request) => (request ? [new URL(request.url).origin] : []),
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     emailAndPassword: { enabled: true },
+    // Better Auth only enables this when NODE_ENV is "production", which the
+    // Worker doesn't set. Limits are kept per isolate, which is enough to blunt
+    // credential guessing without spending D1 writes.
+    rateLimit: { enabled: true },
     user: {
       additionalFields: {
         role: {
