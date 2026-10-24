@@ -2,6 +2,15 @@
   "version": 1,
   "source": {
     "name": "uptime-zero",
+    "account_id": "070a91f36bb99185a44495c5dc870132",
+    "routes": [
+      {
+        "pattern": "uptime.gagrstan.xyz",
+        "custom_domain": true
+      }
+    ],
+    "workers_dev": true,
+    "preview_urls": true,
     "observability": {
       "enabled": true,
       "head_sampling_rate": 1,
@@ -16,6 +25,7 @@
     "d1_databases": [
       {
         "binding": "DB",
+        "database_id": "aec0bdce-7207-4445-adee-033194c52979",
         "database_name": "uptime-zero",
         "migrations_dir": "./db/migrations"
       }
@@ -71,7 +81,8 @@
       {
         "binding": "DB",
         "database_name": "uptime-zero",
-        "migrations_dir": "./db/migrations"
+        "migrations_dir": "./db/migrations",
+        "database_id": "aec0bdce-7207-4445-adee-033194c52979"
       }
     ],
     "migrations": [
@@ -106,7 +117,16 @@
           "NotificationActor"
         ]
       }
-    ]
+    ],
+    "account_id": "070a91f36bb99185a44495c5dc870132",
+    "routes": [
+      {
+        "pattern": "uptime.gagrstan.xyz",
+        "custom_domain": true
+      }
+    ],
+    "workers_dev": true,
+    "preview_urls": true
   },
-  "text": "{\n  \"name\": \"uptime-zero\",\n  \"observability\": {\n    \"enabled\": true,\n    \"head_sampling_rate\": 1,\n    \"logs\": {\n      \"head_sampling_rate\": 1,\n      \"invocation_logs\": false\n    },\n    \"traces\": {\n      \"head_sampling_rate\": 1\n    }\n  },\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"uptime-zero\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"migrations\": [\n    {\n      \"tag\": \"v1\",\n      \"new_sqlite_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v2\",\n      \"new_sqlite_classes\": [\n        \"SchedulerActor\"\n      ]\n    },\n    {\n      \"tag\": \"v3\",\n      \"deleted_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v4\",\n      \"new_sqlite_classes\": [\n        \"NotificationActor\"\n      ]\n    },\n    {\n      \"tag\": \"v5\",\n      \"deleted_classes\": [\n        \"SchedulerActor\",\n        \"NotificationActor\"\n      ]\n    }\n  ]\n}\n"
+  "text": "{\n  \"name\": \"uptime-zero\",\n  \"observability\": {\n    \"enabled\": true,\n    \"head_sampling_rate\": 1,\n    \"logs\": {\n      \"head_sampling_rate\": 1,\n      \"invocation_logs\": false\n    },\n    \"traces\": {\n      \"head_sampling_rate\": 1\n    }\n  },\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"uptime-zero\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"database_id\": \"aec0bdce-7207-4445-adee-033194c52979\"\n    }\n  ],\n  \"migrations\": [\n    {\n      \"tag\": \"v1\",\n      \"new_sqlite_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v2\",\n      \"new_sqlite_classes\": [\n        \"SchedulerActor\"\n      ]\n    },\n    {\n      \"tag\": \"v3\",\n      \"deleted_classes\": [\n        \"MonitorActor\"\n      ]\n    },\n    {\n      \"tag\": \"v4\",\n      \"new_sqlite_classes\": [\n        \"NotificationActor\"\n      ]\n    },\n    {\n      \"tag\": \"v5\",\n      \"deleted_classes\": [\n        \"SchedulerActor\",\n        \"NotificationActor\"\n      ]\n    }\n  ],\n  \"account_id\": \"070a91f36bb99185a44495c5dc870132\",\n  \"routes\": [\n    {\n      \"pattern\": \"uptime.gagrstan.xyz\",\n      \"custom_domain\": true\n    }\n  ],\n  \"workers_dev\": true,\n  \"preview_urls\": true\n}\n"
 }
